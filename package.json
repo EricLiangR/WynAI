@@ -1,0 +1,22 @@
+{
+  "name": "wyn-ai-chat-demo",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Wyn AI 问数 API 前端集成演示",
+  "scripts": {
+    "start": "node server.mjs",
+    "dev": "node --watch server.mjs",
+    "check": "node --check server.mjs && node --check public/app.js && node --check lib/analysis-core.mjs && node --check lib/wax-query.mjs && node --check lib/run-store.mjs && node --check lib/report-export.mjs && node --check lib/report/structured-report.mjs && node --check lib/semantics/capability-profiler.mjs && node --check lib/planning/query-request-schema.mjs && node --check lib/planning/hypothesis-planner.mjs && node --check lib/planning/exploration-planner.mjs && node --check lib/llm/exploration-agent.mjs && node --check lib/query/result-normalizer.mjs && node --check lib/query/router.mjs && node --check lib/query/adapters/controlled-wax.mjs && node --check lib/query/adapters/dataset-none.mjs && node --check lib/analytics/growth-driver.mjs && node --check lib/analytics/exploration-artifacts.mjs && node --check lib/evidence/claim-verifier.mjs && node --check lib/harness/orchestrator.mjs && node --check test/uvt-live.mjs && node --check test/uvt-v2-live.mjs",
+    "test": "node --test test/*.test.mjs",
+    "test:coverage": "node --experimental-test-coverage --test test/*.test.mjs",
+    "uvt": "node test/uvt-live.mjs",
+    "uvt:v2": "node test/uvt-v2-live.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "echarts": "^6.1.0"
+  }
+}

@@ -1,0 +1,443 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="Wyn AI 问数 API 集成演示" />
+    <title>Atlas AI · 智能数据助手</title>
+    <link rel="stylesheet" href="/styles.css?v=18" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar">
+        <a class="brand" href="#" aria-label="Atlas AI 首页">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 28 28"><path d="M14 2 25 8.2v11.6L14 26 3 19.8V8.2L14 2Z" fill="none" stroke="currentColor" stroke-width="2"/><path d="m8.5 17.8 5.3-10 5.7 10M10.4 14.4h7.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+          </span>
+          <span>Atlas<span class="brand-accent">AI</span></span>
+        </a>
+
+        <button class="sidebar-toggle" id="sidebar-toggle" type="button" aria-label="折叠左侧菜单" aria-expanded="true" aria-controls="primary-nav" title="折叠左侧菜单">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m14.5 6-6 6 6 6"/></svg>
+        </button>
+
+        <nav class="primary-nav" id="primary-nav" aria-label="主导航">
+          <button class="nav-item active" type="button" data-section="chat">
+            <svg viewBox="0 0 24 24"><path d="M20 11a7 7 0 0 1-7 7H8l-4 3v-5.5A7 7 0 1 1 20 11Z"/></svg>
+            <span>智能问数</span><span class="nav-badge">AI</span>
+          </button>
+          <button class="nav-item" type="button" data-section="insights">
+            <svg viewBox="0 0 24 24"><path d="M4 19V9m5 10V5m5 14v-7m5 7V3"/></svg>
+            <span>数据洞察</span>
+          </button>
+          <button class="nav-item" type="button" data-section="analysis">
+            <svg viewBox="0 0 24 24"><path d="M4 19V8l4-3 4 3 4-3 4 3v11M8 5v14m4-11v11m4-14v14M3 19h18"/></svg>
+            <span>AI 数据分析</span><span class="nav-badge">新</span>
+          </button>
+          <button class="nav-item" type="button" data-section="reports">
+            <svg viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5V3Zm3 5h8M8 12h8M8 16h5"/></svg>
+            <span>智能报告</span>
+          </button>
+          <button class="nav-item" type="button">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg>
+            <span>能力中心</span>
+          </button>
+        </nav>
+
+        <div class="sidebar-bottom">
+          <div class="powered-by">
+            <span class="wyn-spark">W</span>
+            <div><small>分析引擎</small><strong>Wyn 提供支持</strong></div>
+          </div>
+          <div class="user-card">
+            <span class="avatar">林</span>
+            <div><strong>林晓宇</strong><small>数据分析师</small></div>
+            <button type="button" aria-label="用户菜单">•••</button>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main-area">
+        <header class="topbar">
+          <div>
+            <div class="eyebrow"><span class="live-dot"></span> AI 工作台</div>
+            <h1 id="workspace-title">智能数据助手</h1>
+          </div>
+          <div class="topbar-actions">
+            <div class="connection-pill" id="connection-pill" title="检查 Wyn 服务连接状态">
+              <span class="status-dot"></span><span id="connection-text">正在连接 Wyn</span>
+            </div>
+            <button class="icon-button" id="clear-chat" type="button" aria-label="新建对话" title="新建对话">
+              <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+            </button>
+            <button class="icon-button" type="button" aria-label="更多设置">
+              <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
+            </button>
+          </div>
+        </header>
+
+        <section class="workspace" id="chat-workspace">
+          <div class="conversation-column">
+            <div class="context-bar">
+              <div class="dataset-control">
+                <span class="control-icon"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></span>
+                <label for="dataset-select">当前数据集</label>
+                <select id="dataset-select" aria-label="选择问数数据集"><option value="">加载中…</option></select>
+              </div>
+              <div class="context-divider"></div>
+              <label class="toggle-label" title="让 Wyn 在查询结果后继续生成自然语言洞察">
+                <input id="insight-toggle" type="checkbox" checked />
+                <span class="toggle"></span>
+                深度洞察
+              </label>
+              <span class="api-chip">Wyn AI 接口</span>
+            </div>
+
+            <div class="messages" id="messages" aria-live="polite">
+              <section class="welcome-card" id="welcome-card">
+                <div class="orb-wrap" aria-hidden="true"><div class="orb"><span></span></div></div>
+                <div class="welcome-kicker">数据驱动智能</div>
+                <h2>让数据，直接回答问题</h2>
+                <p>选择一个业务数据集，用自然语言提问。Atlas AI 将调用 Wyn 完成语义理解、指标计算与洞察生成。</p>
+                <div class="suggestion-grid">
+                  <button class="suggestion" type="button" data-prompt="总销售额是多少？">
+                    <span class="suggestion-icon violet"><svg viewBox="0 0 24 24"><path d="m4 17 5-5 4 3 7-8M16 7h4v4"/></svg></span>
+                    <span><strong>核心指标概览</strong><small>总销售额是多少？</small></span>
+                    <svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                  </button>
+                  <button class="suggestion" type="button" data-prompt="按月份分析销售额趋势，并指出变化最大的月份">
+                    <span class="suggestion-icon cyan"><svg viewBox="0 0 24 24"><path d="M4 18h16M6 15l4-5 3 3 5-7"/></svg></span>
+                    <span><strong>发现趋势变化</strong><small>按月份分析销售额趋势</small></span>
+                    <svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                  </button>
+                  <button class="suggestion" type="button" data-prompt="哪个产品类别贡献的销售额最高？请给出排名">
+                    <span class="suggestion-icon amber"><svg viewBox="0 0 24 24"><path d="M5 20V9h4v11M10 20V4h4v16M15 20v-7h4v7"/></svg></span>
+                    <span><strong>识别业务贡献</strong><small>产品类别销售额排名</small></span>
+                    <svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                  </button>
+                  <button class="suggestion" type="button" data-prompt="找出销售额异常的地区，并分析可能原因">
+                    <span class="suggestion-icon rose"><svg viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3Zm0 6v5m0 3h.01"/></svg></span>
+                    <span><strong>定位异常波动</strong><small>找出销售额异常的地区</small></span>
+                    <svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                  </button>
+                </div>
+              </section>
+            </div>
+
+            <div class="composer-wrap">
+              <div class="composer">
+                <textarea id="question-input" rows="1" placeholder="向数据提问，例如：近 6 个月销售额趋势如何？" aria-label="输入问题"></textarea>
+                <div class="composer-footer">
+                  <div class="composer-tools">
+                    <button type="button" class="tool-button" aria-label="添加附件" title="添加附件（演示）">
+                      <svg viewBox="0 0 24 24"><path d="m20 12-8.5 8.5a6 6 0 0 1-8.5-8.5l9-9a4 4 0 0 1 5.7 5.7L8.8 17.6a2 2 0 1 1-2.8-2.8l8.2-8.2"/></svg>
+                    </button>
+                    <span class="shortcut"><kbd>Enter</kbd> 发送 · <kbd>Shift</kbd> + <kbd>Enter</kbd> 换行</span>
+                  </div>
+                  <button id="send-button" class="send-button" type="button" aria-label="发送问题">
+                    <span>发送</span><svg viewBox="0 0 24 24"><path d="m4 4 17 8-17 8 3-8-3-8Zm3 8h14"/></svg>
+                  </button>
+                </div>
+              </div>
+              <p class="disclaimer">内容由 AI 生成，请结合业务口径核验 · 数据计算由 Wyn 提供</p>
+            </div>
+          </div>
+
+          <aside class="insight-panel">
+            <div class="panel-header"><span>本次分析</span><span class="panel-tag">实时</span></div>
+            <div class="analysis-flow" id="analysis-flow">
+              <div class="flow-item active"><span class="flow-index">01</span><div><strong>理解业务问题</strong><small>识别指标、维度与筛选条件</small></div></div>
+              <div class="flow-line"></div>
+              <div class="flow-item"><span class="flow-index">02</span><div><strong>执行数据查询</strong><small>由 Wyn 生成并运行分析查询</small></div></div>
+              <div class="flow-line"></div>
+              <div class="flow-item"><span class="flow-index">03</span><div><strong>生成智能洞察</strong><small>总结结论并解释业务含义</small></div></div>
+            </div>
+
+            <div class="panel-section">
+              <div class="section-title"><span>连接信息</span><span class="tiny-check">✓ 已保护</span></div>
+              <dl class="connection-list">
+                <div><dt>服务</dt><dd id="server-address">localhost:51980</dd></div>
+                <div><dt>接口</dt><dd>/api/v2/chat/analysis/queries</dd></div>
+                <div><dt>认证</dt><dd>服务端代理</dd></div>
+                <div><dt>输出</dt><dd>流式返回</dd></div>
+              </dl>
+            </div>
+
+            <div class="panel-section api-note">
+              <div class="note-icon">⌁</div>
+              <div><strong>企业集成就绪</strong><p>密钥保留在服务端，可直接替换成用户身份映射、审计日志与权限策略。</p></div>
+            </div>
+          </aside>
+        </section>
+
+        <section class="insights-workspace" id="insights-workspace" hidden>
+          <div class="insights-toolbar">
+            <div>
+              <div class="insights-kicker">AI 二次分析</div>
+              <h2>数据洞察工作台</h2>
+              <p>复用 Wyn 问数结果集，让大模型继续完成趋势、异常与归因分析。</p>
+            </div>
+            <div class="insights-toolbar-actions">
+              <span class="model-status" id="model-status"><i></i><span>检测洞察引擎</span></span>
+              <button class="secondary-button" id="refresh-results" type="button">
+                <svg viewBox="0 0 24 24"><path d="M20 6v5h-5M4 18v-5h5M6.1 8a7 7 0 0 1 11.2-2L20 11M4 13l2.7 5A7 7 0 0 0 18 16"/></svg>
+                刷新结果
+              </button>
+              <button class="primary-insight-button" id="back-to-chat" type="button">
+                <svg viewBox="0 0 24 24"><path d="M20 11a7 7 0 0 1-7 7H8l-4 3v-5.5A7 7 0 1 1 20 11Z"/></svg>
+                发起新问数
+              </button>
+            </div>
+          </div>
+
+          <div class="insights-layout">
+            <aside class="result-library">
+              <div class="library-head">
+                <div><strong>Wyn 结果集</strong><small>最近捕获的分析</small></div>
+                <span id="result-count">0</span>
+              </div>
+              <div class="result-list" id="analysis-result-list"></div>
+              <div class="library-foot">
+                <span class="secure-dot">✓</span>
+                <p><strong>数据安全传输</strong><small>结果仅由服务端转发，访问令牌与模型密钥不会进入浏览器。</small></p>
+              </div>
+            </aside>
+
+            <div class="insight-canvas">
+              <div class="insight-empty" id="insight-empty">
+                <div class="empty-orbit"><span></span><i></i></div>
+                <div class="empty-label">等待结果集</div>
+                <h3>从一次 Wyn 问数开始</h3>
+                <p>完成智能问数并加载图表后，结构化结果会自动出现在这里，可继续交给大模型分析。</p>
+                <button class="primary-insight-button" type="button" data-action="go-chat">去智能问数</button>
+              </div>
+
+              <div class="insight-detail" id="insight-detail" hidden>
+                <div class="dataset-heading">
+                  <div class="dataset-title-wrap">
+                    <span class="dataset-glyph"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></span>
+                    <div><div class="dataset-breadcrumb">Wyn 结果 / <span id="insight-view-id">—</span></div><h3 id="insight-topic">分析结果</h3></div>
+                  </div>
+                  <span class="capture-status"><i></i> 已捕获结果集</span>
+                </div>
+
+                <div class="insight-stat-grid">
+                  <article><span class="stat-icon violet">#</span><div><small>结果记录</small><strong id="stat-rows">0</strong><em>记录</em></div></article>
+                  <article><span class="stat-icon cyan">▦</span><div><small>字段数量</small><strong id="stat-columns">0</strong><em>字段</em></div></article>
+                  <article><span class="stat-icon green">✓</span><div><small>数据完整度</small><strong id="stat-completeness">0%</strong><em>质量</em></div></article>
+                  <article><span class="stat-icon amber">AI</span><div><small>洞察引擎</small><strong id="stat-model">内置引擎</strong><em>模型</em></div></article>
+                </div>
+
+                <article class="data-preview-card">
+                  <div class="card-title-row">
+                    <div><span class="card-eyebrow">结构化结果</span><h4>结果集预览</h4></div>
+                    <div class="preview-meta"><span id="preview-range">前 0 行</span><button id="toggle-raw-data" type="button">查看 JSON</button></div>
+                  </div>
+                  <div class="data-table-wrap" id="data-table-wrap">
+                    <table class="data-table"><thead id="insight-table-head"></thead><tbody id="insight-table-body"></tbody></table>
+                  </div>
+                  <pre class="raw-data" id="raw-data" hidden></pre>
+                  <div class="table-foot"><span id="table-quality-note">等待结果质量检查</span><span>由 Wyn 聚合计算</span></div>
+                </article>
+
+                <article class="analysis-studio">
+                  <div class="studio-head">
+                    <div><span class="studio-mark">✦</span><div><span class="card-eyebrow">AI 洞察工作台</span><h4>二次智能洞察</h4></div></div>
+                    <span class="context-chip">已附加结果上下文</span>
+                  </div>
+                  <div class="analysis-presets" id="analysis-presets">
+                    <button type="button" data-preset="请识别最重要的趋势变化，并用数据证据解释。">趋势洞察</button>
+                    <button type="button" data-preset="请定位异常值、突变点和潜在的数据质量风险。">异常检测</button>
+                    <button type="button" data-preset="请分析主要贡献因素，并给出可能的业务归因。">贡献归因</button>
+                    <button type="button" data-preset="请形成面向经营管理者的结论和下一步行动建议。">经营建议</button>
+                  </div>
+                  <div class="insight-prompt-box">
+                    <textarea id="secondary-prompt" rows="3">请从业务趋势、异常和风险角度解读当前结果，并给出可执行建议。</textarea>
+                    <div><span>结果集会在服务端压缩为字段、统计摘要与必要样本</span><button id="generate-insight" type="button"><span>开始洞察</span><svg viewBox="0 0 24 24"><path d="m4 4 17 8-17 8 3-8-3-8Zm3 8h14"/></svg></button></div>
+                  </div>
+                </article>
+
+                <article class="secondary-output" id="secondary-output" hidden>
+                  <div class="output-head"><div><span class="studio-mark">AI</span><div><span class="card-eyebrow">二次洞察</span><h4>洞察结论</h4></div></div><span id="output-model">—</span></div>
+                  <div class="finding-grid" id="finding-grid"></div>
+                  <div class="output-content" id="output-content"></div>
+                </article>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="agent-workspace" id="agent-workspace" hidden>
+          <header class="agent-toolbar">
+            <div>
+              <div class="insights-kicker">受控数据分析智能体</div>
+              <h2>AI 数据分析</h2>
+              <p>只需选择 Wyn 数据集，智能体会自主提出问题、动态选择查询方式、验证证据并生成管理报告。</p>
+            </div>
+            <div class="agent-toolbar-actions">
+              <span class="agent-engine-status"><i></i><span id="agent-engine-model">分析引擎就绪</span></span>
+              <select class="agent-export-format" id="agent-export-format" aria-label="选择报告导出格式" disabled>
+                <option value="html">独立 HTML 文件</option>
+                <option value="markdown">Markdown 文档</option>
+                <option value="json">分析数据 JSON 文件</option>
+              </select>
+              <button class="secondary-button" id="agent-export-report" type="button" disabled>
+                <svg viewBox="0 0 24 24"><path d="M12 3v12m0 0 5-5m-5 5-5-5M5 19h14"/></svg>
+                导出
+              </button>
+              <button class="secondary-button" id="agent-print-report" type="button" disabled>
+                <svg viewBox="0 0 24 24"><path d="M7 8V3h10v5M7 17H4v-7h16v7h-3M7 14h10v7H7v-7Z"/></svg>
+                打印报告
+              </button>
+            </div>
+          </header>
+
+          <div class="agent-layout">
+            <aside class="agent-control-panel">
+              <div class="agent-control-section">
+                <label for="agent-dataset-select">分析数据集</label>
+                <select id="agent-dataset-select" aria-label="选择 AI 分析数据集"><option value="">加载中…</option></select>
+                <div class="semantic-status" id="semantic-status">
+                  <span class="semantic-pulse"></span>
+                  <div><strong>正在读取语义定义</strong><small>字段、类型、描述与 AI 配置</small></div>
+                </div>
+              </div>
+
+              <div class="agent-control-section">
+                <label for="agent-goal">关注方向 <small>可选</small></label>
+                <textarea id="agent-goal" rows="4" placeholder="可以留空，让智能体开放探索；也可以输入你特别关心的业务问题。"></textarea>
+                <div class="agent-goal-presets" id="agent-goal-presets">
+                  <button type="button" data-agent-goal="全面分析经营情况，识别趋势、增长驱动、异常风险和重点客户，并给出管理建议。">综合经营</button>
+                  <button type="button" data-agent-goal="重点分析时间趋势和环比变化，定位波动最大的月份并分析贡献因素。">趋势诊断</button>
+                  <button type="button" data-agent-goal="分析产品类别和区域贡献，识别增长来源、集中度风险和改进机会。">贡献分析</button>
+                </div>
+                <button class="agent-run-button" id="agent-run-button" type="button">
+                  <svg viewBox="0 0 24 24"><path d="m5 3 14 9-14 9V3Z"/></svg>
+                  <span>开始自主分析</span>
+                </button>
+              </div>
+
+              <details class="agent-control-section agent-advanced-settings">
+                <summary><span>高级设置</span><small id="agent-filter-count">全部数据</small></summary>
+                <p>筛选条件会约束证据范围；开放探索时建议保持“全部数据”。</p>
+                <div class="agent-filter-builder">
+                  <select id="agent-filter-field" aria-label="筛选字段"><option value="">选择字段</option></select>
+                  <select id="agent-filter-operator" aria-label="筛选操作符">
+                    <option value="eq">等于</option>
+                    <option value="neq">不等于</option>
+                    <option value="gte">大于等于</option>
+                    <option value="lte">小于等于</option>
+                    <option value="gt">大于</option>
+                    <option value="lt">小于</option>
+                  </select>
+                  <input id="agent-filter-value" type="text" maxlength="200" placeholder="筛选值" aria-label="筛选值">
+                  <button id="agent-add-filter" type="button" title="添加筛选" aria-label="添加筛选">＋</button>
+                </div>
+                <div class="agent-filter-list" id="agent-filter-list"><span>未设置筛选条件</span></div>
+              </details>
+
+              <div class="agent-control-section semantic-catalog" id="semantic-catalog">
+                <div class="control-section-head"><span>语义目录</span><span id="semantic-field-count">0 字段</span></div>
+                <dl>
+                  <div><dt>业务描述</dt><dd id="semantic-description">等待加载</dd></div>
+                  <div><dt>指标</dt><dd id="semantic-measures">—</dd></div>
+                  <div><dt>维度</dt><dd id="semantic-dimensions">—</dd></div>
+                  <div><dt>时间</dt><dd id="semantic-times">—</dd></div>
+                  <div><dt>已描述字段</dt><dd id="semantic-described">0</dd></div>
+                </dl>
+              </div>
+
+              <div class="agent-control-section">
+                <div class="control-section-head"><span>最近运行</span><button class="agent-history-refresh" id="agent-history-refresh" type="button" title="刷新运行记录" aria-label="刷新运行记录">↻</button></div>
+                <select id="agent-run-history" aria-label="选择历史分析运行"><option value="">暂无运行记录</option></select>
+                <button class="agent-history-open" id="agent-history-open" type="button" disabled>打开运行</button>
+              </div>
+
+              <div class="agent-safety-note">
+                <span>✓</span>
+                <div><strong>动态受控执行</strong><small>AI 只提出查询需求；路由器选择明细或聚合接口；数据源 SQL 始终禁用。</small></div>
+              </div>
+            </aside>
+
+            <div class="agent-canvas" id="agent-canvas">
+              <div class="agent-empty" id="agent-empty">
+                <div class="agent-empty-mark"><span></span><i></i><b></b></div>
+                <div class="empty-label">可开始分析</div>
+                <h3>选择数据集即可开始自主分析</h3>
+                <p>关注方向可以留空。智能体会读取 Wyn 语义，提出分析假设，动态路由查询并生成可复核的结论与报告。</p>
+              </div>
+
+              <div class="agent-run-detail" id="agent-run-detail" hidden>
+                <div class="agent-run-strip">
+                  <div><span class="run-live-dot"></span><strong id="agent-run-status">分析完成</strong><small id="agent-run-id">运行 —</small></div>
+                  <div class="run-validation">
+                    <span>证据覆盖 <strong id="agent-evidence-coverage">0%</strong></span>
+                    <span>查询模式 <strong id="agent-query-mode">数据集</strong></span>
+                    <span>SQL <strong>已禁用</strong></span>
+                  </div>
+                </div>
+
+                <section class="agent-band analysis-plan-band">
+                  <div class="agent-section-title"><div><span>01</span><div><small>分析编排</small><h3>自主分析轨迹</h3></div></div><em>查询方式动态路由</em></div>
+                  <div class="agent-plan" id="agent-plan" tabindex="0" role="region" aria-label="自主分析轨迹步骤，可上下滚动"></div>
+                </section>
+
+                <section class="agent-band">
+                  <div class="agent-section-title"><div><span>02</span><div><small>确定性指标</small><h3>经营概览</h3></div></div><em id="agent-profile-summary">等待数据</em></div>
+                  <div class="agent-kpis" id="agent-kpis"></div>
+                </section>
+
+                <section class="agent-band">
+                  <div class="agent-section-title"><div><span>03</span><div><small>探索式动态可视化</small><h3>动态分析视图</h3></div></div><em>由有效发现决定</em></div>
+                  <div class="agent-chart-grid" id="agent-chart-grid"></div>
+                </section>
+
+                <section class="agent-band agent-insight-layout">
+                  <div>
+                    <div class="agent-section-title"><div><span>04</span><div><small>证据支撑洞察</small><h3>关键洞察</h3></div></div></div>
+                    <div class="agent-findings" id="agent-findings"></div>
+                  </div>
+                  <div>
+                    <div class="agent-section-title"><div><span>05</span><div><small>证据追溯</small><h3>证据记录</h3></div></div></div>
+                    <div class="agent-evidence-table-wrap">
+                      <table class="agent-evidence-table">
+                        <thead><tr><th>证据</th><th>方法</th><th>样本</th><th>字段</th></tr></thead>
+                        <tbody id="agent-evidence-body"></tbody>
+                      </table>
+                    </div>
+                  </div>
+                </section>
+
+                <section class="agent-report" id="agent-report">
+                  <div class="report-cover-line"></div>
+                  <div class="report-head">
+                    <div><small>管理分析报告</small><h2 id="agent-report-title">经营分析报告</h2><p id="agent-report-meta">由 Atlas AI 生成</p></div>
+                    <span class="report-confidence">证据支撑</span>
+                  </div>
+                  <div class="report-content" id="agent-report-content"></div>
+                  <div class="report-foot"><span>数据计算由 Wyn 与确定性分析程序完成</span><span>AI 结论需结合业务情境复核</span></div>
+                </section>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <template id="user-message-template">
+      <article class="message-row user-row"><div class="message-bubble user-bubble"></div><span class="message-avatar user-avatar">林</span></article>
+    </template>
+    <template id="assistant-message-template">
+      <article class="message-row assistant-row">
+        <span class="message-avatar ai-avatar">AI</span>
+        <div class="assistant-content">
+          <div class="assistant-meta"><strong>Atlas AI</strong><span>由 Wyn 驱动</span></div>
+          <div class="message-bubble assistant-bubble"><div class="thinking"><i></i><i></i><i></i><span>正在分析数据</span></div></div>
+          <div class="message-actions"><button type="button" data-action="copy">复制</button><button type="button">有帮助</button></div>
+        </div>
+      </article>
+    </template>
+    <script src="/vendor/echarts.min.js"></script>
+    <script src="/app.js?v=18" type="module"></script>
+  </body>
+</html>
