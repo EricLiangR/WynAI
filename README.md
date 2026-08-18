@@ -105,3 +105,20 @@ npm audit
 - 正式 PDF 通过独立 HTML 的打印功能生成。
 - 本地 JSON 仓库适合原型与单实例部署；生产多实例需要数据库、权限映射、审计日志和密钥托管。
 - 真实 LLM UAT 会把字段元数据、语义描述、聚合摘要和报告上下文发送到配置的外部模型服务；执行前必须确认客户数据外发授权与脱敏策略。
+## Windows 发布包
+
+项目可以构建为包含 Node.js、生产依赖和 WinSW 的 Windows x64 ZIP。目标服务器不需要安装 Node.js，也不需要执行 `npm install`。
+
+```powershell
+.\build-windows-package.bat 1.0.1
+```
+
+或者直接运行：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\build-windows-package.ps1 -Version 1.0.1
+```
+
+产物位于 `release/windows/`。构建流程会执行语法检查、自动化测试、生产依赖安装、ZIP 校验，以及从 ZIP 解压后的启动/存活/停止冒烟测试。
+
+发布包的部署配置位于 `config/wynai.env`，首次启动或安装服务时从模板创建。`config` 和 `data` 是持久化目录，升级时不得覆盖。

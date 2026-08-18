@@ -1,7 +1,7 @@
 import http from 'node:http';
 import { randomUUID } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
-import { extname, join, normalize } from 'node:path';
+import { extname, isAbsolute, join, normalize, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { analyzeDataset, normalizeDatasetMetadata } from './lib/analysis-core.mjs';
 import { applyLocalFilters, buildAnalysisQueryBundle, compileFilteredDetailQuery } from './lib/wax-query.mjs';
@@ -15,9 +15,16 @@ import { parseLlmJson, structuredReportMarkdown, validateStructuredReport } from
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 const publicDir = join(rootDir, 'public');
 
-async function loadLocalEnv() {
+function resolveRuntimePath(value, fallback) {
+  const selected = value || fallback;
+  return isAbsolute(selected) ? selected : resolve(process.cwd(), selected);
+}
+
+const envFile = resolveRuntimePath(process.env.WYN_AI_ENV_FILE, join(rootDir, '.env.local'));
+
+async function loadLocalEnv(filePath = envFile) {
   try {
-    const source = await readFile(join(rootDir, '.env.local'), 'utf8');
+    const source = await readFile(filePath, 'utf8');
     for (const line of source.split(/\r?\n/)) {
       const trimmed = line.trim();
       if (!trimmed || trimmed.startsWith('#')) continue;
@@ -40,11 +47,19 @@ function commandLineNumber(name) {
   return value ? Number(value) : null;
 }
 
+function validPort(name, value) {
+  const port = Number(value);
+  if (!Number.isInteger(port) || port < 1 || port > 65535) {
+    throw new Error(`${name} must be an integer between 1 and 65535`);
+  }
+  return port;
+}
+
 const config = {
   wynBaseUrl: (process.env.WYN_BASE_URL || 'http://localhost:51980').replace(/\/$/, ''),
   token: process.env.WYN_TOKEN || '',
   host: process.env.HOST || '127.0.0.1',
-  port: commandLineNumber('port') || Number(process.env.PORT || 8787),
+  port: validPort('PORT', commandLineNumber('port') || process.env.PORT || 8787),
   llmBaseUrl: (process.env.LLM_BASE_URL || '').replace(/\/$/, ''),
   llmApiKey: process.env.LLM_API_KEY || '',
   llmModel: process.env.LLM_MODEL || '',
@@ -54,7 +69,13 @@ const explorationLlm = createExplorationLlm({
   apiKey: config.llmApiKey,
   model: config.llmModel,
 });
-config.viewProxyPort = commandLineNumber('view-proxy-port') || Number(process.env.WYN_VIEW_PROXY_PORT || config.port + 1);
+config.viewProxyPort = validPort(
+  'WYN_VIEW_PROXY_PORT',
+  commandLineNumber('view-proxy-port') || process.env.WYN_VIEW_PROXY_PORT || config.port + 1,
+);
+if (config.viewProxyPort === config.port) {
+  throw new Error('PORT and WYN_VIEW_PROXY_PORT must be different');
+}
 
 const analysisResults = new Map();
 const viewDefinitions = new Map();
@@ -65,7 +86,8 @@ const MAX_CAPTURED_RESULTS = 30;
 const MAX_AGENT_RUNS = 100;
 const MAX_DATASET_ROWS = 5000;
 const MAX_QUERY_ROWS = 5000;
-const runStore = new JsonRunStore(join(rootDir, 'data', 'analysis-runs'), { maxItems: 100 });
+const dataDir = resolveRuntimePath(process.env.WYN_AI_DATA_DIR, join(rootDir, 'data'));
+const runStore = new JsonRunStore(join(dataDir, 'analysis-runs'), { maxItems: 100 });
 for (const run of (await runStore.init()).reverse()) agentRuns.set(run.id, run);
 
 const mimeTypes = {
@@ -114,6 +136,20 @@ function parseJsonText(value) {
   return JSON.parse(String(value || '').replace(/^\uFEFF/, '').trim());
 }
 
+function describePayloadShape(value, depth = 0) {
+  if (depth > 4 || value == null) return value == null ? String(value) : typeof value;
+  if (Array.isArray(value)) {
+    return { type: 'array', length: value.length, sample: value.length ? describePayloadShape(value[0], depth + 1) : null };
+  }
+  if (typeof value === 'object') {
+    return {
+      type: 'object',
+      keys: Object.keys(value).slice(0, 24),
+      children: Object.fromEntries(Object.entries(value).slice(0, 12).map(([key, child]) => [key, describePayloadShape(child, depth + 1)])),
+    };
+  }
+  return typeof value;
+}
 function extractViewId(value = '') {
   try {
     return new URL(value).searchParams.get('viewId') || '';
@@ -123,7 +159,7 @@ function extractViewId(value = '') {
 }
 
 function findRowArray(value, depth = 0, candidates = []) {
-  if (depth > 7 || value == null) return candidates;
+  if (depth > 12 || value == null) return candidates;
   if (Array.isArray(value)) {
     if (value.length && value.some(item => item && typeof item === 'object' && !Array.isArray(item))) {
       candidates.push(value);
@@ -135,13 +171,55 @@ function findRowArray(value, depth = 0, candidates = []) {
   return candidates;
 }
 
-function resultRows(record) {
-  const aggregationData = record?.aggregationResult?.data;
-  if (Array.isArray(aggregationData)) return aggregationData;
-  const candidates = findRowArray(record?.pivotPayload);
-  return candidates.sort((a, b) => b.length - a.length)[0] || [];
+function matrixRows(value, depth = 0, candidates = []) {
+  if (depth > 12 || value == null) return candidates;
+  if (Array.isArray(value)) {
+    if (value.length >= 2 && value.every(row => Array.isArray(row))) {
+      const headers = value[0];
+      if (headers.length && headers.every(header => ['string', 'number'].includes(typeof header))) {
+        candidates.push({ headers: headers.map(header => String(header)), rows: value.slice(1) });
+      }
+    }
+    for (const item of value.slice(0, 12)) matrixRows(item, depth + 1, candidates);
+  } else if (typeof value === 'object') {
+    const rows = value.rows || value.dataRows || value.values;
+    const columns = value.columns || value.fields || value.headers;
+    if (Array.isArray(rows) && rows.length && rows.every(row => Array.isArray(row)) && Array.isArray(columns)) {
+      const headers = columns.map(column => typeof column === 'string' ? column : column?.name || column?.label || column?.alias || '').filter(Boolean);
+      if (headers.length) candidates.push({ headers, rows });
+    }
+    for (const child of Object.values(value)) matrixRows(child, depth + 1, candidates);
+  }
+  return candidates;
 }
 
+function resultRows(record) {
+  const aggregationResult = record?.aggregationResult;
+  const directCandidates = [
+    aggregationResult?.data,
+    aggregationResult?.rows,
+    aggregationResult?.result?.data,
+    aggregationResult?.result?.rows,
+    aggregationResult?.resultSet?.data,
+    aggregationResult?.resultSet?.rows,
+  ].filter(candidate => Array.isArray(candidate) && candidate.length);
+  if (directCandidates.length) return directCandidates.sort((a, b) => b.length - a.length)[0];
+
+  const candidates = [
+    ...findRowArray(aggregationResult),
+    ...findRowArray(record?.pivotPayload),
+  ];
+  const objectRows = candidates.sort((a, b) => b.length - a.length)[0];
+  if (objectRows?.length) return objectRows;
+
+  const matrices = [
+    ...matrixRows(aggregationResult),
+    ...matrixRows(record?.pivotPayload),
+  ].sort((a, b) => b.rows.length - a.rows.length);
+  const matrix = matrices[0];
+  if (!matrix) return [];
+  return matrix.rows.map(row => Object.fromEntries(matrix.headers.map((header, index) => [header, row[index] ?? null])));
+}
 function unwrapValue(value, depth = 0) {
   if (depth > 5) return value;
   if (Array.isArray(value)) {
@@ -217,7 +295,8 @@ function readRawBody(request) {
 }
 
 function wynUrl(pathname) {
-  const url = new URL(pathname, `${config.wynBaseUrl}/`);
+  const baseUrl = config.wynBaseUrl.endsWith('/') ? config.wynBaseUrl : `${config.wynBaseUrl}/`;
+  const url = new URL(String(pathname).replace(/^\/+/, ''), baseUrl);
   if (config.token) url.searchParams.set('token', config.token);
   return url;
 }
@@ -276,36 +355,48 @@ async function handleHealth(response) {
 
 async function loadDatasetDocuments({ force = false } = {}) {
   if (!force && datasetDocumentCache.expiresAt > Date.now()) return datasetDocumentCache.items;
-  const requestBody = {
-    types: 'dataset',
-    pageSize: 500,
-    pageNumber: 1,
-    deleted: false,
-    searchForAllTags: false,
-    disableHideInDocumentPortalFilter: true,
-    enableDataModelFilter: false,
-    fromAdminPortal: false,
-    includeIndirectReference: false,
-    includeDocTypeExtFields: true,
-  };
 
-  const upstream = await wynFetch('/api/v2/common/documents/search', {
-    method: 'POST',
-    body: JSON.stringify(requestBody),
-    timeout: 20_000,
-  });
-  const raw = await upstream.text();
-  let payload = {};
-  try { payload = parseJsonText(raw); } catch { /* handled below */ }
+  const pageSize = 500;
+  const items = [];
+  let pageNumber = 1;
 
-  if (!upstream.ok) {
-    throw new Error(payload.message || `获取数据集失败 (${upstream.status})`);
+  while (pageNumber <= 20) {
+    const requestBody = {
+      types: 'dataset',
+      pageSize,
+      pageNumber,
+      deleted: false,
+      searchForAllTags: false,
+      disableHideInDocumentPortalFilter: true,
+      enableDataModelFilter: false,
+      fromAdminPortal: false,
+      includeIndirectReference: false,
+      includeDocTypeExtFields: true,
+    };
+
+    const upstream = await wynFetch('/api/v2/common/documents/search', {
+      method: 'POST',
+      body: JSON.stringify(requestBody),
+      timeout: 20_000,
+    });
+    const raw = await upstream.text();
+    let payload = {};
+    try { payload = parseJsonText(raw); } catch { /* handled below */ }
+
+    if (!upstream.ok) {
+      throw new Error(payload.message || `获取数据集失败 (${upstream.status})`);
+    }
+
+    const pageItems = Array.isArray(payload.data) ? payload.data : [];
+    items.push(...pageItems);
+    const total = Number(payload.pagination?.total || 0);
+    if (!pageItems.length || pageItems.length < pageSize || (total > 0 && items.length >= total)) break;
+    pageNumber += 1;
   }
 
-  datasetDocumentCache = { expiresAt: Date.now() + 60_000, items: payload.data || [] };
-  return datasetDocumentCache.items;
+  datasetDocumentCache = { expiresAt: Date.now() + 60_000, items };
+  return items;
 }
-
 function isAnalysisDataset(item) {
   return Boolean(item?.docTypeExtFields?.supportChatAnalysis)
     || /DATASET_SUPPORT_CHAT_ANALYSIS=True/i.test(item?.meta || '');
@@ -788,7 +879,8 @@ async function handleChat(request, response) {
     userInput: question,
     datasetId,
     clientReferenceTime: new Date().toISOString(),
-    includeInsight: body.includeInsight !== false,
+    includeInsight: true,
+    lng: 'zh',
     stream: body.stream !== false,
   };
 
@@ -1031,6 +1123,13 @@ const server = http.createServer(async (request, response) => {
   try {
     const requestUrl = new URL(request.url, 'http://localhost');
     const { pathname } = requestUrl;
+    if (request.method === 'GET' && pathname === '/api/live') {
+      return sendJson(response, 200, {
+        alive: true,
+        pid: process.pid,
+        uptimeSeconds: Math.floor(process.uptime()),
+      });
+    }
     if (request.method === 'GET' && pathname === '/api/health') return await handleHealth(response);
     if (request.method === 'GET' && pathname === '/api/datasets') return await handleDatasets(response);
     if (request.method === 'GET' && /^\/api\/datasets\/[a-zA-Z0-9-]+\/metadata$/.test(pathname)) {
@@ -1145,7 +1244,9 @@ const viewProxyServer = http.createServer(async (request, response) => {
       const rawPivot = Buffer.from(await upstream.arrayBuffer());
       if (rawPivot.length <= 12_000_000) {
         try {
-          upsertAnalysisResult(requestViewId, { pivotPayload: JSON.parse(rawPivot.toString('utf8')) });
+          const pivotPayload = JSON.parse(rawPivot.toString('utf8'));
+          console.log(`[pivot-shape] ${JSON.stringify(describePayloadShape(pivotPayload))}`);
+          upsertAnalysisResult(requestViewId, { pivotPayload });
         } catch {
           // 非 JSON 结果仍按原样返回给 Wyn 视图。
         }
@@ -1161,6 +1262,7 @@ const viewProxyServer = http.createServer(async (request, response) => {
       const embedFixes = `
         <style id="wyn-ai-demo-embed-fixes">
           .sa-insight-content {
+            display: none !important;
             max-height: 320px !important;
             overflow-x: hidden !important;
             overflow-y: auto !important;
@@ -1246,11 +1348,57 @@ const viewProxyServer = http.createServer(async (request, response) => {
   }
 });
 
-server.listen(config.port, config.host, () => {
-  console.log(`Wyn AI Demo 已启动：http://${config.host}:${config.port}`);
-  console.log(`Wyn Server：${config.wynBaseUrl}`);
-});
+function listen(httpServer, port, host) {
+  return new Promise((resolveListen, reject) => {
+    const onError = error => {
+      httpServer.off('listening', onListening);
+      reject(error);
+    };
+    const onListening = () => {
+      httpServer.off('error', onError);
+      resolveListen();
+    };
+    httpServer.once('error', onError);
+    httpServer.once('listening', onListening);
+    httpServer.listen(port, host);
+  });
+}
 
-viewProxyServer.listen(config.viewProxyPort, config.host, () => {
-  console.log(`Wyn 分析视图代理已启动：http://${config.host}:${config.viewProxyPort}`);
-});
+function close(httpServer) {
+  return new Promise(resolveClose => {
+    if (!httpServer.listening) {
+      resolveClose();
+      return;
+    }
+    httpServer.close(() => resolveClose());
+    httpServer.closeIdleConnections?.();
+  });
+}
+
+await listen(server, config.port, config.host);
+try {
+  await listen(viewProxyServer, config.viewProxyPort, config.host);
+} catch (error) {
+  await close(server);
+  throw error;
+}
+
+console.log(`Wyn AI started: http://${config.host}:${config.port}`);
+console.log(`Wyn view proxy started: http://${config.host}:${config.viewProxyPort}`);
+console.log(`Runtime config: ${envFile}`);
+console.log(`Runtime data: ${dataDir}`);
+
+let shuttingDown = false;
+async function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`Received ${signal}; stopping Wyn AI...`);
+  const forcedExit = setTimeout(() => process.exit(1), 10_000);
+  forcedExit.unref();
+  await Promise.all([close(server), close(viewProxyServer)]);
+  clearTimeout(forcedExit);
+  process.exit(0);
+}
+
+process.on('SIGINT', () => void shutdown('SIGINT'));
+process.on('SIGTERM', () => void shutdown('SIGTERM'));

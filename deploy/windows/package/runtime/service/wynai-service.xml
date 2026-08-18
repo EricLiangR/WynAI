@@ -1,0 +1,19 @@
+<service>
+  <id>WynAIService</id>
+  <name>Wyn AI Service</name>
+  <description>Wyn AI data analysis application</description>
+  <executable>%BASE%\..\node\node.exe</executable>
+  <arguments>"%BASE%\..\..\app\server.mjs"</arguments>
+  <workingdirectory>%BASE%\..\..</workingdirectory>
+  <env name="WYN_AI_ENV_FILE" value="%BASE%\..\..\config\wynai.env"/>
+  <env name="WYN_AI_DATA_DIR" value="%BASE%\..\..\data"/>
+  <startmode>Automatic</startmode>
+  <stoptimeout>30 sec</stoptimeout>
+  <starttimeout>60 sec</starttimeout>
+  <onfailure action="restart" delay="10 sec"/>
+  <logpath>%BASE%\..\logs</logpath>
+  <log mode="roll-by-size">
+    <sizeThreshold>10240</sizeThreshold>
+    <keepFiles>8</keepFiles>
+  </log>
+</service>

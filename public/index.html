@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Wyn AI 问数 API 集成演示" />
     <title>Atlas AI · 智能数据助手</title>
-    <link rel="stylesheet" href="/styles.css?v=18" />
+    <link rel="stylesheet" href="/styles.css?v=19" />
   </head>
   <body>
     <div class="app-shell">
@@ -84,12 +84,7 @@
                 <label for="dataset-select">当前数据集</label>
                 <select id="dataset-select" aria-label="选择问数数据集"><option value="">加载中…</option></select>
               </div>
-              <div class="context-divider"></div>
-              <label class="toggle-label" title="让 Wyn 在查询结果后继续生成自然语言洞察">
-                <input id="insight-toggle" type="checkbox" checked />
-                <span class="toggle"></span>
-                深度洞察
-              </label>
+
               <span class="api-chip">Wyn AI 接口</span>
             </div>
 
@@ -98,7 +93,7 @@
                 <div class="orb-wrap" aria-hidden="true"><div class="orb"><span></span></div></div>
                 <div class="welcome-kicker">数据驱动智能</div>
                 <h2>让数据，直接回答问题</h2>
-                <p>选择一个业务数据集，用自然语言提问。Atlas AI 将调用 Wyn 完成语义理解、指标计算与洞察生成。</p>
+                <p>选择一个业务数据集，用自然语言提问。Atlas AI 将调用 Wyn 完成语义理解、指标计算与统计图表生成。</p>
                 <div class="suggestion-grid">
                   <button class="suggestion" type="button" data-prompt="总销售额是多少？">
                     <span class="suggestion-icon violet"><svg viewBox="0 0 24 24"><path d="m4 17 5-5 4 3 7-8M16 7h4v4"/></svg></span>
@@ -150,7 +145,7 @@
               <div class="flow-line"></div>
               <div class="flow-item"><span class="flow-index">02</span><div><strong>执行数据查询</strong><small>由 Wyn 生成并运行分析查询</small></div></div>
               <div class="flow-line"></div>
-              <div class="flow-item"><span class="flow-index">03</span><div><strong>生成智能洞察</strong><small>总结结论并解释业务含义</small></div></div>
+              <div class="flow-item"><span class="flow-index">03</span><div><strong>生成统计图表</strong><small>呈现指标、趋势与分类统计</small></div></div>
             </div>
 
             <div class="panel-section">
@@ -438,6 +433,6 @@
       </article>
     </template>
     <script src="/vendor/echarts.min.js"></script>
-    <script src="/app.js?v=18" type="module"></script>
+    <script src="/app.js?v=19" type="module"></script>
   </body>
 </html>

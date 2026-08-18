@@ -6,7 +6,6 @@ const elements = {
   input: document.querySelector('#question-input'),
   send: document.querySelector('#send-button'),
   dataset: document.querySelector('#dataset-select'),
-  insight: document.querySelector('#insight-toggle'),
   connectionPill: document.querySelector('#connection-pill'),
   connectionText: document.querySelector('#connection-text'),
   clear: document.querySelector('#clear-chat'),
@@ -491,7 +490,6 @@ function extractViewId(value) {
 function renderView(view, viewId) {
   const chart = view.chart || {};
   const query = chart.query || {};
-  const insight = view.insight || {};
   const measures = (query.measures || []).map(item => item.alias || item.name || item.value?.name).filter(Boolean);
   const groups = (query.groupBy || []).map(item => item.alias || item.name || item.value?.name).filter(Boolean);
   const chartType = chart.visualization?.chartType || 'Auto';
@@ -502,7 +500,7 @@ function renderView(view, viewId) {
     <div class="view-result">
       <div class="view-result-head">
         <span class="success-mark">✓</span>
-        <div><small>Wyn 分析已就绪</small><h3>${escapeHtml(insight.topic || query.name || '分析视图已生成')}</h3></div>
+        <div><small>Wyn 统计结果已就绪</small><h3>${escapeHtml(query.name || '统计图表已生成')}</h3></div>
       </div>
       <div class="view-meta-strip">
         <span><b>分析</b>${escapeHtml(query.name || '智能分析')}</span>
@@ -512,11 +510,10 @@ function renderView(view, viewId) {
       </div>
       <div class="wyn-frame-toolbar">
         <span class="wyn-scroll-hint"><span aria-hidden="true">↕</span> 滚轮 / 滑动浏览完整结果</span>
-        <span class="wyn-insight-scroll-ready"><span aria-hidden="true">✓</span> 数据解读可独立滚动</span>
       </div>
       <div class="wyn-frame-wrap">
-        <div class="frame-loading"><i></i><i></i><i></i><span>Wyn 正在计算并生成数据解读</span></div>
-        <iframe class="wyn-view-frame" src="${escapeHtml(viewUrl)}" title="Wyn AI 分析图表与数据解读" loading="eager"></iframe>
+        <div class="frame-loading"><i></i><i></i><i></i><span>Wyn 正在计算并生成统计图表</span></div>
+        <iframe class="wyn-view-frame" src="${escapeHtml(viewUrl)}" title="Wyn AI 统计图表" loading="eager"></iframe>
       </div>
       <div class="view-foot"><span>分析 ID</span><code>${escapeHtml(viewId)}</code><button class="open-insights-link" type="button" data-action="open-insights" data-view-id="${escapeHtml(viewId)}">进入数据洞察 →</button><span class="secure-view">Token 由服务端代理保护</span></div>
     </div>`;
@@ -1022,7 +1019,7 @@ async function ask(question = elements.input.value.trim()) {
       body: JSON.stringify({
         question,
         datasetId: elements.dataset.value,
-        includeInsight: elements.insight.checked,
+        includeInsight: false,
         stream: true,
       }),
     });

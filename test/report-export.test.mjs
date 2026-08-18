@@ -71,7 +71,9 @@ test('系统界面关键标签默认使用中文', async () => {
   }
   assert.match(html, /受控数据分析智能体/);
   assert.match(html, /证据支撑洞察/);
-  assert.match(app, /Wyn 分析已就绪/);
+  assert.match(app, /Wyn 统计结果已就绪/);
+  assert.doesNotMatch(html, /id="insight-toggle"/);
+  assert.match(app, /includeInsight: false/);
   assert.match(app, /已验证指标/);
   assert.match(app, /statusLabel\(step\.status\)/);
   assert.match(app, /queryModeLabel\(queryMode\)/);
