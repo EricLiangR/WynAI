@@ -1260,25 +1260,45 @@ const viewProxyServer = http.createServer(async (request, response) => {
       const html = await upstream.text();
       const embedFixes = `
         <style id="wyn-ai-demo-embed-fixes">
+          .sa-receive-msg.wyn-ai-hidden-insight,
+          .sa-receive-msg:has(.sa-insight-item),
+          .sa-insight-item,
           .sa-insight-content {
             display: none !important;
-            max-height: 320px !important;
-            overflow-x: hidden !important;
-            overflow-y: auto !important;
-            overscroll-behavior: contain;
-            scrollbar-gutter: stable;
+            width: 0 !important;
+            height: 0 !important;
+            min-height: 0 !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            border: 0 !important;
+            overflow: hidden !important;
           }
-          .sa-insight-content::-webkit-scrollbar { width: 10px; }
-          .sa-insight-content::-webkit-scrollbar-track { background: #f3f3f7; }
-          .sa-insight-content::-webkit-scrollbar-thumb {
-            border: 2px solid #f3f3f7;
-            border-radius: 999px;
-            background: #aaa4c2;
-          }
-          .sa-insight-content::-webkit-scrollbar-thumb:hover { background: #8479ad; }
         </style>
         <script>
           (() => {
+            const collapseInsightMessages = root => {
+              const scope = root?.nodeType === Node.ELEMENT_NODE ? root : document;
+              const insights = [
+                ...(scope.matches?.('.sa-insight-item') ? [scope] : []),
+                ...(scope.querySelectorAll?.('.sa-insight-item') || []),
+              ];
+              insights.forEach(insight => {
+                insight.closest('.sa-receive-msg')?.classList.add('wyn-ai-hidden-insight');
+              });
+            };
+
+            const observeInsights = () => {
+              collapseInsightMessages(document);
+              new MutationObserver(mutations => mutations.forEach(mutation => {
+                mutation.addedNodes.forEach(collapseInsightMessages);
+              })).observe(document.body, { childList: true, subtree: true });
+            };
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', observeInsights, { once: true });
+            } else {
+              observeInsights();
+            }
+
             const outerScroll = deltaY => parent.postMessage({
               source: 'wyn-ai-demo',
               type: 'wyn-frame-scroll',

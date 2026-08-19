@@ -83,4 +83,6 @@ test('系统界面关键标签默认使用中文', async () => {
   assert.match(app, /elements\.agentPlan\.scrollTop = 0/);
   assert.match(server, /chat\/analysis\/queries\?outputLocale=zh-CN/);
   assert.doesNotMatch(server, /\blng\s*:/);
+  assert.match(server, /sa-receive-msg:has\(\.sa-insight-item\)/);
+  assert.match(server, /classList\.add\('wyn-ai-hidden-insight'\)/);
 });
