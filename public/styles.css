@@ -162,7 +162,7 @@ svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width:
 .view-result-head > div { min-width: 0; }
 .success-mark { width: 31px; height: 31px; flex: none; display: grid; place-items: center; border-radius: 9px; color: #fff; background: linear-gradient(145deg,#31c397,#20a97f); box-shadow: 0 7px 15px rgba(32,180,134,.2); font-weight: 800; }
 .view-result-head h3 { margin: 0; }
-.wyn-frame-wrap { position: relative; height: 645px; border: 1px solid #e6e4ef; border-radius: 10px; overflow: hidden; background: #fbfbfd; }
+.wyn-frame-wrap { position: relative; height: 860px; border: 1px solid #e6e4ef; border-radius: 10px; overflow: hidden; background: #fbfbfd; }
 .frame-loading { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; gap: 4px; color: #777789; background: #fbfbfd; transition: opacity .25s; z-index: 0; }
 .frame-loading i { width: 5px; height: 5px; border-radius: 50%; background: #8c76f3; animation: bounce 1.1s infinite ease-in-out; }
 .frame-loading i:nth-child(2) { animation-delay: .15s; }
