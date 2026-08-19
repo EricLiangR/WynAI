@@ -490,9 +490,6 @@ function extractViewId(value) {
 function renderView(view, viewId) {
   const chart = view.chart || {};
   const query = chart.query || {};
-  const measures = (query.measures || []).map(item => item.alias || item.name || item.value?.name).filter(Boolean);
-  const groups = (query.groupBy || []).map(item => item.alias || item.name || item.value?.name).filter(Boolean);
-  const chartType = chart.visualization?.chartType || 'Auto';
   const viewProxyOrigin = `${location.protocol}//${location.hostname}:${state.viewProxyPort}`;
   // Wyn 前端需要检测到 token 参数才会进入分析视图；代理会把此占位值替换为服务端真实 Token。
   const viewUrl = `${viewProxyOrigin}/dashboards/chatanalysis/view?viewId=${encodeURIComponent(viewId)}&token=proxy`;
@@ -500,22 +497,13 @@ function renderView(view, viewId) {
     <div class="view-result">
       <div class="view-result-head">
         <span class="success-mark">✓</span>
-        <div><small>Wyn 统计结果已就绪</small><h3>${escapeHtml(query.name || '统计图表已生成')}</h3></div>
-      </div>
-      <div class="view-meta-strip">
-        <span><b>分析</b>${escapeHtml(query.name || '智能分析')}</span>
-        <span><b>图表</b>${escapeHtml(chartTypeLabel(chartType))}</span>
-        <span><b>指标</b>${escapeHtml(measures.join('、') || '自动选择')}</span>
-        <span><b>维度</b>${escapeHtml(groups.join('、') || '全局汇总')}</span>
-      </div>
-      <div class="wyn-frame-toolbar">
-        <span class="wyn-scroll-hint"><span aria-hidden="true">↕</span> 滚轮 / 滑动浏览完整结果</span>
+        <div><h3>${escapeHtml(query.name || '统计图表已生成')}</h3></div>
+        <button class="open-insights-link" type="button" data-action="open-insights" data-view-id="${escapeHtml(viewId)}">进入数据洞察 →</button>
       </div>
       <div class="wyn-frame-wrap">
         <div class="frame-loading"><i></i><i></i><i></i><span>Wyn 正在计算并生成统计图表</span></div>
         <iframe class="wyn-view-frame" src="${escapeHtml(viewUrl)}" title="Wyn AI 统计图表" loading="eager"></iframe>
       </div>
-      <div class="view-foot"><span>分析 ID</span><code>${escapeHtml(viewId)}</code><button class="open-insights-link" type="button" data-action="open-insights" data-view-id="${escapeHtml(viewId)}">进入数据洞察 →</button><span class="secure-view">Token 由服务端代理保护</span></div>
     </div>`;
 }
 

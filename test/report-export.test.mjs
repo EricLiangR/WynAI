@@ -72,7 +72,7 @@ test('系统界面关键标签默认使用中文', async () => {
   }
   assert.match(html, /受控数据分析智能体/);
   assert.match(html, /证据支撑洞察/);
-  assert.match(app, /Wyn 统计结果已就绪/);
+  assert.doesNotMatch(app, /Wyn 统计结果已就绪/);
   assert.doesNotMatch(html, /id="insight-toggle"/);
   assert.match(app, /includeInsight: false/);
   assert.match(app, /已验证指标/);
@@ -90,4 +90,9 @@ test('系统界面关键标签默认使用中文', async () => {
   assert.match(server, /if \(!panel\) return;/);
   assert.match(app, /wyn-frame-resize/);
   assert.match(server, /classList\.add\('wyn-ai-hidden-insight'\)/);
+  assert.doesNotMatch(app, /view-meta-strip|wyn-frame-toolbar|wyn-scroll-hint|view-foot|secure-view/);
+  assert.match(app, /data-action="open-insights"/);
+  assert.doesNotMatch(css, /\.view-meta-strip|\.wyn-frame-toolbar|\.wyn-scroll-hint|\.view-foot|\.secure-view/);
+  assert.match(css, /\.open-insights-link \{ margin-left: auto/);
+  assert.match(css, /\.assistant-bubble\.has-wyn-view \{ padding: 10px 12px 8px; \}/);
 });
