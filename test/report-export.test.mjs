@@ -84,5 +84,10 @@ test('系统界面关键标签默认使用中文', async () => {
   assert.match(server, /chat\/analysis\/queries\?outputLocale=zh-CN/);
   assert.doesNotMatch(server, /\blng\s*:/);
   assert.match(server, /sa-receive-msg:has\(\.sa-insight-item\)/);
+  assert.match(server, /\.sa-app \{ background: #fff !important; \}/);
+  assert.match(server, /type: 'wyn-frame-resize'/);
+  assert.match(server, /const refreshTarget = \(\) =>/);
+  assert.match(server, /if \(!panel\) return;/);
+  assert.match(app, /wyn-frame-resize/);
   assert.match(server, /classList\.add\('wyn-ai-hidden-insight'\)/);
 });

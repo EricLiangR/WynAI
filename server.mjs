@@ -1260,6 +1260,7 @@ const viewProxyServer = http.createServer(async (request, response) => {
       const html = await upstream.text();
       const embedFixes = `
         <style id="wyn-ai-demo-embed-fixes">
+          .sa-app { background: #fff !important; }
           .sa-receive-msg.wyn-ai-hidden-insight,
           .sa-receive-msg:has(.sa-insight-item),
           .sa-insight-item,
@@ -1293,6 +1294,39 @@ const viewProxyServer = http.createServer(async (request, response) => {
                 mutation.addedNodes.forEach(collapseInsightMessages);
               })).observe(document.body, { childList: true, subtree: true });
             };
+            const postFrameHeight = () => {
+              const panel = document.querySelector('.sa-layout__chat-panel');
+              if (!panel) return;
+              const height = Math.ceil(panel.getBoundingClientRect().height + 16);
+              if (height > 0) parent.postMessage({
+                source: 'wyn-ai-demo',
+                type: 'wyn-frame-resize',
+                height,
+              }, '*');
+            };
+
+            const observeFrameHeight = () => {
+              let observedTarget = null;
+              const resizeObserver = typeof ResizeObserver === 'function' ? new ResizeObserver(postFrameHeight) : null;
+              const refreshTarget = () => {
+                const target = document.querySelector('.sa-layout__chat-panel') || document.querySelector('.sa-app');
+                if (target === observedTarget) {
+                  postFrameHeight();
+                  return;
+                }
+                resizeObserver?.disconnect();
+                observedTarget = target;
+                if (target) resizeObserver?.observe(target);
+                postFrameHeight();
+              };
+              refreshTarget();
+              new MutationObserver(refreshTarget).observe(document.body, { childList: true, subtree: true });
+            };
+            if (document.readyState === 'loading') {
+              document.addEventListener('DOMContentLoaded', observeFrameHeight, { once: true });
+            } else {
+              observeFrameHeight();
+            }
             if (document.readyState === 'loading') {
               document.addEventListener('DOMContentLoaded', observeInsights, { once: true });
             } else {

@@ -1122,10 +1122,20 @@ elements.messages.addEventListener('click', async event => {
 window.addEventListener('message', event => {
   const expectedOrigin = `${location.protocol}//${location.hostname}:${state.viewProxyPort}`;
   const data = event.data;
-  if (event.origin !== expectedOrigin || data?.source !== 'wyn-ai-demo' || data?.type !== 'wyn-frame-scroll') return;
+  if (event.origin !== expectedOrigin || data?.source !== 'wyn-ai-demo' || !['wyn-frame-scroll', 'wyn-frame-resize'].includes(data?.type)) return;
   const isKnownFrame = [...document.querySelectorAll('.wyn-view-frame')]
     .some(frame => frame.contentWindow === event.source);
   if (!isKnownFrame) return;
+  if (data.type === 'wyn-frame-resize') {
+    const height = Math.max(360, Math.min(1400, Number(data.height) || 0));
+    if (!height) return;
+    const frame = [...document.querySelectorAll('.wyn-view-frame')]
+      .find(item => item.contentWindow === event.source);
+    const wrap = frame?.closest('.wyn-frame-wrap');
+    if (!wrap) return;
+    wrap.style.height = `${height}px`;
+    return;
+  }
   const deltaY = Math.max(-600, Math.min(600, Number(data.deltaY) || 0));
   elements.messages.scrollBy({ top: deltaY, left: 0, behavior: 'auto' });
 });
