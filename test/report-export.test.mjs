@@ -85,6 +85,8 @@ test('系统界面关键标签默认使用中文', async () => {
   assert.doesNotMatch(server, /\blng\s*:/);
   assert.match(server, /sa-receive-msg:has\(\.sa-insight-item\)/);
   assert.match(server, /\.sa-app \{ background: #fff !important; \}/);
+  assert.match(server, /chat-layout-conversation-area[\s\S]*padding: 10px !important/);
+  assert.match(server, /sa-layout__chat-panel \.sa-app__content[\s\S]*padding: 10px !important/);
   assert.match(server, /type: 'wyn-frame-resize'/);
   assert.match(server, /const refreshTarget = \(\) =>/);
   assert.match(server, /if \(!panel\) return;/);

@@ -1261,6 +1261,12 @@ const viewProxyServer = http.createServer(async (request, response) => {
       const embedFixes = `
         <style id="wyn-ai-demo-embed-fixes">
           .sa-app { background: #fff !important; }
+          .wyn-smart-analyzer.theme-default.wyn-smart-analyzer.wyn-smart-analyzer .chat-layout-conversation-area {
+            padding: 10px !important;
+          }
+          .wyn-smart-analyzer.theme-default .sa-app .sa-layout__chat-panel .sa-app__content {
+            padding: 10px !important;
+          }
           .sa-receive-msg.wyn-ai-hidden-insight,
           .sa-receive-msg:has(.sa-insight-item),
           .sa-insight-item,
