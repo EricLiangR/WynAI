@@ -61,10 +61,11 @@ test('报告可导出 HTML、Markdown 和 JSON 并拒绝未知格式', () => {
 });
 
 test('系统界面关键标签默认使用中文', async () => {
-  const [html, app, css] = await Promise.all([
+  const [html, app, css, server] = await Promise.all([
     readFile(new URL('../public/index.html', import.meta.url), 'utf8'),
     readFile(new URL('../public/app.js', import.meta.url), 'utf8'),
     readFile(new URL('../public/styles.css', import.meta.url), 'utf8'),
+    readFile(new URL('../server.mjs', import.meta.url), 'utf8'),
   ]);
   for (const englishLabel of ['AI WORKSPACE', 'LIVE', 'AWAITING DATASET', 'READY FOR ANALYSIS', 'ANALYSIS HARNESS', 'EVIDENCE BASED']) {
     assert.doesNotMatch(html, new RegExp(englishLabel));
@@ -80,4 +81,6 @@ test('系统界面关键标签默认使用中文', async () => {
   assert.match(html, /id="agent-plan" tabindex="0"/);
   assert.match(css, /max-height: min\(440px,52vh\)/);
   assert.match(app, /elements\.agentPlan\.scrollTop = 0/);
+  assert.match(server, /chat\/analysis\/queries\?outputLocale=zh-CN/);
+  assert.doesNotMatch(server, /\blng\s*:/);
 });

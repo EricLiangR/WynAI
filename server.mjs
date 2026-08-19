@@ -880,11 +880,10 @@ async function handleChat(request, response) {
     datasetId,
     clientReferenceTime: new Date().toISOString(),
     includeInsight: true,
-    lng: 'zh',
     stream: body.stream !== false,
   };
 
-  const upstream = await wynFetch('/api/v2/chat/analysis/queries', {
+  const upstream = await wynFetch('/api/v2/chat/analysis/queries?outputLocale=zh-CN', {
     method: 'POST',
     headers: {
       Accept: payload.stream ? 'text/event-stream, application/x-ndjson, application/json, text/plain' : 'application/json, text/plain',
