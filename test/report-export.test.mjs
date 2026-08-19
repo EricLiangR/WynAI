@@ -96,5 +96,7 @@ test('系统界面关键标签默认使用中文', async () => {
   assert.match(app, /data-action="open-insights"/);
   assert.doesNotMatch(css, /\.view-meta-strip|\.wyn-frame-toolbar|\.wyn-scroll-hint|\.view-foot|\.secure-view/);
   assert.match(css, /\.open-insights-link \{ margin-left: auto/);
+  assert.match(css, /\.wyn-frame-wrap \{ position: relative; height: 645px;/);
+  assert.match(app, /Math\.round\(rawHeight \* 0\.75\)/);
   assert.match(css, /\.assistant-bubble\.has-wyn-view \{ padding: 4px 8px 4px; \}/);
 });

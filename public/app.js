@@ -1115,7 +1115,8 @@ window.addEventListener('message', event => {
     .some(frame => frame.contentWindow === event.source);
   if (!isKnownFrame) return;
   if (data.type === 'wyn-frame-resize') {
-    const height = Math.max(360, Math.min(1400, Number(data.height) || 0));
+    const rawHeight = Number(data.height) || 0;
+    const height = Math.max(440, Math.min(1400, Math.round(rawHeight * 0.75)));
     if (!height) return;
     const frame = [...document.querySelectorAll('.wyn-view-frame')]
       .find(item => item.contentWindow === event.source);
