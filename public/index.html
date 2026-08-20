@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Wyn AI 问数 API 集成演示" />
     <title>Atlas AI · 智能数据助手</title>
-    <link rel="stylesheet" href="/styles.css?v=19" />
+    <link rel="stylesheet" href="/styles.css?v=20" />
   </head>
   <body>
     <div class="app-shell">
@@ -38,7 +38,7 @@
             <svg viewBox="0 0 24 24"><path d="M5 3h11l3 3v15H5V3Zm3 5h8M8 12h8M8 16h5"/></svg>
             <span>智能报告</span>
           </button>
-          <button class="nav-item" type="button">
+          <button class="nav-item" type="button" disabled aria-disabled="true" title="能力中心即将开放">
             <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1-2.8 2.8-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6v.2h-4V21a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1L4.2 17l.1-.1a1.7 1.7 0 0 0 .3-1.9A1.7 1.7 0 0 0 3 14H2.8v-4H3a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7 7 4.2l.1.1a1.7 1.7 0 0 0 1.9.3A1.7 1.7 0 0 0 10 3V2.8h4V3a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1L19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.2v4H21a1.7 1.7 0 0 0-1.6 1Z"/></svg>
             <span>能力中心</span>
           </button>
@@ -52,7 +52,7 @@
           <div class="user-card">
             <span class="avatar">林</span>
             <div><strong>林晓宇</strong><small>数据分析师</small></div>
-            <button type="button" aria-label="用户菜单">•••</button>
+            <button type="button" aria-label="用户菜单" disabled title="用户菜单即将开放">•••</button>
           </div>
         </div>
       </aside>
@@ -70,7 +70,7 @@
             <button class="icon-button" id="clear-chat" type="button" aria-label="新建对话" title="新建对话">
               <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
             </button>
-            <button class="icon-button" type="button" aria-label="更多设置">
+            <button class="icon-button" type="button" aria-label="更多设置" disabled title="更多设置即将开放">
               <svg viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.5"/><circle cx="12" cy="12" r="1.5"/><circle cx="19" cy="12" r="1.5"/></svg>
             </button>
           </div>
@@ -82,7 +82,7 @@
               <div class="dataset-control">
                 <span class="control-icon"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></span>
                 <label for="dataset-select">当前数据集</label>
-                <select id="dataset-select" aria-label="选择问数数据集"><option value="">加载中…</option></select>
+                <select id="dataset-select" aria-label="选择问数数据集" disabled><option value="">加载中…</option></select>
               </div>
 
               <span class="api-chip">Wyn AI 接口</span>
@@ -95,22 +95,22 @@
                 <h2>让数据，直接回答问题</h2>
                 <p>选择一个业务数据集，用自然语言提问。Atlas AI 将调用 Wyn 完成语义理解、指标计算与统计图表生成。</p>
                 <div class="suggestion-grid">
-                  <button class="suggestion" type="button" data-prompt="总销售额是多少？">
+                  <button class="suggestion" type="button" disabled data-prompt="总销售额是多少？">
                     <span class="suggestion-icon violet"><svg viewBox="0 0 24 24"><path d="m4 17 5-5 4 3 7-8M16 7h4v4"/></svg></span>
                     <span><strong>核心指标概览</strong><small>总销售额是多少？</small></span>
                     <svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
                   </button>
-                  <button class="suggestion" type="button" data-prompt="按月份分析销售额趋势，并指出变化最大的月份">
+                  <button class="suggestion" type="button" disabled data-prompt="按月份分析销售额趋势，并指出变化最大的月份">
                     <span class="suggestion-icon cyan"><svg viewBox="0 0 24 24"><path d="M4 18h16M6 15l4-5 3 3 5-7"/></svg></span>
                     <span><strong>发现趋势变化</strong><small>按月份分析销售额趋势</small></span>
                     <svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
                   </button>
-                  <button class="suggestion" type="button" data-prompt="哪个产品类别贡献的销售额最高？请给出排名">
+                  <button class="suggestion" type="button" disabled data-prompt="哪个产品类别贡献的销售额最高？请给出排名">
                     <span class="suggestion-icon amber"><svg viewBox="0 0 24 24"><path d="M5 20V9h4v11M10 20V4h4v16M15 20v-7h4v7"/></svg></span>
                     <span><strong>识别业务贡献</strong><small>产品类别销售额排名</small></span>
                     <svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
                   </button>
-                  <button class="suggestion" type="button" data-prompt="找出销售额异常的地区，并分析可能原因">
+                  <button class="suggestion" type="button" disabled data-prompt="找出销售额异常的地区，并分析可能原因">
                     <span class="suggestion-icon rose"><svg viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3Zm0 6v5m0 3h.01"/></svg></span>
                     <span><strong>定位异常波动</strong><small>找出销售额异常的地区</small></span>
                     <svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
@@ -124,12 +124,12 @@
                 <textarea id="question-input" rows="1" placeholder="向数据提问，例如：近 6 个月销售额趋势如何？" aria-label="输入问题"></textarea>
                 <div class="composer-footer">
                   <div class="composer-tools">
-                    <button type="button" class="tool-button" aria-label="添加附件" title="添加附件（演示）">
+                    <button type="button" class="tool-button" aria-label="添加附件" title="附件能力即将开放" disabled>
                       <svg viewBox="0 0 24 24"><path d="m20 12-8.5 8.5a6 6 0 0 1-8.5-8.5l9-9a4 4 0 0 1 5.7 5.7L8.8 17.6a2 2 0 1 1-2.8-2.8l8.2-8.2"/></svg>
                     </button>
                     <span class="shortcut"><kbd>Enter</kbd> 发送 · <kbd>Shift</kbd> + <kbd>Enter</kbd> 换行</span>
                   </div>
-                  <button id="send-button" class="send-button" type="button" aria-label="发送问题">
+                  <button id="send-button" class="send-button" type="button" aria-label="发送问题" disabled>
                     <span>发送</span><svg viewBox="0 0 24 24"><path d="m4 4 17 8-17 8 3-8-3-8Zm3 8h14"/></svg>
                   </button>
                 </div>
@@ -291,7 +291,7 @@
             <aside class="agent-control-panel">
               <div class="agent-control-section">
                 <label for="agent-dataset-select">分析数据集</label>
-                <select id="agent-dataset-select" aria-label="选择 AI 分析数据集"><option value="">加载中…</option></select>
+                <select id="agent-dataset-select" aria-label="选择 AI 分析数据集" disabled><option value="">加载中…</option></select>
                 <div class="semantic-status" id="semantic-status">
                   <span class="semantic-pulse"></span>
                   <div><strong>正在读取语义定义</strong><small>字段、类型、描述与 AI 配置</small></div>
@@ -306,7 +306,7 @@
                   <button type="button" data-agent-goal="重点分析时间趋势和环比变化，定位波动最大的月份并分析贡献因素。">趋势诊断</button>
                   <button type="button" data-agent-goal="分析产品类别和区域贡献，识别增长来源、集中度风险和改进机会。">贡献分析</button>
                 </div>
-                <button class="agent-run-button" id="agent-run-button" type="button">
+                <button class="agent-run-button" id="agent-run-button" type="button" disabled>
                   <svg viewBox="0 0 24 24"><path d="m5 3 14 9-14 9V3Z"/></svg>
                   <span>开始自主分析</span>
                 </button>
@@ -428,11 +428,11 @@
         <div class="assistant-content">
           <div class="assistant-meta"><strong>Atlas AI</strong><span>由 Wyn 驱动</span></div>
           <div class="message-bubble assistant-bubble"><div class="thinking"><i></i><i></i><i></i><span>正在分析数据</span></div></div>
-          <div class="message-actions"><button type="button" data-action="copy">复制</button><button type="button">有帮助</button></div>
+          <div class="message-actions"><button type="button" data-action="copy">复制</button><button type="button" disabled title="反馈能力即将开放">有帮助</button></div>
         </div>
       </article>
     </template>
     <script src="/vendor/echarts.min.js"></script>
-    <script src="/app.js?v=19" type="module"></script>
+    <script src="/app.js?v=20" type="module"></script>
   </body>
 </html>

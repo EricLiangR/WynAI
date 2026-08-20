@@ -6,6 +6,7 @@ const elements = {
   input: document.querySelector('#question-input'),
   send: document.querySelector('#send-button'),
   dataset: document.querySelector('#dataset-select'),
+  suggestions: [...document.querySelectorAll('[data-prompt]')],
   connectionPill: document.querySelector('#connection-pill'),
   connectionText: document.querySelector('#connection-text'),
   clear: document.querySelector('#clear-chat'),
@@ -542,8 +543,9 @@ function setFlow(step) {
 
 function setSending(sending) {
   state.sending = sending;
-  elements.send.disabled = sending;
-  elements.dataset.disabled = sending;
+  elements.send.disabled = sending || !state.datasets.length;
+  elements.dataset.disabled = sending || !state.datasets.length;
+  elements.suggestions.forEach(button => { button.disabled = sending || !state.datasets.length; });
   elements.send.querySelector('span').textContent = sending ? '分析中' : '发送';
 }
 
@@ -877,6 +879,10 @@ async function loadHealth() {
 }
 
 async function loadDatasets() {
+  elements.dataset.disabled = true;
+  elements.agentDataset.disabled = true;
+  elements.agentRunButton.disabled = true;
+  setSending(false);
   try {
     const response = await fetch('/api/datasets');
     const data = await response.json();
@@ -889,6 +895,10 @@ async function loadDatasets() {
     elements.agentDataset.innerHTML = state.datasets
       .map(item => `<option value="${escapeHtml(item.id)}">${escapeHtml(item.name)}</option>`)
       .join('');
+    elements.dataset.disabled = false;
+    elements.agentDataset.disabled = false;
+    elements.agentRunButton.disabled = false;
+    setSending(false);
     if (state.datasets[0]) await loadAgentMetadata(state.datasets[0].id);
   } catch (error) {
     elements.dataset.innerHTML = '<option value="">数据集加载失败</option>';
@@ -896,6 +906,10 @@ async function loadDatasets() {
     elements.connectionPill.classList.add('error');
     elements.connectionText.textContent = '配置需要检查';
     elements.connectionPill.title = error.message;
+    elements.dataset.disabled = true;
+    elements.agentDataset.disabled = true;
+    elements.agentRunButton.disabled = true;
+    setSending(false);
   }
 }
 
