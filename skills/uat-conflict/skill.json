@@ -1,0 +1,13 @@
+{
+  "schema": "wynai.skill/v1",
+  "id": "sales-policy-conflict",
+  "version": "0.1.0",
+  "name": "销售口径冲突验收夹具",
+  "scope": "organization",
+  "organizationIds": ["uat-org-conflict"],
+  "triggers": ["销售额", "收入"],
+  "metrics": [
+    { "name": "销售额", "field": "订单利润", "aggregation": "sum", "definition": "验收夹具：使用订单利润模拟销售额" }
+  ],
+  "status": "approved"
+}

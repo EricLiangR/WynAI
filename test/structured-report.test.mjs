@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { validateStructuredReport } from '../lib/report/structured-report.mjs';
+import { prepareStructuredReport, validateStructuredReport } from '../lib/report/structured-report.mjs';
 
 function analysisFixture(scope = {}) {
   return {
@@ -75,6 +75,29 @@ test('分组数值必须保留唯一实体上下文，组合占比不得变成�
   assert.doesNotThrow(() => validateStructuredReport(report, analysis));
   report.keyFindings[0].text = '已完成订单占比100%（前三项合计）';
   assert.throws(() => validateStructuredReport(report, analysis), /组合占比/);
+});
+
+test('复合实体上下文允许不同连接符但不得丢失任一组成部分', () => {
+  const analysis = analysisFixture();
+  analysis.evidence[0].value = [{ label: '点心 · 2025-02-01T00:00:00.000Z', revenue: 158508.77 }];
+  const report = reportFixture();
+  report.keyFindings[0].text = '点心·2025-02-01T00:00:00.000Z订单金额为158,508.77';
+  assert.doesNotThrow(() => validateStructuredReport(report, analysis));
+  report.keyFindings[0].text = '点心订单金额为158,508.77';
+  assert.throws(() => validateStructuredReport(report, analysis), /实体上下文/);
+});
+
+test('管理摘要中的分组数字在验证前删除，详细发现仍保留严格实体校验', () => {
+  const analysis = analysisFixture();
+  analysis.evidence[0].value = [{ label: '点心 · 2025-02-01T00:00:00.000Z', revenue: 158508.77 }];
+  const report = reportFixture();
+  report.managementSummary[0].text = '交叉结果金额达到158,508.77';
+  report.keyFindings[0].text = '点心 · 2025-02-01T00:00:00.000Z金额为158,508.77';
+  const prepared = prepareStructuredReport(report, analysis);
+  assert.doesNotMatch(prepared.managementSummary[0].text, /158,508\.77/);
+  assert.doesNotThrow(() => validateStructuredReport(prepared, analysis));
+  prepared.keyFindings[0].text = '金额为158,508.77';
+  assert.throws(() => validateStructuredReport(prepared, analysis), /实体上下文/);
 });
 
 test('含负时长的证据不能直接形成正常效率排名', () => {

@@ -10,7 +10,17 @@ import { buildReportExport } from './lib/report-export.mjs';
 import { runAutonomousAnalysis } from './lib/harness/orchestrator.mjs';
 import { createExplorationLlm } from './lib/llm/exploration-agent.mjs';
 import { normalizeCanonicalFilters } from './lib/planning/query-request-schema.mjs';
-import { parseLlmJson, structuredReportMarkdown, validateStructuredReport } from './lib/report/structured-report.mjs';
+import { parseLlmJson, prepareStructuredReport, structuredReportMarkdown, validateStructuredReport } from './lib/report/structured-report.mjs';
+import { SmartQueryConversationStore } from './lib/conversation/session.mjs';
+import { MultiDatasetQueryService } from './lib/query/multi-dataset.mjs';
+import { parseDocxTemplate } from './lib/template/docx-parser.mjs';
+import { composeDocxTemplate } from './lib/template/docx-composer.mjs';
+import { loadSkillsFromDirectory } from './lib/skills/skill-registry.mjs';
+import { SkillGovernanceService } from './lib/skills/skill-governance.mjs';
+import { RequestAuditLog, SlidingWindowRateLimiter, requestIdentity } from './lib/security/request-governance.mjs';
+import { TemplatePackageRepository } from './lib/template/template-model.mjs';
+import { proposeCanonicalQueries, proposeFormula } from './lib/reporting/binding-resolver.mjs';
+import { ReportRunRepository } from './lib/reporting/report-runner.mjs';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 const publicDir = join(rootDir, 'public');
@@ -41,6 +51,13 @@ async function loadLocalEnv(filePath = envFile) {
 
 await loadLocalEnv();
 
+function configuredBoolean(value, fallback = null) {
+  if (value == null || value === '') return fallback;
+  if (/^(true|1|yes)$/i.test(String(value))) return true;
+  if (/^(false|0|no)$/i.test(String(value))) return false;
+  return fallback;
+}
+
 function commandLineNumber(name) {
   const prefix = `--${name}=`;
   const value = process.argv.find(argument => argument.startsWith(prefix))?.slice(prefix.length);
@@ -63,11 +80,19 @@ const config = {
   llmBaseUrl: (process.env.LLM_BASE_URL || '').replace(/\/$/, ''),
   llmApiKey: process.env.LLM_API_KEY || '',
   llmModel: process.env.LLM_MODEL || '',
+  llmTimeoutMs: Math.max(10_000, Number(process.env.LLM_TIMEOUT_MS) || 180_000),
+  llmEnableThinking: configuredBoolean(process.env.LLM_ENABLE_THINKING, /dashscope\.aliyuncs\.com/i.test(process.env.LLM_BASE_URL || '') ? false : null),
+  skillAdminToken: process.env.WYN_AI_SKILL_ADMIN_TOKEN || '',
 };
+const llmEndpointHost = (() => {
+  try { return new URL(config.llmBaseUrl).host; } catch { return null; }
+})();
 const explorationLlm = createExplorationLlm({
   baseUrl: config.llmBaseUrl,
   apiKey: config.llmApiKey,
   model: config.llmModel,
+  timeoutMs: config.llmTimeoutMs,
+  enableThinking: config.llmEnableThinking,
 });
 config.viewProxyPort = validPort(
   'WYN_VIEW_PROXY_PORT',
@@ -89,6 +114,52 @@ const MAX_QUERY_ROWS = 5000;
 const dataDir = resolveRuntimePath(process.env.WYN_AI_DATA_DIR, join(rootDir, 'data'));
 const runStore = new JsonRunStore(join(dataDir, 'analysis-runs'), { maxItems: 100 });
 for (const run of (await runStore.init()).reverse()) agentRuns.set(run.id, run);
+const conversationStore = new JsonRunStore(join(dataDir, 'smart-query-conversations'), { maxItems: 100 });
+const skillRegistry = await loadSkillsFromDirectory(join(rootDir, 'skills'));
+const skillGovernance = new SkillGovernanceService({
+  registry: skillRegistry,
+  overridePersistence: new JsonRunStore(join(dataDir, 'skill-overrides'), { maxItems: 500 }),
+  auditPersistence: new JsonRunStore(join(dataDir, 'skill-audit'), { maxItems: 1000 }),
+});
+await skillGovernance.init();
+const requestAudit = new RequestAuditLog({ maxItems: 2000, persistence: new JsonRunStore(join(dataDir, 'request-audit'), { maxItems: 2000 }) });
+await requestAudit.init();
+const smartQueryRateLimiter = new SlidingWindowRateLimiter({
+  limit: Number(process.env.WYN_AI_SMART_QUERY_RATE_LIMIT || 60),
+  windowMs: Number(process.env.WYN_AI_SMART_QUERY_RATE_WINDOW_MS || 60_000),
+});
+const multiDatasetQueries = new MultiDatasetQueryService({
+  loadMetadata: datasetId => loadDatasetMetadata(datasetId),
+  executeDatasetQuery,
+});
+const conversations = new SmartQueryConversationStore({
+  loadMetadata: datasetId => loadDatasetMetadata(datasetId),
+  executeQuery: input => multiDatasetQueries.execute(input),
+  intentLlm: explorationLlm,
+  skillRegistry,
+  skillGovernance,
+  persistence: conversationStore,
+  runAnalysis: async ({ datasetId, focus, constraints, skills, strictMode }) => {
+    const metadata = await loadDatasetMetadata(datasetId);
+    return runAutonomousAnalysis({
+      metadata,
+      focus,
+      constraints,
+      executeDatasetQuery,
+      analyzeDataset,
+      explorationAgent: explorationLlm,
+      skills,
+      strictMode,
+    });
+  },
+});
+await conversations.init();
+const templatePersistence = new JsonRunStore(join(dataDir, 'report-templates'), { maxItems: 100 });
+const templatePackages = new TemplatePackageRepository({ persistence: templatePersistence, maxItems: 100 });
+await templatePackages.init();
+const reportRunPersistence = new JsonRunStore(join(dataDir, 'report-runs'), { maxItems: 100 });
+const reportRuns = new ReportRunRepository({ templates: templatePackages, queryService: multiDatasetQueries, persistence: reportRunPersistence });
+await reportRuns.init();
 
 const mimeTypes = {
   '.html': 'text/html; charset=utf-8',
@@ -133,7 +204,18 @@ function trimAgentRuns() {
 }
 
 function parseJsonText(value) {
-  return JSON.parse(String(value || '').replace(/^\uFEFF/, '').trim());
+  let parsed = JSON.parse(String(value || '').replace(/^\uFEFF/, '').trim());
+  // Wyn may return JSON as a JSON-encoded string; unwrap that response form.
+  for (let depth = 0; depth < 2 && typeof parsed === 'string'; depth += 1) {
+    const nested = parsed.replace(/^\uFEFF/, '').trim();
+    if (!/^[\[{]/.test(nested)) break;
+    try {
+      parsed = JSON.parse(nested);
+    } catch {
+      break;
+    }
+  }
+  return parsed;
 }
 
 function describePayloadShape(value, depth = 0) {
@@ -339,6 +421,8 @@ async function handleHealth(response) {
       viewProxyPort: config.viewProxyPort,
       llmConfigured: Boolean(config.llmBaseUrl && config.llmModel),
       llmModel: config.llmModel || 'Atlas 内置洞察引擎',
+      llmProvider: config.llmBaseUrl && config.llmModel ? 'project-env' : 'local-fallback',
+      llmEndpointHost,
       status: upstream.status,
       message: upstream.ok ? 'Wyn 服务连接正常' : `Wyn 返回 ${upstream.status}`,
     });
@@ -485,7 +569,17 @@ async function executeDatasetQuery(datasetId, { queryType = 'NONE', query = '', 
   try { payload = parseJsonText(raw); }
   catch { throw httpError(502, 'Wyn 返回的数据集结果无法解析'); }
   const rows = Array.isArray(payload) ? payload : Array.isArray(payload?.data) ? payload.data : [];
-  return { rows, rowLimit: safeLimit, truncated: rows.length >= safeLimit, queryType };
+  const limitReached = rows.length >= safeLimit;
+  return {
+    rows,
+    rowLimit: safeLimit,
+    // Wyn does not expose a definitive truncation flag in this response shape.
+    // Reaching RowLimit is therefore only a possible boundary, not proof of loss.
+    truncated: false,
+    limitReached,
+    truncationConfidence: limitReached ? 'possible' : 'none',
+    queryType,
+  };
 }
 
 async function loadDatasetRows(datasetId, rowLimit) {
@@ -516,6 +610,8 @@ async function executeWaxBundle(datasetId, bundle) {
       plan: queryPlan,
       durationMs: Date.now() - startedAt,
       truncated: result.truncated,
+      limitReached: result.limitReached,
+      truncationConfidence: result.truncationConfidence,
     }];
   }));
   return Object.fromEntries(entries);
@@ -527,7 +623,7 @@ async function callAgentReportLlm(analysis, metadata) {
     ? config.llmBaseUrl
     : `${config.llmBaseUrl}/chat/completions`;
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 90_000);
+  const timer = setTimeout(() => controller.abort(), config.llmTimeoutMs);
   const allowedEvidenceIds = analysis.evidence.map(item => item.id);
   const evidenceCatalog = analysis.evidence.map(item => ({
     id: item.id,
@@ -546,7 +642,7 @@ async function callAgentReportLlm(analysis, metadata) {
   const messages = [
     {
       role: 'system',
-      content: '你是一名企业经营分析负责人。只能使用输入中的 KPI、洞察和证据，不得新增任何数字、客户、事实或推断。只输出合法 JSON，不要输出 Markdown。JSON 必须包含 managementSummary、keyFindings、risks、actions 四个数组；每项必须严格使用 {"text":"...","evidenceIds":["ev-id"],"verificationRequired":false}。evidenceIds 字段不可省略且至少包含一个值，只能逐字复制 allowedEvidenceIds 中的 ID，不得自行创造、改写或翻译 ID。即使 verificationRequired=true 也必须引用触发该待验证事项的已有证据。证据 scope.resultLimited=true 表示只返回排序后的局部结果，任何最高、最低、所有、全部、唯一、整体、总体或全局结论必须明确限定为“当前返回范围内”或“所列项目中”，不得外推到全量。对 invalidDurationEvidence 中的每个 evidenceId，必须单独形成一条明确包含“负值异常”“已从正常效率排名和图表中排除”“需核验”的数据质量披露。不得把该 evidenceId 引用到正常效率排名或瓶颈条目；若正常排名由其他无负时长证据支持，只引用其他证据。任何分组数值必须保留 insights 中对应的实体、期间或组合上下文，不得省略主体后改写成整体值；“前三项合计占100%”不得改写成某个单项占比100%。actions 应优先使用不含数字的定性行动；确需引用现状数字时，该数字必须逐字出现在同一证据关联的 insights 中，且严禁把任何数字写成目标、阈值或承诺。',
+      content: '你是一名企业经营分析负责人。只能使用输入中的 KPI、洞察和证据，不得新增任何数字、客户、事实或推断。只输出合法 JSON，不要输出 Markdown。JSON 必须包含 managementSummary、keyFindings、risks、actions 四个数组；每项必须严格使用 {"text":"...","evidenceIds":["ev-id"],"verificationRequired":false}。evidenceIds 字段不可省略且至少包含一个值，只能逐字复制 allowedEvidenceIds 中的 ID，不得自行创造、改写或翻译 ID。即使 verificationRequired=true 也必须引用触发该待验证事项的已有证据。managementSummary 只允许引用标量 KPI 数字；对于分组或交叉结果只做不带数字的定性概括，禁止合并多个实体的数值或生成数值区间。分组数值只能写在 keyFindings 或 risks 中，并且一条只引用一个分组证据、逐字保留该数值对应的全部实体、期间和布尔分组值。证据 scope.resultLimited=true 表示只返回排序后的局部结果，任何最高、最低、所有、全部、唯一、整体、总体或全局结论必须明确限定为“当前返回范围内”或“所列项目中”，不得外推到全量。对 invalidDurationEvidence 中的每个 evidenceId，必须单独形成一条明确包含“负值异常”“已从正常效率排名和图表中排除”“需核验”的数据质量披露。不得把该 evidenceId 引用到正常效率排名或瓶颈条目；若正常排名由其他无负时长证据支持，只引用其他证据。任何分组数值必须保留 insights 中对应的实体、期间或组合上下文，不得省略主体后改写成整体值；“前三项合计占100%”不得改写成某个单项占比100%。actions 应优先使用不含数字的定性行动；确需引用现状数字时，该数字必须逐字出现在同一证据关联的 insights 中，且严禁把任何数字写成目标、阈值或承诺。',
     },
     {
       role: 'user',
@@ -575,7 +671,14 @@ async function callAgentReportLlm(analysis, metadata) {
           'Content-Type': 'application/json',
           ...(config.llmApiKey ? { Authorization: `Bearer ${config.llmApiKey}` } : {}),
         },
-        body: JSON.stringify({ model: config.llmModel, temperature: 0.1, response_format: { type: 'json_object' }, messages }),
+        body: JSON.stringify({
+          model: config.llmModel,
+          temperature: 0.1,
+          max_tokens: 4096,
+          ...(typeof config.llmEnableThinking === 'boolean' ? { enable_thinking: config.llmEnableThinking } : {}),
+          response_format: { type: 'json_object' },
+          messages,
+        }),
         signal: controller.signal,
       });
       const payload = await upstream.json().catch(() => ({}));
@@ -583,7 +686,7 @@ async function callAgentReportLlm(analysis, metadata) {
       const content = payload.choices?.[0]?.message?.content || payload.output_text || '';
       outputPreviews.push(String(content).slice(0, 4000));
       try {
-        const structured = validateStructuredReport(parseLlmJson(content), analysis);
+        const structured = validateStructuredReport(prepareStructuredReport(parseLlmJson(content), analysis), analysis);
         return { structured, markdown: structuredReportMarkdown(structured), attempts: attempt + 1 };
       } catch (error) {
         lastError = error;
@@ -591,7 +694,7 @@ async function callAgentReportLlm(analysis, metadata) {
         if (attempt < 2) {
           messages.push(
             { role: 'assistant', content },
-            { role: 'user', content: `上次输出未通过校验：${error.message}。请重新输出完整 JSON。每一项都必须包含 evidenceIds，且只能从以下列表逐字复制，至少选择一个：${allowedEvidenceIds.join('、')}。受限证据的最高或最低结论必须明确写“当前返回范围内”。请为 invalidDurationEvidence 中每个 evidenceId 单独输出一条数据质量项，原文包含“负值异常，已从正常效率排名和图表中排除，需核验”。正常效率排名条目不得引用这些 evidenceId；若排名由其他证据支持，只引用其他证据。actions 的 text 请移除所有目标、阈值和承诺；其中任何保留数字都必须逐字来自同一证据关联的洞察。` },
+            { role: 'user', content: `上次输出未通过校验：${error.message}。请重新输出完整 JSON。若错误包含“应关联”，删除 managementSummary 中该数字及相关数值区间；在 keyFindings 或 risks 中引用该数字时，一条只引用一个分组证据，并逐字保留错误中列出的全部实体、期间和布尔分组值；无法完整保留时删除该数字。每一项都必须包含 evidenceIds，且只能从以下列表逐字复制，至少选择一个：${allowedEvidenceIds.join('、')}。受限证据的最高或最低结论必须明确写“当前返回范围内”。请为 invalidDurationEvidence 中每个 evidenceId 单独输出一条数据质量项，原文包含“负值异常，已从正常效率排名和图表中排除，需核验”。正常效率排名条目不得引用这些 evidenceId；若排名由其他证据支持，只引用其他证据。actions 的 text 请移除所有目标、阈值和承诺；其中任何保留数字都必须逐字来自同一证据关联的洞察。` },
           );
         }
       }
@@ -698,8 +801,8 @@ async function handleCreateAgentRun(request, response) {
     if (metadata.indexed) {
       try {
         aggregateResults = await executeWaxBundle(datasetId, queryBundle);
-        const truncatedPlans = Object.values(aggregateResults).filter(item => item.truncated).map(item => item.plan.purpose);
-        if (truncatedPlans.length) queryWarnings.push(`以下聚合达到结果上限，请缩小筛选范围后复核：${truncatedPlans.join('、')}`);
+        const limitedPlans = Object.values(aggregateResults).filter(item => item.truncated || item.limitReached).map(item => item.plan.purpose);
+        if (limitedPlans.length) queryWarnings.push(`以下聚合达到结果上限，可能仅代表当前返回范围，请缩小筛选范围后复核：${limitedPlans.join('、')}`);
       } catch (error) {
         queryWarnings.push(`WAX 完整数据集聚合未完成，指标改用质量样本计算：${error.message}`);
       }
@@ -716,11 +819,15 @@ async function handleCreateAgentRun(request, response) {
       rowLimit: queryResult.rowLimit,
     });
     analysis.profile.sourceTruncated = queryResult.truncated;
+    analysis.profile.sourceLimitReached = queryResult.limitReached;
+    analysis.profile.sourceTruncationConfidence = queryResult.truncationConfidence;
     analysis.execution = {
       dataSource: 'wyn-dataset-api',
       queryType: aggregateResults ? 'WAX+SAMPLE' : queryResult.queryType,
       sampleQueryType: queryResult.queryType,
       sampleRowLimit: queryResult.rowLimit,
+      sampleLimitReached: queryResult.limitReached,
+      sampleTruncationConfidence: queryResult.truncationConfidence,
       filters: queryBundle.filters,
       waxStatus: aggregateResults ? 'completed' : 'fallback',
       waxQueryCount: aggregateResults ? Object.keys(aggregateResults).length : 0,
@@ -858,6 +965,221 @@ function handleV2AgentRuns(pathname, response) {
   sendJson(response, 200, run);
 }
 
+function publicConversation(item) {
+  if (!item) return null;
+  const { lastResult, lastDocument, ...safe } = item;
+  return safe;
+}
+
+async function handleCreateConversation(request, response) {
+  const startedAt = Date.now();
+  const body = await readJson(request);
+  const identity = guardSmartQuery(request, response);
+  if (!identity) return;
+  const item = await conversations.create({ ...body, userId: identity.userId, organizationId: identity.organizationId });
+  requestAudit.record({ method: request.method, path: request.url, status: 201, durationMs: Date.now() - startedAt, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId });
+  sendJson(response, 201, publicConversation(item));
+}
+
+async function handleConversationMessage(request, response, conversationId) {
+  const startedAt = Date.now();
+  const body = await readJson(request);
+  const identity = guardSmartQuery(request, response);
+  if (!identity) return;
+  if (!conversations.canAccess(conversationId, identity)) {
+    requestAudit.record({ method: request.method, path: request.url, status: 403, durationMs: Date.now() - startedAt, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId });
+    return sendJson(response, 403, { message: '无权访问该智能问数会话' });
+  }
+  const result = await conversations.ask(conversationId, body);
+  requestAudit.record({ method: request.method, path: request.url, status: 200, durationMs: Date.now() - startedAt, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId });
+  sendJson(response, 200, { ...result, conversation: publicConversation(result.conversation) });
+}
+
+async function handleMultiDatasetQuery(request, response) {
+  const startedAt = Date.now();
+  const body = await readJson(request);
+  const identity = guardSmartQuery(request, response);
+  if (!identity) return;
+  const result = await multiDatasetQueries.execute(body);
+  requestAudit.record({ method: request.method, path: request.url, status: 200, durationMs: Date.now() - startedAt, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId });
+  sendJson(response, 200, result);
+}
+
+async function handleTemplateParse(request, response) {
+  const body = await readJson(request);
+  const encoded = String(body.contentBase64 || '');
+  if (!encoded || encoded.length > 8_000_000) return sendJson(response, 400, { message: 'DOCX 内容不能为空或超过限制' });
+  const buffer = Buffer.from(encoded, 'base64');
+  sendJson(response, 200, parseDocxTemplate(buffer, { filename: body.filename || 'template.docx' }));
+}
+
+async function handleTemplateCompose(request, response) {
+  const body = await readJson(request);
+  const encoded = String(body.contentBase64 || '');
+  if (!encoded || encoded.length > 8_000_000) return sendJson(response, 400, { message: 'DOCX 内容不能为空或超过限制' });
+  const buffer = composeDocxTemplate(Buffer.from(encoded, 'base64'), body.values && typeof body.values === 'object' ? body.values : {}, { blockReplacements: Array.isArray(body.blockReplacements) ? body.blockReplacements : [] });
+  sendDownload(response, { body: buffer, contentType: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', filename: String(body.filename || 'generated-report.docx').replace(/[\\/:*?"<>|]/g, '-').slice(0, 80) });
+}
+
+async function handleTemplateCreate(request, response) {
+  const body = await readJson(request);
+  const encoded = String(body.contentBase64 || '');
+  if (!encoded || encoded.length > 8_000_000) return sendJson(response, 400, { message: 'DOCX 内容不能为空或超过限制' });
+  const buffer = Buffer.from(encoded, 'base64');
+  if (!buffer.length) return sendJson(response, 400, { message: 'DOCX 内容无效' });
+  const item = await templatePackages.create(buffer, { filename: body.filename || 'template.docx', name: body.name });
+  sendJson(response, 201, templatePackages.get(item.id));
+}
+
+function handleTemplateList(response) {
+  sendJson(response, 200, { schema: 'wynai.template-catalog/v1', items: templatePackages.list(), total: templatePackages.list().length });
+}
+
+function handleTemplateGet(templateId, response) {
+  const item = templatePackages.get(templateId);
+  if (!item) return sendJson(response, 404, { message: '报告模板不存在' });
+  sendJson(response, 200, item);
+}
+
+async function handleTemplateAnnotate(request, response, templateId) {
+  const result = await templatePackages.annotate(templateId, await readJson(request));
+  sendJson(response, 200, { schema: 'wynai.template-annotation/v1', annotation: result, template: templatePackages.get(templateId) });
+}
+
+async function handleTemplateBinding(request, response, templateId) {
+  const input = await readJson(request);
+  const template = templatePackages.get(templateId, { includeSource: true });
+  if (!template) return sendJson(response, 404, { message: '报告模板不存在' });
+  const block = template.blocks.find(item => item.id === input.blockId);
+  if (!block) return sendJson(response, 404, { message: '模板 Block 不存在' });
+  let proposal = null;
+  if ((!Array.isArray(input.queryRequests) || !input.queryRequests.length) && (input.businessQuestion || input.businessIntent)) {
+    const datasetIds = input.datasetIds || input.businessIntent?.datasetIds || input.businessIntent?.datasets?.map(item => item.id) || [];
+    const metadataItems = await Promise.all(datasetIds.map(datasetId => loadDatasetMetadata(datasetId)));
+    const proposalIntent = input.businessIntent || { businessQuestion: input.businessQuestion, datasetIds, expectedResult: input.expectedResult, presentation: { targetBlockType: input.type || block.suggestion?.type || 'inline-text' } };
+    const skillItems = metadataItems.length ? skillRegistry.resolveForQuestion({ datasetId: metadataItems[0].id, question: proposalIntent.businessQuestion }).skills : [];
+    proposal = proposeCanonicalQueries({ metadataItems, intent: proposalIntent, skills: skillItems });
+    proposal.formula = input.formula || proposeFormula(proposalIntent.businessQuestion);
+  }
+  const binding = await templatePackages.putBinding(templateId, { ...input, queryRequests: input.queryRequests || proposal?.requests || [], formula: input.formula || (proposal?.formula ? { ...proposal.formula, inputBindings: input.inputBindings || {} } : null), status: input.status || 'proposed' });
+  sendJson(response, 200, { schema: 'wynai.binding-proposal/v1', proposal, binding, template: templatePackages.get(templateId) });
+}
+
+async function handleReportRunCreate(request, response) {
+  const run = await reportRuns.create(await readJson(request));
+  sendJson(response, 201, reportRuns.get(run.id));
+}
+
+function handleReportRunGet(reportId, response) {
+  const run = reportRuns.get(reportId);
+  if (!run) return sendJson(response, 404, { message: '报告运行不存在' });
+  sendJson(response, 200, run);
+}
+
+function handleReportRunList(response) {
+  const items = reportRuns.list();
+  sendJson(response, 200, { schema: 'wynai.report-run-catalog/v1', items, total: items.length });
+}
+
+async function handleReportContent(request, response, reportId, blockId) {
+  const session = await reportRuns.updateContent(reportId, blockId, await readJson(request));
+  sendJson(response, 200, session);
+}
+
+function handleReportExport(reportId, format, response) {
+  const exportFile = reportRuns.export(reportId, format);
+  sendDownload(response, exportFile);
+}
+
+function handleConversation(pathname, response) {
+  const prefix = '/api/smart-query/conversations/';
+  const remainder = pathname.slice(prefix.length);
+  const [conversationId, action] = remainder.split('/');
+  const item = conversations.get(conversationId);
+  if (!item) return sendJson(response, 404, { message: '会话不存在或已过期' });
+  if (action === 'messages') return item;
+  sendJson(response, 200, publicConversation(item));
+}
+
+function handleSkillCatalog(response) {
+  const approvedSkills = skillRegistry.list().filter(skill => skill.status === 'approved');
+  sendJson(response, 200, {
+    schema: 'wynai.skill-catalog/v1',
+    items: approvedSkills.map(skill => ({ id: skill.id, version: skill.version, name: skill.name, scope: skill.scope, status: skill.status, datasetIds: skill.datasetIds, triggers: skill.triggers })),
+    total: approvedSkills.length,
+  });
+}
+
+function skillActor(request) {
+  return requestIdentity(request).actor;
+}
+
+function requireSkillAdmin(request, response) {
+  if (!config.skillAdminToken) {
+    sendJson(response, 503, { message: 'Skill 管理写操作尚未配置 WYN_AI_SKILL_ADMIN_TOKEN' });
+    return false;
+  }
+  const provided = String(request.headers['x-wyn-skill-admin-token'] || '');
+  if (provided.length !== config.skillAdminToken.length || provided !== config.skillAdminToken) {
+    sendJson(response, 403, { message: '需要 Skill 管理员权限' });
+    return false;
+  }
+  return true;
+}
+
+function guardSmartQuery(request, response) {
+  const identity = requestIdentity(request);
+  const key = `${identity.organizationId || 'global'}:${identity.userId || request.socket.remoteAddress || 'anonymous'}`;
+  const decision = smartQueryRateLimiter.check(key);
+  response.setHeader('X-RateLimit-Limit', String(decision.limit));
+  response.setHeader('X-RateLimit-Remaining', String(decision.remaining));
+  if (!decision.allowed) {
+    response.setHeader('Retry-After', String(Math.ceil(decision.retryAfterMs / 1000)));
+    requestAudit.record({ method: request.method, path: request.url, status: 429, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, rateLimited: true });
+    sendJson(response, 429, { message: '智能问数请求过于频繁，请稍后重试', retryAfterMs: decision.retryAfterMs });
+    return null;
+  }
+  return identity;
+}
+
+async function handleSkillCreate(request, response) {
+  if (!requireSkillAdmin(request, response)) return;
+  const body = await readJson(request);
+  const identity = requestIdentity(request);
+  const skill = { ...body, status: 'draft' };
+  delete skill.userId;
+  delete skill.organizationId;
+  const result = await skillGovernance.saveOverride(skill, { actor: identity.actor, reason: '通过管理 API 创建草稿' });
+  sendJson(response, 201, { schema: 'wynai.skill-governance/v1', ...result });
+}
+
+function handleSkillVersions(request, response, id) {
+  if (!requireSkillAdmin(request, response)) return;
+  sendJson(response, 200, { schema: 'wynai.skill-versions/v1', id, items: skillGovernance.versions(id).map(skill => ({ id: skill.id, version: skill.version, name: skill.name, scope: skill.scope, status: skill.status, updatedAt: skill.updatedAt || null })) });
+}
+
+async function handleSkillLifecycle(request, response, id, version, action) {
+  if (!requireSkillAdmin(request, response)) return;
+  const body = await readJson(request);
+  const options = { actor: skillActor(request), reason: body.reason || '' };
+  const result = action === 'rollback'
+    ? await skillGovernance.rollback(id, version, options)
+    : await skillGovernance.setStatus(id, version, action === 'approve' ? 'approved' : 'retired', options);
+  sendJson(response, 200, { schema: 'wynai.skill-governance/v1', ...result });
+}
+
+function handleSkillAudit(request, response) {
+  if (!requireSkillAdmin(request, response)) return;
+  const limit = new URL(request.url, 'http://localhost').searchParams.get('limit') || 100;
+  sendJson(response, 200, { schema: 'wynai.skill-audit/v1', items: skillGovernance.auditLog({ limit }), total: skillGovernance.audit.length });
+}
+
+function handleRequestAudit(request, response) {
+  if (!requireSkillAdmin(request, response)) return;
+  const limit = new URL(request.url, 'http://localhost').searchParams.get('limit') || 100;
+  sendJson(response, 200, { schema: 'wynai.request-audit/v1', items: requestAudit.list(limit), total: requestAudit.items.length });
+}
+
 function handleAgentReportExport(runId, format, response) {
   const run = agentRuns.get(runId);
   if (!run) return sendJson(response, 404, { message: '分析运行不存在' });
@@ -953,7 +1275,14 @@ function handleAnalysisResults(pathname, response) {
   const viewId = pathname.slice('/api/analysis-results/'.length);
   if (!viewId) {
     const items = [...analysisResults.values()].reverse().map(analysisListItem);
-    sendJson(response, 200, { items, total: items.length, llmConfigured: Boolean(config.llmBaseUrl && config.llmModel) });
+    sendJson(response, 200, {
+      items,
+      total: items.length,
+      llmConfigured: Boolean(config.llmBaseUrl && config.llmModel),
+      llmProvider: config.llmBaseUrl && config.llmModel ? 'project-env' : 'local-fallback',
+      llmModel: config.llmModel || null,
+      llmEndpointHost,
+    });
     return;
   }
 
@@ -1042,6 +1371,7 @@ async function callConfiguredLlm(record, prompt) {
     body: JSON.stringify({
       model: config.llmModel,
       temperature: 0.2,
+      ...(typeof config.llmEnableThinking === 'boolean' ? { enable_thinking: config.llmEnableThinking } : {}),
       messages: [
         {
           role: 'system',
@@ -1084,7 +1414,7 @@ async function handleSecondaryInsight(request, response) {
       : buildLocalInsight(record, prompt);
     sendJson(response, 200, { ...result, viewId, generatedAt: new Date().toISOString() });
   } catch (error) {
-    sendJson(response, 502, { message: `二次洞察失败：${error.message}` });
+    sendJson(response, 502, { message: `项目 LLM 二次洞察失败（${llmEndpointHost || '未配置端点'}）：${error.message}` });
   }
 }
 
@@ -1134,6 +1464,66 @@ const server = http.createServer(async (request, response) => {
     if (request.method === 'GET' && /^\/api\/datasets\/[a-zA-Z0-9-]+\/metadata$/.test(pathname)) {
       const datasetId = pathname.split('/')[3];
       return await handleDatasetMetadata(datasetId, response);
+    }
+    if (request.method === 'POST' && pathname === '/api/smart-query/conversations') {
+      return await handleCreateConversation(request, response);
+    }
+    if (request.method === 'GET' && pathname === '/api/smart-query/skills') {
+      return handleSkillCatalog(response);
+    }
+    if (request.method === 'POST' && pathname === '/api/smart-query/skills') {
+      return await handleSkillCreate(request, response);
+    }
+    if (request.method === 'GET' && pathname === '/api/smart-query/skills/audit') {
+      return handleSkillAudit(request, response);
+    }
+    if (request.method === 'GET' && pathname === '/api/smart-query/audit') {
+      return handleRequestAudit(request, response);
+    }
+    const skillVersionsRoute = pathname.match(/^\/api\/smart-query\/skills\/([a-zA-Z0-9-]{2,80})\/versions$/);
+    if (request.method === 'GET' && skillVersionsRoute) return handleSkillVersions(request, response, skillVersionsRoute[1]);
+    const skillLifecycleRoute = pathname.match(/^\/api\/smart-query\/skills\/([a-zA-Z0-9-]{2,80})\/versions\/([^/]+)\/(approve|retire|rollback)$/);
+    if (request.method === 'POST' && skillLifecycleRoute) return await handleSkillLifecycle(request, response, skillLifecycleRoute[1], decodeURIComponent(skillLifecycleRoute[2]), skillLifecycleRoute[3]);
+    if (request.method === 'POST' && pathname === '/api/smart-query/query') {
+      return await handleMultiDatasetQuery(request, response);
+    }
+    if (request.method === 'POST' && pathname === '/api/report-templates/parse') {
+      return await handleTemplateParse(request, response);
+    }
+    if (request.method === 'POST' && pathname === '/api/report-templates') {
+      return await handleTemplateCreate(request, response);
+    }
+    if (request.method === 'GET' && pathname === '/api/report-templates') {
+      return handleTemplateList(response);
+    }
+    const templateRoute = pathname.match(/^\/api\/report-templates\/([a-zA-Z0-9-]{8,100})$/);
+    if (request.method === 'GET' && templateRoute) return handleTemplateGet(templateRoute[1], response);
+    const templateAnnotateRoute = pathname.match(/^\/api\/report-templates\/([a-zA-Z0-9-]{8,100})\/annotate$/);
+    if (request.method === 'POST' && templateAnnotateRoute) return await handleTemplateAnnotate(request, response, templateAnnotateRoute[1]);
+    const templateBindingRoute = pathname.match(/^\/api\/report-templates\/([a-zA-Z0-9-]{8,100})\/bindings\/propose$/);
+    if (request.method === 'POST' && templateBindingRoute) return await handleTemplateBinding(request, response, templateBindingRoute[1]);
+    if (request.method === 'POST' && pathname === '/api/report-templates/compose') {
+      return await handleTemplateCompose(request, response);
+    }
+    if (request.method === 'POST' && pathname === '/api/report-runs') return await handleReportRunCreate(request, response);
+    if (request.method === 'GET' && pathname === '/api/report-runs') return handleReportRunList(response);
+    const reportContentRoute = pathname.match(/^\/api\/report-runs\/([a-zA-Z0-9-]{8,100})\/content\/([^/]+)$/);
+    if (request.method === 'POST' && reportContentRoute) return await handleReportContent(request, response, reportContentRoute[1], decodeURIComponent(reportContentRoute[2]));
+    const reportExportRoute = pathname.match(/^\/api\/report-runs\/([a-zA-Z0-9-]{8,100})\/export$/);
+    if (request.method === 'GET' && reportExportRoute) return handleReportExport(reportExportRoute[1], requestUrl.searchParams.get('format') || 'docx', response);
+    const templateReportRoute = pathname.match(/^\/api\/report-runs\/([a-zA-Z0-9-]{8,100})$/);
+    if (request.method === 'GET' && templateReportRoute) return handleReportRunGet(templateReportRoute[1], response);
+    const conversationMessageRoute = pathname.match(/^\/api\/smart-query\/conversations\/([a-zA-Z0-9-]{8,100})\/messages$/);
+    if (request.method === 'POST' && conversationMessageRoute) {
+      return await handleConversationMessage(request, response, conversationMessageRoute[1]);
+    }
+    const conversationRoute = pathname.match(/^\/api\/smart-query\/conversations\/([a-zA-Z0-9-]{8,100})$/);
+    if (request.method === 'GET' && conversationRoute) {
+      const item = conversations.get(conversationRoute[1]);
+      const identity = requestIdentity(request);
+      if (!item) return sendJson(response, 404, { message: '会话不存在或已过期' });
+      if (!conversations.canAccess(conversationRoute[1], identity)) return sendJson(response, 403, { message: '无权访问该智能问数会话' });
+      return sendJson(response, 200, publicConversation(item));
     }
     if (request.method === 'POST' && pathname === '/api/analysis-agent/v2/runs') {
       return await handleCreateV2AgentRun(request, response);

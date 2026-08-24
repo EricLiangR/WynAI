@@ -1,0 +1,151 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wynai.question-semantic-frame/v2",
+  "title": "WynAI QuestionSemanticFrame v2",
+  "type": "object",
+  "required": [
+    "schema",
+    "question",
+    "metrics",
+    "dimensions",
+    "time",
+    "accumulation",
+    "ranking",
+    "derivedMetrics",
+    "requestedOutputs",
+    "complexity"
+  ],
+  "properties": {
+    "schema": {
+      "const": "wynai.question-semantic-frame/v2"
+    },
+    "question": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 4000
+    },
+    "metrics": {
+      "type": "array"
+    },
+    "dimensions": {
+      "type": "array"
+    },
+    "time": {
+      "type": "object",
+      "required": [
+        "explicit",
+        "scopeExplicit",
+        "groupingExplicit",
+        "scopePolicy",
+        "periods",
+        "grouping",
+        "aggregationMode"
+      ],
+      "properties": {
+        "explicit": {
+          "type": "boolean"
+        },
+        "scopeExplicit": {
+          "type": "boolean"
+        },
+        "groupingExplicit": {
+          "type": "boolean"
+        },
+        "scopePolicy": {
+          "enum": [
+            "unspecified",
+            "explicit-periods",
+            "latest-complete-years"
+          ]
+        },
+        "source": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "periods": {
+          "type": "array"
+        },
+        "range": {
+          "type": [
+            "object",
+            "null"
+          ]
+        },
+        "grouping": {
+          "enum": [
+            null,
+            "day",
+            "week",
+            "month",
+            "quarter",
+            "year"
+          ]
+        },
+        "aggregationMode": {
+          "enum": [
+            "period-total",
+            "cumulative-window"
+          ]
+        }
+      }
+    },
+    "accumulation": {
+      "type": "object"
+    },
+    "ranking": {
+      "type": [
+        "object",
+        "null"
+      ],
+      "properties": {
+        "partitionBy": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "derivedMetrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "type",
+          "sourceConcept",
+          "alias",
+          "resultType"
+        ],
+        "properties": {
+          "type": {
+            "enum": [
+              "yoy",
+              "mom"
+            ]
+          },
+          "sourceConcept": {
+            "type": "string"
+          },
+          "alias": {
+            "type": "string"
+          },
+          "resultType": {
+            "const": "percentage"
+          }
+        }
+      }
+    },
+    "groupingQuantifiers": {
+      "type": "array"
+    },
+    "requestedOutputs": {
+      "type": "array"
+    },
+    "complexity": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}

@@ -10,7 +10,7 @@ const run = {
   completedAt: '2026-08-01T01:01:00.000Z',
   analysis: {
     dataset: { id: 'sales', name: '销售数据' },
-    profile: { rowCount: 10000, sampleRowCount: 5000 },
+    profile: { rowCount: 10000, sampleRowCount: 5000, sourceLimitReached: true, sourceTruncationConfidence: 'possible' },
     validation: { queryMode: 'dataset-wax-controlled', evidenceCoverage: 100 },
     execution: { dataSource: 'wyn-dataset-api', waxQueryCount: 5, filters: [{ field: '地区', operator: 'eq', value: '华东' }] },
     kpis: [{ label: '销售额合计', value: '¥1,000', rawValue: 1000 }],
@@ -45,6 +45,7 @@ test('独立 HTML 报告包含图表、证据与执行审计且不执行注入�
   assert.match(html, /<polyline/);
   assert.match(html, /ev-category/);
   assert.match(html, /WAX 聚合/);
+  assert.match(html, /达到读取上限/);
   assert.match(html, /SQL<\/dt><dd>已禁用/);
   assert.doesNotMatch(html, /<script>alert/);
   assert.match(html, /&lt;script&gt;alert/);
@@ -97,4 +98,19 @@ test('系统界面关键标签默认使用中文', async () => {
   assert.doesNotMatch(css, /\.view-meta-strip|\.wyn-frame-toolbar|\.wyn-scroll-hint|\.view-foot|\.secure-view/);
   assert.match(css, /\.open-insights-link \{ margin-left: auto/);
   assert.match(css, /\.assistant-bubble\.has-wyn-view \{ padding: 4px 8px 4px; \}/);
+});
+
+test('独立问数在左侧提供单独入口且不复用 Wyn 问数工作区', async () => {
+  const [html, app] = await Promise.all([
+    readFile(new URL('../public/index.html', import.meta.url), 'utf8'),
+    readFile(new URL('../public/app.js', import.meta.url), 'utf8'),
+  ]);
+  assert.match(html, /data-section="chat"[\s\S]*Wyn 问数/);
+  assert.match(html, /data-section="smart-query"[\s\S]*独立问数/);
+  assert.match(html, /id="agent-workspace-title"/);
+  assert.match(html, /id="smart-query-messages"/);
+  assert.match(html, /id="smart-new-conversation"/);
+  assert.match(app, /const isSmartQuery = section === 'smart-query'/);
+  assert.match(app, /不调用 Wyn AI 问数接口/);
+  assert.match(app, /data-smart-followup/);
 });

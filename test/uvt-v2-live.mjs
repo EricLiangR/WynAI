@@ -1,20 +1,46 @@
 import assert from 'node:assert/strict';
+import { mkdir, writeFile } from 'node:fs/promises';
+import http from 'node:http';
+import { join } from 'node:path';
 
 const baseUrl = (process.env.UVT_BASE_URL || 'http://127.0.0.1:8787').replace(/\/$/, '');
+const uatStartedAt = new Date();
+const caseResults = [];
 
 async function jsonRequest(pathname, options) {
-  const response = await fetch(`${baseUrl}${pathname}`, options);
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(`${pathname} 返回 ${response.status}: ${payload.message || '未知错误'}`);
-  return { response, payload };
+  const target = new URL(pathname, `${baseUrl}/`);
+  const body = options?.body || null;
+  const result = await new Promise((resolve, reject) => {
+    const request = http.request(target, {
+      method: options?.method || 'GET',
+      headers: {
+        ...(options?.headers || {}),
+        ...(body ? { 'Content-Length': Buffer.byteLength(body) } : {}),
+      },
+    }, response => {
+      const chunks = [];
+      response.on('data', chunk => chunks.push(chunk));
+      response.on('end', () => resolve({ status: response.statusCode, raw: Buffer.concat(chunks).toString('utf8') }));
+    });
+    request.on('error', reject);
+    if (body) request.write(body);
+    request.end();
+  });
+  let payload = {};
+  try { payload = JSON.parse(result.raw); } catch { /* error handled below */ }
+  if (result.status < 200 || result.status >= 300) throw new Error(`${pathname} 返回 ${result.status}: ${payload.message || result.raw || '未知错误'}`);
+  return { response: { status: result.status, ok: true }, payload };
 }
 
 async function runCase(id, title, action) {
   const startedAt = Date.now();
   try {
     const detail = await action();
-    console.log(`PASS ${id} ${title} (${Date.now() - startedAt}ms)${detail ? ` - ${detail}` : ''}`);
+    const durationMs = Date.now() - startedAt;
+    caseResults.push({ id, title, status: 'passed', durationMs, detail: detail || null });
+    console.log(`PASS ${id} ${title} (${durationMs}ms)${detail ? ` - ${detail}` : ''}`);
   } catch (error) {
+    caseResults.push({ id, title, status: 'failed', durationMs: Date.now() - startedAt, error: error.message });
     console.error(`FAIL ${id} ${title} - ${error.message}`);
     process.exitCode = 1;
   }
@@ -202,9 +228,11 @@ await runCase('UAT-V21-13', '分环节 TAT 问题必须比较真实处理阶段�
   runs.set('laboratory-tat', run);
   assert.equal(run.analysis.planning.intent, 'open');
   const queries = explorationQueries(run);
-  const stageQuery = queries.find(item => new Set(item.request.measures.map(metric => metric.field).filter(field => /前处理TAT|分析TAT|后处理TAT/.test(field))).size >= 3);
-  assert.ok(stageQuery, '未形成覆盖前处理、分析和后处理的 TAT 瓶颈查询');
-  assert.ok(stageQuery.request.select.some(field => /科室|专业组/.test(field.field)), 'TAT 瓶颈查询缺少组织定位维度');
+  const stageQuery = queries.find(item => (
+    new Set(item.request.measures.map(metric => metric.field).filter(field => /前处理TAT|分析TAT|后处理TAT/.test(field))).size >= 3
+    && item.request.select.some(field => /科室|专业组/.test(field.field))
+  ));
+  assert.ok(stageQuery, '未形成同时覆盖前处理、分析、后处理和科室/专业组定位的 TAT 瓶颈查询');
   assert.ok(!stageQuery.request.measures.some(metric => /^是否/.test(metric.field || '')), 'TAT 瓶颈查询混入布尔标志');
   assertInvalidDurationsAreQualified(run);
   return `${run.analysis.planning.plannerMode}, ${stageQuery.request.id}`;
@@ -256,7 +284,7 @@ await runCase('UAT-V21-09', '安全校验、证据链和敏感信息保护', asy
     const detail = run.resultSets.find(item => item.requestId === 'qry-system-quality');
     assert.equal(detail.rowStorage, 'not-persisted-sensitive-detail');
     assert.equal(detail.rows.length, 0);
-    assert.doesNotMatch(JSON.stringify(run), /WYN_TOKEN|LLM_API_KEY|[A-F0-9]{64}/i);
+    assert.doesNotMatch(JSON.stringify(run), /WYN_TOKEN|LLM_API_KEY|Authorization|Bearer\s+/i);
   }
   return `raw SQL ${rawQuery.status}, ${runs.size} evidence chains verified`;
 });
@@ -277,5 +305,26 @@ await runCase('UAT-V21-10', '持久化与动态报告导出', async () => {
   return `${runs.size} persisted runs and dynamic exports`;
 });
 
-if (process.exitCode) process.exit(process.exitCode);
-console.log('UAT V2.1 COMPLETE: all live acceptance cases passed.');
+const uatFinishedAt = new Date();
+const artifact = {
+  schemaVersion: 'uat-v2.1-live/v1',
+  startedAt: uatStartedAt.toISOString(),
+  finishedAt: uatFinishedAt.toISOString(),
+  baseUrl,
+  strictMode: true,
+  status: process.exitCode ? 'failed' : 'passed',
+  summary: {
+    total: caseResults.length,
+    passed: caseResults.filter(item => item.status === 'passed').length,
+    failed: caseResults.filter(item => item.status === 'failed').length,
+  },
+  cases: caseResults,
+};
+const artifactDirectory = join('test', 'uat-artifacts', 'strict-llm');
+const artifactTimestamp = artifact.finishedAt.replace(/[:.]/g, '-');
+await mkdir(artifactDirectory, { recursive: true });
+await writeFile(join(artifactDirectory, `strict-llm-${artifactTimestamp}.json`), `${JSON.stringify(artifact, null, 2)}\n`, 'utf8');
+await writeFile(join(artifactDirectory, 'latest.json'), `${JSON.stringify(artifact, null, 2)}\n`, 'utf8');
+
+if (process.exitCode) console.error('UAT V2.1 COMPLETE: one or more live acceptance cases failed.');
+else console.log('UAT V2.1 COMPLETE: all live acceptance cases passed.');

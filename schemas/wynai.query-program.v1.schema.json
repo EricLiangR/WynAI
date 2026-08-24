@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wynai.query-program/v1",
+  "title": "WynAI QueryProgram v1",
+  "type": "object",
+  "required": [
+    "schema",
+    "version",
+    "intentId",
+    "baseQuery",
+    "steps",
+    "output"
+  ],
+  "properties": {
+    "schema": {
+      "const": "wynai.query-program/v1"
+    },
+    "version": {
+      "const": 1
+    },
+    "intentId": {
+      "type": "string"
+    },
+    "baseQuery": {
+      "type": "object"
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "enum": [
+              "derive-period-growth",
+              "partition-rank",
+              "project-periods",
+              "validate"
+            ]
+          }
+        }
+      }
+    },
+    "output": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": false
+}

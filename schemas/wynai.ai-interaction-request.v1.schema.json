@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wynai.local/schemas/wynai.ai-interaction-request.v1.schema.json",
+  "title": "WynAI AI Interaction Request v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "type", "requestId", "dataset", "question", "context", "skills", "locale"],
+  "properties": {
+    "schema": { "const": "wynai.ai-interaction-request/v1" },
+    "type": { "const": "query.interaction" },
+    "requestId": { "$ref": "#/$defs/id" },
+    "dataset": { "type": "object", "additionalProperties": false, "required": ["id", "revision"], "properties": { "id": { "$ref": "#/$defs/id" }, "revision": {} } },
+    "conversationId": { "anyOf": [{ "$ref": "#/$defs/id" }, { "type": "null" }] },
+    "question": { "type": "string", "maxLength": 4000 },
+    "messages": { "type": "array", "maxItems": 20, "items": { "type": "object", "additionalProperties": false, "required": ["role", "content"], "properties": { "role": { "enum": ["user", "assistant", "system"] }, "content": { "type": "string", "maxLength": 4000 } } } },
+    "context": { "type": "object", "additionalProperties": false, "required": ["activeMetrics", "activeDimensions", "activeFilters", "previousResultSetIds", "previousInsightDocumentId"], "properties": { "activeMetrics": { "type": "array", "items": { "type": "string", "maxLength": 200 } }, "activeDimensions": { "type": "array", "items": { "type": "string", "maxLength": 200 } }, "activeFilters": { "type": "array", "maxItems": 8 }, "previousResultSetIds": { "type": "array", "maxItems": 8, "items": { "$ref": "#/$defs/id" } }, "previousInsightDocumentId": { "anyOf": [{ "type": "string", "maxLength": 100 }, { "type": "null" }] } } },
+    "skills": { "type": "array", "maxItems": 16, "items": { "type": "string", "maxLength": 200 } },
+    "semanticRevision": { "anyOf": [{ "type": "string", "maxLength": 100 }, { "type": "null" }] },
+    "locale": { "type": "string", "maxLength": 20 }
+  },
+  "$defs": { "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,99}$" } }
+}

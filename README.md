@@ -27,6 +27,8 @@ WYN_VIEW_PROXY_PORT=8788
 LLM_BASE_URL=https://your-openai-compatible-endpoint/v1
 LLM_API_KEY=your_llm_key
 LLM_MODEL=your_model_name
+LLM_TIMEOUT_MS=180000
+LLM_ENABLE_THINKING=false
 ```
 
 浏览器只访问本应用的 `/api/*`。Wyn Token 和 LLM API Key 只保存在服务端，不进入前端源码、URL、报告或运行记录。
@@ -53,7 +55,7 @@ LLM_MODEL=your_model_name
 
 `deterministic-fallback` 仅用于非严格体验。开发和严格 UAT 中，Planner、Critic、查询或 AI 报告失败都必须使 run 失败；`fallback`、`partial`、warning 和空 AI 报告均不计通过。
 
-当前 V2.1 已通过 `65/65` 自动化测试、`14/14` 真实严格 UAT 和最新 `9/9` run 独立审计。严格 UAT 使用阿里云 DashScope 的 `qwen3-coder-next`；本次已获得授权发送数据集元数据、字段语义、聚合摘要和报告上下文，Token、Key 和完整明细不会发送。
+当前项目自动化回归为 `108/108`。独立智能问数的真实 UAT 已覆盖 Phase 0 查询矩阵 `11/11`、Phase 0 多数据集 `4/4`、Phase 2 `4/4`、Phase 3/4 `4/4`、模板报告 `5/5`，Skill 治理 UAT `9/9`。DashScope 固定文本连通 UAT `1/1` 和严格外部 LLM UAT `14/14` 均已通过；严格 UAT 的 Planner、Critic 和报告均调用真实模型 `deepseek-v4-flash-0731`，9 个持久化运行全部完成且未使用确定性回退。完整阶段记录见 `DEVELOPMENT_PROGRESS_REPORT.md`。
 
 无论采用哪种规划模式，Wyn 负责数据查询执行，确定性程序负责数值计算和证据绑定，AI 不接触 Token、完整明细或底层查询语言。
 
@@ -74,6 +76,15 @@ LLM_MODEL=your_model_name
 - `GET /api/analysis-agent/v2/runs`：读取 V2 运行历史。
 - `GET /api/analysis-agent/v2/runs/:id`：读取假设、查询、统一结果集、发现和证据。
 - `GET /api/analysis-agent/v2/runs/:id/report?format=html|markdown|json`：导出 V2 正式报告。
+- `GET /api/smart-query/skills`：读取已审核的结构化 Skill 目录和版本。
+- `POST /api/smart-query/conversations`：创建单数据集或受控多数据集会话。
+- `POST /api/smart-query/conversations/:id/messages`：发送多轮自然语言问题，返回 `AIInteractionResponse v1` 和 `InsightDocument v1`。
+- 会话主体应由受信网关写入 `X-Wyn-User-Id`、`X-Wyn-Organization-Id` 请求头；请求体中的同名字段不参与身份解析。
+- `GET /api/smart-query/skills/audit`、`GET /api/smart-query/audit`：读取 Skill 变更和问数请求审计。
+- Skill 写操作需要配置 `WYN_AI_SKILL_ADMIN_TOKEN`，并在请求头传 `X-Wyn-Skill-Admin-Token`。
+- `POST /api/smart-query/query`：执行一个或多个经过校验的 Canonical 查询，并可按声明维度受控合并结果。
+
+协议 Schema 位于 `schemas/`：`AIInteractionRequest v1`、`AIInteractionResponse v1`、`CanonicalQueryRequest v1` 和 `InsightDocument v1`。
 
 应用不提供数据源 SQL 接口，也不接受浏览器或大模型提交任意 WAX。所有可执行查询均由服务端依据语义目录和白名单操作生成。
 
@@ -85,6 +96,14 @@ npm test
 npm run test:coverage
 npm run uvt
 npm run uvt:v2
+npm run uat:llm-connectivity
+npm run uat:phase0
+npm run uat:phase0:query-matrix
+npm run uat:phase0:multi-dataset
+npm run uat:phase2
+npm run uat:phase3
+npm run uat:phase4
+npm run uat:phase3-4
 npm audit
 ```
 
@@ -104,7 +123,8 @@ npm audit
 - 单个聚合或明细查询最多返回 5,000 行；增长来源查询会自动限制为两个比较期间，避免全历史 TopN 截断。
 - 正式 PDF 通过独立 HTML 的打印功能生成。
 - 本地 JSON 仓库适合原型与单实例部署；生产多实例需要数据库、权限映射、审计日志和密钥托管。
-- 真实 LLM UAT 会把字段元数据、语义描述、聚合摘要和报告上下文发送到配置的外部模型服务；执行前必须确认客户数据外发授权与脱敏策略。
+- 真实 LLM UAT 已按授权把字段元数据、语义描述、受控聚合摘要和报告上下文发送到阿里云 DashScope；不发送完整明细、`WYN_TOKEN` 或 `LLM_API_KEY`。后续使用其他客户数据时仍须单独确认数据外发授权与脱敏策略。
+- 新智能问数的统一协议、会话和 Skill 设计记录见 [NEW_SMART_QUERY_DEVELOPMENT_PLAN.md](./NEW_SMART_QUERY_DEVELOPMENT_PLAN.md)；阶段开发、测试、UAT 和 Bug 台账见 [DEVELOPMENT_PROGRESS_REPORT.md](./DEVELOPMENT_PROGRESS_REPORT.md)。
 ## Windows 发布包
 
 项目可以构建为包含 Node.js、生产依赖和 WinSW 的 Windows x64 ZIP。目标服务器不需要安装 Node.js，也不需要执行 `npm install`。

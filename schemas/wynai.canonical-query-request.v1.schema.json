@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wynai.local/schemas/wynai.canonical-query-request.v1.schema.json",
+  "title": "WynAI Canonical Query Request v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "mode", "topic", "dataset", "select", "measures", "filters", "resultFilters", "fieldComparisons", "orderBy", "limit", "expectedResult", "sensitivity"],
+  "properties": {
+    "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,79}$" },
+    "hypothesisId": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
+    "purpose": { "type": "string", "maxLength": 500 },
+    "mode": { "enum": ["profile", "aggregate", "detail", "compare", "mining", "verify"] },
+    "topic": { "enum": ["baseline", "quality", "profitability", "customer", "product", "anomaly", "open"] },
+    "dataset": { "type": "object", "required": ["id", "revision"], "properties": { "id": { "type": "string" }, "revision": {} } },
+    "select": { "type": "array", "maxItems": 64 },
+    "measures": { "type": "array", "maxItems": 8 },
+    "filters": { "type": "array", "maxItems": 8 },
+    "resultFilters": { "type": "array", "maxItems": 4 },
+    "fieldComparisons": { "type": "array", "maxItems": 4 },
+    "comparison": {},
+    "orderBy": { "type": "array", "maxItems": 3 },
+    "limit": { "type": "integer", "minimum": 1, "maximum": 5000 },
+    "expectedResult": { "type": "object" },
+    "sensitivity": { "type": "string" },
+    "lineage": { "anyOf": [{ "type": "object" }, { "type": "null" }] }
+  },
+  "not": { "anyOf": [{ "required": ["sql"] }, { "required": ["wax"] }, { "required": ["payload"] }, { "required": ["pivotPayload"] }, { "required": ["adapter"] }] }
+}

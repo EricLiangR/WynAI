@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wynai.intent-patch/v1",
+  "title": "WynAI IntentPatch v1",
+  "type": "object",
+  "required": [
+    "schema",
+    "basedOnIntentId",
+    "operations",
+    "reply",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "wynai.intent-patch/v1"
+    },
+    "basedOnIntentId": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "sourceTurn": {
+      "type": [
+        "integer",
+        "null"
+      ]
+    },
+    "operations": {
+      "type": "array",
+      "maxItems": 8,
+      "items": {
+        "type": "object",
+        "required": [
+          "op",
+          "path",
+          "value"
+        ],
+        "properties": {
+          "op": {
+            "enum": [
+              "replace",
+              "add",
+              "remove"
+            ]
+          },
+          "path": {
+            "enum": [
+              "/metrics",
+              "/dimensions",
+              "/time",
+              "/filters",
+              "/ranking"
+            ]
+          },
+          "value": {}
+        }
+      }
+    },
+    "reply": {
+      "type": "string"
+    },
+    "createdAt": {
+      "type": "string"
+    }
+  },
+  "additionalProperties": false
+}

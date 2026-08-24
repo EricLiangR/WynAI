@@ -1,0 +1,71 @@
+{
+  "schema": "wynai.skill/v1",
+  "id": "sales-baseline",
+  "version": "1.0.0",
+  "name": "销售基础分析",
+  "scope": "dataset",
+  "datasetIds": [
+    "2b445034-38fe-4350-9cab-b7684c28b5f8"
+  ],
+  "triggers": [
+    "销售",
+    "销售额",
+    "收入",
+    "利润",
+    "客户地区",
+    "客户集中度",
+    "销售经理",
+    "销售员",
+    "业务员",
+    "销售代表"
+  ],
+  "metrics": [
+    {
+      "name": "销售额",
+      "field": "订单金额",
+      "aggregation": "sum",
+      "definition": "订单金额求和"
+    },
+    {
+      "name": "利润",
+      "field": "订单利润",
+      "aggregation": "sum",
+      "definition": "订单利润求和"
+    },
+    {
+      "name": "订单数",
+      "field": "订单编号",
+      "aggregation": "distinctCount",
+      "definition": "订单编号去重计数"
+    }
+  ],
+  "workflows": [
+    {
+      "id": "sales-trend",
+      "steps": [
+        "time-trend",
+        "region-drilldown",
+        "customer-drilldown"
+      ]
+    }
+  ],
+  "forbidden": [
+    "将订单明细样本当作全量总额",
+    "将订单金额直接解释为利润"
+  ],
+  "status": "approved",
+  "businessEntities": [
+    {
+      "id": "salesManager",
+      "concept": "employee",
+      "name": "销售经理",
+      "field": "员工姓名",
+      "synonyms": [
+        "销售经理",
+        "销售员",
+        "业务员",
+        "销售代表"
+      ]
+    }
+  ]
+}

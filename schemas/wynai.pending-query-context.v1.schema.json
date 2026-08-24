@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wynai.pending-query-context/v1",
+  "title": "WynAI PendingQueryContext v1",
+  "type": "object",
+  "required": [
+    "schema",
+    "sourceTurn",
+    "originalQuestion",
+    "intent",
+    "unresolvedSlots",
+    "candidates",
+    "patchHistory",
+    "createdAt",
+    "updatedAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "wynai.pending-query-context/v1"
+    },
+    "sourceTurn": {
+      "type": "integer"
+    },
+    "originalQuestion": {
+      "type": "string"
+    },
+    "planningQuestion": {
+      "type": "string"
+    },
+    "intent": {
+      "type": "object"
+    },
+    "unresolvedSlots": {
+      "type": "array"
+    },
+    "candidates": {
+      "type": "array"
+    },
+    "patchHistory": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "createdAt": {
+      "type": "string"
+    },
+    "updatedAt": {
+      "type": "string"
+    }
+  }
+}

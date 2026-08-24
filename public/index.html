@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Wyn AI 问数 API 集成演示" />
     <title>Atlas AI · 智能数据助手</title>
-    <link rel="stylesheet" href="/styles.css?v=20" />
+    <link rel="stylesheet" href="/styles.css?v=22" />
   </head>
   <body>
     <div class="app-shell">
@@ -24,7 +24,11 @@
         <nav class="primary-nav" id="primary-nav" aria-label="主导航">
           <button class="nav-item active" type="button" data-section="chat">
             <svg viewBox="0 0 24 24"><path d="M20 11a7 7 0 0 1-7 7H8l-4 3v-5.5A7 7 0 1 1 20 11Z"/></svg>
-            <span>智能问数</span><span class="nav-badge">AI</span>
+            <span>Wyn 问数</span><span class="nav-badge">Wyn</span>
+          </button>
+          <button class="nav-item" type="button" data-section="smart-query">
+            <svg viewBox="0 0 24 24"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8a2.5 2.5 0 0 1-2.5 2.5H11l-4.5 4v-4H6.5A2.5 2.5 0 0 1 4 13.5v-8Z"/><path d="M8 8h8M8 11h5"/></svg>
+            <span>独立问数</span><span class="nav-badge nav-badge-new">自建</span>
           </button>
           <button class="nav-item" type="button" data-section="insights">
             <svg viewBox="0 0 24 24"><path d="M4 19V9m5 10V5m5 14v-7m5 7V3"/></svg>
@@ -265,9 +269,17 @@
         <section class="agent-workspace" id="agent-workspace" hidden>
           <header class="agent-toolbar">
             <div>
-              <div class="insights-kicker">受控数据分析智能体</div>
-              <h2>AI 数据分析</h2>
-              <p>只需选择 Wyn 数据集，智能体会自主提出问题、动态选择查询方式、验证证据并生成管理报告。</p>
+              <div class="insights-kicker" id="agent-workspace-kicker">受控数据分析智能体</div>
+              <h2 id="agent-workspace-title">AI 数据分析</h2>
+              <p id="agent-workspace-description">只需选择 Wyn 数据集，智能体会自主提出问题、动态选择查询方式、验证证据并生成管理报告。</p>
+            </div>
+            <div class="smart-query-dataset-bar">
+              <div class="dataset-control">
+                <span class="control-icon"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></span>
+                <label for="smart-dataset-select">当前数据集</label>
+                <select id="smart-dataset-select" aria-label="选择独立问数数据集" disabled><option value="">加载中…</option></select>
+              </div>
+
             </div>
             <div class="agent-toolbar-actions">
               <span class="agent-engine-status"><i></i><span id="agent-engine-model">分析引擎就绪</span></span>
@@ -289,6 +301,31 @@
 
           <div class="agent-layout">
             <aside class="agent-control-panel">
+              <div class="agent-control-section smart-query-side-flow">
+                <div class="section-title"><span>本次分析</span><span class="panel-tag">实时</span></div>
+                <div class="analysis-flow">
+                  <div class="smart-flow-item active"><span class="flow-index">01</span><div><strong>理解业务问题</strong><small>识别指标、维度与筛选条件</small></div></div>
+                  <div class="flow-line"></div>
+                  <div class="smart-flow-item"><span class="flow-index">02</span><div><strong>执行数据查询</strong><small>由受控查询内核调用 Wyn</small></div></div>
+                  <div class="flow-line"></div>
+                  <div class="smart-flow-item"><span class="flow-index">03</span><div><strong>生成分析结果</strong><small>呈现指标、图表与明细</small></div></div>
+                </div>
+              </div>
+              <div class="agent-control-section smart-query-session-panel">
+                <button class="smart-new-conversation" id="smart-new-conversation" type="button">
+                  <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>新建对话</span>
+                </button>
+                <small class="smart-query-status" id="smart-query-status">选择数据集后即可开始对话</small>
+              </div>
+              <div class="agent-control-section smart-query-context-panel">
+                <div class="control-section-head"><span>当前对话上下文</span><span id="smart-turn-count">0 轮</span></div>
+                <dl class="smart-context-list">
+                  <div><dt>指标</dt><dd id="smart-context-metrics">未指定</dd></div>
+                  <div><dt>维度</dt><dd id="smart-context-dimensions">未指定</dd></div>
+                  <div><dt>筛选</dt><dd id="smart-context-filters">全部数据</dd></div>
+                  <div><dt>Skill</dt><dd id="smart-context-skills">自动匹配</dd></div>
+                </dl>
+              </div>
               <div class="agent-control-section">
                 <label for="agent-dataset-select">分析数据集</label>
                 <select id="agent-dataset-select" aria-label="选择 AI 分析数据集" disabled><option value="">加载中…</option></select>
@@ -355,6 +392,48 @@
             </aside>
 
             <div class="agent-canvas" id="agent-canvas">
+              <section class="smart-query-chat" id="smart-query-output">
+                <header class="smart-chat-header">
+                  <div><strong>独立问数对话</strong><small>查询由 Wyn 数据集语义和受控查询内核执行</small></div>
+                  <span id="smart-query-scope"><i></i>等待提问</span>
+                </header>
+                <div class="smart-chat-messages" id="smart-query-messages" aria-live="polite">
+                  <section class="welcome-card smart-chat-welcome">
+                    <div class="orb-wrap" aria-hidden="true"><div class="orb smart-orb"><span></span></div></div>
+
+                    <h2>让数据，直接回答问题</h2>
+                    <p>选择一个业务数据集，用自然语言提问。独立问数将基于 Wyn 数据集语义执行受控查询，并支持连续追问。</p>
+                    <div class="suggestion-grid">
+                      <button class="suggestion" type="button" data-smart-prompt="总销售额是多少？">
+                        <span class="suggestion-icon violet"><svg viewBox="0 0 24 24"><path d="m4 17 5-5 4 3 7-8M16 7h4v4"/></svg></span>
+                        <span><strong>核心指标概览</strong><small>总销售额是多少？</small></span>
+                        <svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                      </button>
+                      <button class="suggestion" type="button" data-smart-prompt="2023至2025年销售额和同比增长率">
+                        <span class="suggestion-icon cyan"><svg viewBox="0 0 24 24"><path d="M4 18h16M6 15l4-5 3 3 5-7"/></svg></span>
+                        <span><strong>发现趋势变化</strong><small>按年度分析销售额同比</small></span>
+                        <svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                      </button>
+                      <button class="suggestion" type="button" data-smart-prompt="过去三年销售额累计排名前三的销售经理是谁">
+                        <span class="suggestion-icon amber"><svg viewBox="0 0 24 24"><path d="M5 20V9h4v11M10 20V4h4v16M15 20v-7h4v7"/></svg></span>
+                        <span><strong>识别业务贡献</strong><small>销售经理累计销售额排名</small></span>
+                        <svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                      </button>
+                      <button class="suggestion" type="button" data-smart-prompt="2023至2025年每年利润前三的城市">
+                        <span class="suggestion-icon rose"><svg viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3Zm0 6v5m0 3h.01"/></svg></span>
+                        <span><strong>定位重点对象</strong><small>每年利润前三的城市</small></span>
+                        <svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg>
+                      </button>
+                    </div>
+                  </section>
+                </div>
+                <footer class="smart-chat-composer">
+                  <textarea id="smart-question" rows="1" maxlength="4000" placeholder="输入业务问题，Enter 发送，Shift + Enter 换行"></textarea>
+                  <button id="smart-ask-button" type="button" disabled title="发送问题" aria-label="发送问题">
+                    <svg viewBox="0 0 24 24"><path d="m4 4 17 8-17 8 3-8-3-8Z"/></svg>
+                  </button>
+                </footer>
+              </section>
               <div class="agent-empty" id="agent-empty">
                 <div class="agent-empty-mark"><span></span><i></i><b></b></div>
                 <div class="empty-label">可开始分析</div>
@@ -416,6 +495,35 @@
             </div>
           </div>
         </section>
+
+        <section class="reports-workspace" id="reports-workspace" hidden>
+          <header class="reports-toolbar">
+            <div><div class="insights-kicker">模板驱动报告</div><h2>智能报告工作台</h2><p>上传标准 Word 模板，使用业务语言绑定数据，运行后在线审核动态内容并下载 Word。</p></div>
+            <div class="reports-toolbar-actions"><button class="agent-run-button" id="report-download" type="button" disabled>下载 Word</button></div>
+          </header>
+          <div class="reports-layout">
+            <aside class="reports-control-panel">
+              <label for="report-template-file">Word 模板</label>
+              <input id="report-template-file" type="file" accept=".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+              <button class="agent-run-button" id="report-upload" type="button">上传并解析</button>
+              <label for="report-template-select">已保存模板</label>
+              <select id="report-template-select"><option value="">先上传模板</option></select>
+              <label for="report-block-select">目标 Block</label>
+              <select id="report-block-select" disabled><option value="">上传后选择段落或表格</option></select>
+              <label for="report-business-question">业务描述</label>
+              <textarea id="report-business-question" rows="4" placeholder="例如：按客户地区统计本月销售额，并列出前五名"></textarea>
+              <label for="report-block-type">内容类型</label>
+              <select id="report-block-type"><option value="inline-text">内联文本</option><option value="scalar">单值指标</option><option value="grouped-table">分组表</option><option value="detail-table">明细表</option><option value="ai-narrative">AI 洞察</option><option value="parameter">运行参数</option></select>
+              <button class="agent-run-button" id="report-propose" type="button" disabled>提议并确认绑定</button>
+              <small id="report-status">等待模板</small>
+            </aside>
+            <div class="reports-canvas">
+              <section class="report-preview-panel"><div class="agent-section-title"><div><span>01</span><div><small>模板解析</small><h3 id="report-template-title">尚未选择模板</h3></div></div><em id="report-template-meta">—</em></div><div id="report-block-preview" class="report-block-preview">选择模板后查看候选动态块。</div></section>
+              <section class="report-preview-panel"><div class="agent-section-title"><div><span>02</span><div><small>运行结果</small><h3>报告审核</h3></div></div><em id="report-run-status">—</em></div><div id="report-run-output" class="report-run-output">确认绑定后运行报告。</div></section>
+              <section class="report-preview-panel" id="report-content-editor" hidden><div class="agent-section-title"><div><span>03</span><div><small>动态块协作</small><h3>AI 内容编辑</h3></div></div><em id="report-content-status">—</em></div><textarea id="report-content-text" rows="7"></textarea><div class="report-content-actions"><input id="report-content-message" type="text" placeholder="继续讨论：突出风险、改写语气或补充背景"><button id="report-content-discuss" type="button">继续讨论</button><button id="report-content-confirm" type="button">确认内容</button></div></section>
+            </div>
+          </div>
+        </section>
       </main>
     </div>
 
@@ -433,6 +541,6 @@
       </article>
     </template>
     <script src="/vendor/echarts.min.js"></script>
-    <script src="/app.js?v=20" type="module"></script>
+    <script src="/app.js?v=22" type="module"></script>
   </body>
 </html>

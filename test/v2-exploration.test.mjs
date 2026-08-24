@@ -56,6 +56,16 @@ test('外部 AI Planner 计划必须通过 Canonical 安全校验', () => {
   });
   assert.equal(valid.mode, 'ai-planner');
   assert.equal(valid.requests[0].measures[0].field, '订单利润');
+  assert.deepEqual(valid.requests[0].filters, [{ field: '订购日期', operator: 'isNotNull', value: null, fieldType: 'time' }]);
+  const prefixed = normalizeExternalExplorationPlan({
+    metadata, profile, focus: '利润分析', filters: [],
+    rawPlan: {
+      intent: 'profitability',
+      hypotheses: [{ id: 'hyp-profit-short-id', question: '利润是否恶化' }],
+      requests: [{ id: 'q1', hypothesisId: 'hyp-profit-short-id', purpose: '查询利润', mode: 'aggregate', select: [], measures: [{ field: '订单利润', aggregation: 'sum', alias: 'profit' }] }],
+    },
+  });
+  assert.equal(prefixed.requests[0].id, 'qry-q1');
   assert.throws(() => normalizeExternalExplorationPlan({
     metadata, profile, focus: '', filters: [],
     rawPlan: {
@@ -139,6 +149,21 @@ test('无关注方向时即使 AI 偏向单一主题也保留开放探索的多�
   assert.equal(plan.intent, 'open');
   assert.ok(new Set(plan.requests.map(item => item.topic)).size >= 3);
   assert.deepEqual(plan.aiRequestedMethods, ['profit_trend']);
+});
+
+test('完整 AI Planner 不得把开放任务窄化为利润单主题', () => {
+  const profile = buildSemanticCapabilityProfile(metadata);
+  assert.throws(() => normalizeExternalExplorationPlan({
+    metadata,
+    profile,
+    focus: '',
+    filters: [],
+    rawPlan: {
+      intent: 'profitability',
+      hypotheses: [{ id: 'hyp-profit-only', question: '利润如何' }],
+      requests: [{ id: 'q1', hypothesisId: 'hyp-profit-only', purpose: '利润合计', mode: 'aggregate', topic: 'profitability', select: [], measures: [{ field: '订单利润', aggregation: 'sum', alias: 'profit' }] }],
+    },
+  }), /意图 profitability 与用户问题 open 不一致/);
 });
 
 test('管理驾驶舱和跨视角运营分析识别为开放任务', () => {
@@ -244,7 +269,7 @@ test('Critic 缺失血缘时只能从真实父假设结果推导并删除空筛�
   });
   assert.equal(plan.mode, 'ai-critic');
   assert.deepEqual(plan.requests[0].lineage.triggerResultSetIds, ['rs-qry-customer-base']);
-  assert.deepEqual(plan.requests[0].filters, []);
+  assert.deepEqual(plan.requests[0].filters, [{ field: '客户名称', operator: 'isNotNull', value: null, fieldType: 'dimension' }]);
 });
 
 test('Critic 可从唯一字段重合的真实结果补全新假设与触发血缘并记录修复', async () => {

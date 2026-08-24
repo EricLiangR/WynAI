@@ -7,11 +7,24 @@
   "scripts": {
     "start": "node server.mjs",
     "dev": "node --watch server.mjs",
-    "check": "node --check server.mjs && node --check public/app.js && node --check lib/analysis-core.mjs && node --check lib/wax-query.mjs && node --check lib/run-store.mjs && node --check lib/report-export.mjs && node --check lib/report/structured-report.mjs && node --check lib/semantics/capability-profiler.mjs && node --check lib/planning/query-request-schema.mjs && node --check lib/planning/hypothesis-planner.mjs && node --check lib/planning/exploration-planner.mjs && node --check lib/llm/exploration-agent.mjs && node --check lib/query/result-normalizer.mjs && node --check lib/query/router.mjs && node --check lib/query/adapters/controlled-wax.mjs && node --check lib/query/adapters/dataset-none.mjs && node --check lib/analytics/growth-driver.mjs && node --check lib/analytics/exploration-artifacts.mjs && node --check lib/evidence/claim-verifier.mjs && node --check lib/harness/orchestrator.mjs && node --check test/uvt-live.mjs && node --check test/uvt-v2-live.mjs",
+    "check": "node --check server.mjs && node --check public/app.js && node --check lib/analysis-core.mjs && node --check lib/wax-query.mjs && node --check lib/run-store.mjs && node --check lib/report-export.mjs && node --check lib/report/structured-report.mjs && node --check lib/semantics/capability-profiler.mjs && node --check lib/semantics/time-semantics.mjs && node --check lib/semantics/question-semantic-frame.mjs && node --check lib/semantics/business-query-intent.mjs && node --check lib/conversation/question-planner.mjs && node --check lib/planning/query-request-schema.mjs && node --check lib/planning/hypothesis-planner.mjs && node --check lib/planning/exploration-planner.mjs && node --check lib/llm/exploration-agent.mjs && node --check lib/query/result-normalizer.mjs && node --check lib/query/query-program.mjs && node --check lib/query/router.mjs && node --check lib/query/multi-dataset.mjs && node --check lib/query/adapters/controlled-wax.mjs && node --check lib/query/adapters/dataset-none.mjs && node --check lib/analytics/growth-driver.mjs && node --check lib/analytics/exploration-artifacts.mjs && node --check lib/evidence/claim-verifier.mjs && node --check lib/harness/orchestrator.mjs && node --check lib/protocol/interaction-contract.mjs && node --check lib/report/insight-document.mjs && node --check lib/conversation/session.mjs && node --check lib/skills/skill-registry.mjs && node --check lib/skills/skill-governance.mjs && node --check lib/security/request-governance.mjs && node --check lib/template/docx-parser.mjs && node --check lib/template/docx-composer.mjs && node --check lib/template/template-model.mjs && node --check lib/reporting/binding-resolver.mjs && node --check lib/reporting/formula-engine.mjs && node --check lib/reporting/content-session.mjs && node --check lib/reporting/report-runner.mjs && node --check test/uvt-live.mjs && node --check test/uvt-v2-live.mjs && node --check test/uat-llm-connectivity-live.mjs && node --check test/uat-phase0-live.mjs && node --check test/uat-phase0-query-matrix-live.mjs && node --check test/uat-phase0-multi-dataset-live.mjs && node --check test/uat-phase2-live.mjs && node --check test/uat-phase3-live.mjs && node --check test/uat-phase4-live.mjs && node --check test/uat-phase3-4-live.mjs && node --check test/uat-advanced-multiturn-50-live.mjs && node --check test/verify-advanced-multiturn-browser-uat.mjs",
     "test": "node --test test/*.test.mjs",
     "test:coverage": "node --experimental-test-coverage --test test/*.test.mjs",
     "uvt": "node test/uvt-live.mjs",
-    "uvt:v2": "node test/uvt-v2-live.mjs"
+    "uvt:v2": "node test/uvt-v2-live.mjs",
+    "uat:llm-connectivity": "node test/uat-llm-connectivity-live.mjs",
+    "uat:phase0": "node test/uat-phase0-live.mjs",
+    "uat:phase0:query-matrix": "node test/uat-phase0-query-matrix-live.mjs",
+    "uat:phase0:multi-dataset": "node test/uat-phase0-multi-dataset-live.mjs",
+    "uat:phase2": "node test/uat-phase2-live.mjs",
+    "uat:phase3": "node test/uat-phase3-live.mjs",
+    "uat:phase4": "node test/uat-phase4-live.mjs",
+    "uat:template-report": "node test/uat-template-report-live.mjs",
+    "uat:semantic50": "node test/uat-semantic-50-live.mjs",
+    "uat:semantic50:verify": "node test/verify-semantic-browser-uat.mjs",
+    "uat:advanced50": "node test/uat-advanced-multiturn-50-live.mjs",
+    "uat:advanced50:verify": "node test/verify-advanced-multiturn-browser-uat.mjs",
+    "uat:phase3-4": "node test/uat-phase3-4-live.mjs"
   },
   "engines": {
     "node": ">=18"
