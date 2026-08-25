@@ -1,5 +1,5 @@
 param(
-    [string]$Version = '1.0.1',
+    [string]$Version = '1.0.4',
     [string]$NodeRuntimeZip = '',
     [switch]$SkipTests,
     [switch]$SkipSmokeTest
@@ -81,7 +81,7 @@ New-Item -ItemType Directory -Path $AppDir -Force | Out-Null
 foreach ($file in @('server.mjs', 'package.json', 'package-lock.json')) {
     Copy-Item -LiteralPath (Join-Path $ProjectRoot $file) -Destination $AppDir -Force
 }
-foreach ($directory in @('lib', 'public')) {
+foreach ($directory in @('lib', 'public', 'skills')) {
     Copy-Item -LiteralPath (Join-Path $ProjectRoot $directory) -Destination $AppDir -Recurse -Force
 }
 
@@ -157,6 +157,13 @@ LLM_MODEL=
                 Invoke-Native 'start packaged application' { & cmd.exe /d /c quick-start.bat }
                 $live = Invoke-WebRequest -UseBasicParsing -Uri "http://127.0.0.1:$mainPort/api/live" -TimeoutSec 5
                 if ($live.StatusCode -ne 200) { throw "Smoke liveness check returned HTTP $($live.StatusCode)" }
+                $skillCatalog = Invoke-RestMethod -UseBasicParsing -Uri "http://127.0.0.1:$mainPort/api/smart-query/skills" -TimeoutSec 5
+                $packagedSkillIds = @($skillCatalog.items | ForEach-Object { $_.id })
+                foreach ($expectedSkillId in @('sales-baseline', 'retail-baseline', 'laboratory-baseline')) {
+                    if ($packagedSkillIds -notcontains $expectedSkillId) {
+                        throw "Smoke skill catalog is missing $expectedSkillId"
+                    }
+                }
                 Invoke-Native 'stop packaged application' { & cmd.exe /d /c quick-stop.bat }
             } finally {
                 Pop-Location

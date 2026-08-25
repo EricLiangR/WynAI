@@ -1,0 +1,42 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wynai.local/schemas/wynai.operation-event.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema",
+    "traceId",
+    "sequence",
+    "at",
+    "event",
+    "phase",
+    "details"
+  ],
+  "properties": {
+    "schema": {
+      "const": "wynai.operation-event/v1"
+    },
+    "traceId": {
+      "type": "string",
+      "pattern": "^trace-"
+    },
+    "sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "event": {
+      "type": "string"
+    },
+    "phase": {
+      "type": "string"
+    },
+    "details": {
+      "type": "object"
+    }
+  },
+  "additionalProperties": true
+}
+

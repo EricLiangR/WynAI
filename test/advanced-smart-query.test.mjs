@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { planBusinessQuestion } from '../lib/conversation/question-planner.mjs';
+import { planBusinessQuestion, planBusinessQuestionAsync } from '../lib/conversation/question-planner.mjs';
 import { applyQueryProgram } from '../lib/query/query-program.mjs';
 import { SmartQueryConversationStore } from '../lib/conversation/session.mjs';
 import { SkillRegistry } from '../lib/skills/skill-registry.mjs';
@@ -9,6 +9,7 @@ const fields = [
   ['订购日期', 'time', 'Date'],
   ['订单金额', 'measure', 'Number'],
   ['订单利润', 'measure', 'Number'],
+  ['订单编号', 'identifier', 'String'],
   ['购买数量', 'measure', 'Number'],
   ['客户地区', 'geography', 'String'],
   ['客户省份', 'geography', 'String'],
@@ -166,4 +167,253 @@ test('筛选追问继承全部复合指标，派生追问继承当前指标', ()
   const yoy = planBusinessQuestion({ metadata, question: '再看同比增长率', previousIntent: profit.intent, previousRequest: profit.displayRequest, now });
   assert.equal(yoy.status, 'supported');
   assert.deepEqual(yoy.intent.derivedMetrics.map(item => item.alias), ['profit_yoy']);
+});
+test('低风险且有已审批 Skill 的完整意图走快路径', async () => {
+  let llmCalls = 0;
+  const llm = {
+    enabled: true,
+    async planQueryIntent() {
+      llmCalls += 1;
+      await new Promise(() => {});
+    },
+  };
+  const startedAt = Date.now();
+  const plan = await planBusinessQuestionAsync({
+    metadata,
+    question: '2025年销售收入总额',
+    skillRefs: ['sales-baseline@1.0.0'],
+    now,
+    llm,
+  });
+  assert.equal(plan.status, 'supported');
+  assert.equal(plan.plannerMode, 'deterministic-fast-path');
+  assert.equal(plan.plannerDiagnostics.llmAttempted, false);
+  assert.equal(llmCalls, 0);
+  assert.ok(Date.now() - startedAt < 100);
+  assert.deepEqual(plan.intent.time.periods, [2025]);
+  assert.equal(plan.request.filters.find(item => item.operator === 'gte').value, '2025-01-01');
+});
+
+test('意图大模型连续失败后触发短时熔断并保留确定性澄清', async () => {
+  let llmCalls = 0;
+  const llm = {
+    enabled: true,
+    async planQueryIntent() {
+      llmCalls += 1;
+      const error = new Error('模拟意图模型超时');
+      error.code = 'LLM_TIMEOUT';
+      throw error;
+    },
+  };
+  const input = {
+    metadata,
+    question: '过去三年销售额累计排名前三的是谁',
+    now,
+    llm,
+  };
+  const first = await planBusinessQuestionAsync(input);
+  const second = await planBusinessQuestionAsync(input);
+  const third = await planBusinessQuestionAsync(input);
+  assert.equal(first.plannerDiagnostics.llmAttempted, true);
+  assert.equal(second.plannerDiagnostics.circuitOpen, true);
+  assert.equal(third.plannerDiagnostics.reason, 'high-risk-intent-llm-circuit-open');
+  assert.equal(third.plannerDiagnostics.llmAttempted, false);
+  assert.equal(llmCalls, 2);
+  assert.equal(third.status, 'needs_clarification');
+});
+
+const governedSalesSkill = {
+  id: 'sales-baseline',
+  version: '1.1.0',
+  scope: 'dataset',
+  datasetIds: [metadata.id],
+  status: 'approved',
+  triggers: ['销售', '订单数', '订单数量', '大区'],
+  metrics: [
+    { id: 'revenue', concept: 'revenue', name: '销售额', field: '订单金额', aggregation: 'sum', synonyms: ['销售收入'], unitFamily: 'currency' },
+    { id: 'profit', concept: 'profit', name: '利润', field: '订单利润', aggregation: 'sum', synonyms: ['毛利'], unitFamily: 'currency' },
+    { id: 'orderCount', concept: 'orderCount', name: '订单数', field: '订单编号', aggregation: 'distinctCount', synonyms: ['订单数量', '订单量'], unitFamily: 'count' },
+  ],
+  businessEntities: [
+    { id: 'salesRegion', concept: 'region', name: '销售大区', field: '客户地区', synonyms: ['大区', '区域', '地区'] },
+  ],
+};
+
+test('开放式每年排名按时间分区而不是退化为全局 TopN', () => {
+  const plan = planBusinessQuestion({ metadata, question: '统计每年，销售排名前三的城市和销售额', now });
+  assert.equal(plan.status, 'supported');
+  assert.deepEqual(plan.intent.ranking.partitionBy, ['period']);
+  assert.equal(plan.request.limit, 5000);
+  const raw = resultSet(plan.request, [
+    { city: 'A', period: '2024-01-01', revenue: 10 },
+    { city: 'B', period: '2024-01-01', revenue: 40 },
+    { city: 'C', period: '2024-01-01', revenue: 30 },
+    { city: 'D', period: '2024-01-01', revenue: 20 },
+    { city: 'A', period: '2025-01-01', revenue: 70 },
+    { city: 'B', period: '2025-01-01', revenue: 50 },
+    { city: 'C', period: '2025-01-01', revenue: 60 },
+    { city: 'D', period: '2025-01-01', revenue: 5 },
+  ]);
+  const output = applyQueryProgram(raw, plan.queryProgram);
+  assert.deepEqual(output.rows.map(row => [row.period.slice(0, 4), row.city]), [
+    ['2024', 'B'], ['2024', 'C'], ['2024', 'D'],
+    ['2025', 'A'], ['2025', 'C'], ['2025', 'B'],
+  ]);
+});
+
+test('Skill 指标口径优先于数量字段泛化并支持订单数去重计数', () => {
+  const plan = planBusinessQuestion({
+    metadata,
+    question: '统计每年销售额、利润和订单数量',
+    skills: [governedSalesSkill],
+    skillRefs: ['sales-baseline@1.1.0'],
+    now,
+  });
+  assert.equal(plan.status, 'supported');
+  assert.deepEqual(plan.intent.metrics.map(item => [item.field, item.aggregation, item.alias]), [
+    ['订单金额', 'sum', 'revenue'],
+    ['订单利润', 'sum', 'profit'],
+    ['订单编号', 'distinctCount', 'order_count'],
+  ]);
+});
+
+test('单年度同比自动建立基期上下文并隐藏内部时间维度', () => {
+  const plan = planBusinessQuestion({
+    metadata,
+    question: '去年各省份的销售额和同比增长率',
+    skills: [governedSalesSkill],
+    skillRefs: ['sales-baseline@1.1.0'],
+    now,
+  });
+  assert.equal(plan.status, 'supported');
+  assert.equal(plan.request.filters.find(item => item.operator === 'gte').value, '2024-01-01');
+  assert.equal(plan.intent.dimensions.find(item => item.grain)?.internal, true);
+  assert.deepEqual(plan.displayRequest.select.map(item => item.alias), ['province']);
+  const raw = resultSet(plan.request, [
+    { province: 'A', period: '2024-01-01', revenue: 100 },
+    { province: 'B', period: '2024-01-01', revenue: 200 },
+    { province: 'A', period: '2025-01-01', revenue: 120 },
+    { province: 'B', period: '2025-01-01', revenue: 150 },
+  ]);
+  const output = applyQueryProgram(raw, plan.queryProgram);
+  assert.deepEqual(output.rows, [
+    { province: 'A', revenue: 120, revenue_yoy: 0.2 },
+    { province: 'B', revenue: 150, revenue_yoy: -0.25 },
+  ]);
+  assert.equal(output.schema.some(column => column.name === 'period'), false);
+});
+
+test('Skill 业务实体把大区统一映射到数据集地区字段', () => {
+  const plan = planBusinessQuestion({
+    metadata,
+    question: '统计去年，每个大区的销售额和销售额同比增长率',
+    skills: [governedSalesSkill],
+    skillRefs: ['sales-baseline@1.1.0'],
+    now,
+  });
+  assert.equal(plan.status, 'supported');
+  assert.equal(plan.intent.dimensions.find(item => !item.grain).field, '客户地区');
+  assert.equal(plan.intent.dimensions.find(item => !item.grain).concept, 'region');
+});
+
+test('追加式多轮追问继承已有上下文并增加指标', () => {
+  const first = planBusinessQuestion({
+    metadata,
+    question: '统计每年销售额',
+    skills: [governedSalesSkill],
+    skillRefs: ['sales-baseline@1.1.0'],
+    now,
+  });
+  const second = planBusinessQuestion({
+    metadata,
+    question: '同时增加利润和订单数量',
+    previousIntent: first.intent,
+    previousRequest: first.displayRequest,
+    skills: [governedSalesSkill],
+    skillRefs: ['sales-baseline@1.1.0'],
+    now,
+  });
+  assert.equal(second.status, 'supported');
+  assert.deepEqual(second.intent.metrics.map(item => item.alias), ['revenue', 'profit', 'order_count']);
+  assert.equal(second.intent.transition.inheritsPriorContext, true);
+  assert.equal(second.intent.time.grain, 'year');
+});
+
+test('模型语义覆盖失败不会被计为供应商熔断故障', async () => {
+  let calls = 0;
+  const llm = {
+    enabled: true,
+    async planQueryIntent() {
+      calls += 1;
+      return { dimensions: [] };
+    },
+  };
+  const input = {
+    metadata,
+    question: '去年各省份的销售额和同比增长率',
+    skills: [governedSalesSkill],
+    skillRefs: ['sales-baseline@1.1.0'],
+    now,
+    llm,
+  };
+  const first = await planBusinessQuestionAsync(input);
+  const second = await planBusinessQuestionAsync(input);
+  assert.equal(first.plannerDiagnostics.reason, 'INTENT_COVERAGE_INVALID');
+  assert.equal(second.plannerDiagnostics.llmAttempted, true);
+  assert.equal(second.plannerDiagnostics.circuitOpen, false);
+  assert.equal(calls, 2);
+});
+test('模型不得把同比计算依赖扩张为用户可见时间维度', async () => {
+  const llm = {
+    enabled: true,
+    async planQueryIntent({ deterministicIntent }) {
+      return {
+        ...deterministicIntent,
+        dimensions: deterministicIntent.dimensions.map(({ internal, ...item }) => item),
+      };
+    },
+  };
+  const plan = await planBusinessQuestionAsync({
+    metadata,
+    question: '去年各省份的销售额和同比增长率',
+    skills: [governedSalesSkill],
+    skillRefs: ['sales-baseline@1.1.0'],
+    now,
+    llm,
+  });
+  assert.equal(plan.plannerMode, 'hybrid-llm-validated');
+  assert.equal(plan.intent.dimensions.find(item => item.grain)?.internal, true);
+  assert.deepEqual(plan.displayRequest.select.map(item => item.field), ['客户省份']);
+});
+
+test('模型新增用户未要求的可见维度时回退到已校验计划且不触发熔断', async () => {
+  let calls = 0;
+  const llm = {
+    enabled: true,
+    async planQueryIntent({ deterministicIntent }) {
+      calls += 1;
+      return {
+        ...deterministicIntent,
+        dimensions: [
+          ...deterministicIntent.dimensions,
+          { field: '客户地区', alias: 'region', concept: 'region', grain: null },
+        ],
+      };
+    },
+  };
+  const input = {
+    metadata,
+    question: '各省份销售额为什么不同',
+    skills: [governedSalesSkill],
+    skillRefs: ['sales-baseline@1.1.0'],
+    now,
+    llm,
+  };
+  const first = await planBusinessQuestionAsync(input);
+  const second = await planBusinessQuestionAsync(input);
+  assert.equal(first.plannerDiagnostics.reason, 'INTENT_SCOPE_EXPANSION_INVALID');
+  assert.deepEqual(first.displayRequest.select.map(item => item.field), ['客户省份']);
+  assert.equal(second.plannerDiagnostics.llmAttempted, true);
+  assert.equal(second.plannerDiagnostics.circuitOpen, false);
+  assert.equal(calls, 2);
 });

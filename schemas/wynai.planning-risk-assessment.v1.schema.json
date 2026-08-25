@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wynai.local/schemas/wynai.planning-risk-assessment.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema",
+    "level",
+    "score",
+    "reasons",
+    "policy"
+  ],
+  "properties": {
+    "schema": {
+      "const": "wynai.planning-risk-assessment/v1"
+    },
+    "level": {
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ]
+    },
+    "score": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "code",
+          "score",
+          "message"
+        ]
+      }
+    },
+    "policy": {
+      "type": "object",
+      "required": [
+        "llm",
+        "failureMode",
+        "execution"
+      ]
+    },
+    "plannerReadiness": {
+      "enum": [
+        "executable",
+        "incomplete"
+      ]
+    }
+  },
+  "additionalProperties": true
+}

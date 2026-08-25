@@ -60,3 +60,27 @@ test('LLM 主动超时使用明确错误码而不是通用 fetch failed', async 
     return true;
   });
 });
+
+test('调用方取消会中断意图模型请求并返回明确取消错误', async () => {
+  const llm = createExplorationLlm({
+    baseUrl: 'https://dashscope.example/v1',
+    apiKey: 'secret-test-key',
+    model: 'test-model',
+    timeoutMs: 1000,
+    fetchImpl: async (_url, options) => new Promise((resolve, reject) => {
+      options.signal.addEventListener('abort', () => reject(options.signal.reason), { once: true });
+    }),
+  });
+  const controller = new AbortController();
+  const pending = llm.planQueryIntent({
+    metadata: { id: 'dataset', name: '销售数据', fields: [] },
+    question: '分析一个模糊问题',
+    signal: controller.signal,
+  });
+  controller.abort();
+  await assert.rejects(pending, error => {
+    assert.equal(error.code, 'REQUEST_ABORTED');
+    assert.match(error.message, /请求已取消/);
+    return true;
+  });
+});

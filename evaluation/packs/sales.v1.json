@@ -1,0 +1,162 @@
+{
+  "schema": "wynai.evaluation-pack/v1",
+  "id": "sales-core",
+  "version": "1.1.0",
+  "domain": "销售",
+  "datasetId": "2b445034-38fe-4350-9cab-b7684c28b5f8",
+  "owner": "销售数据负责人",
+  "status": "approved",
+  "cases": [
+    {
+      "id": "sales-001",
+      "question": "2025年销售额是多少",
+      "risk": "low",
+      "expected": {
+        "status": "supported",
+        "metrics": [
+          "订单金额"
+        ],
+        "dimensions": []
+      },
+      "variants": [
+        "去年收入总额是多少"
+      ],
+      "tags": [
+        "scalar",
+        "time"
+      ]
+    },
+    {
+      "id": "sales-002",
+      "question": "过去五年每年的销售收入和同比增长率",
+      "risk": "medium",
+      "expected": {
+        "status": "supported",
+        "metrics": [
+          "订单金额"
+        ],
+        "dimensions": [
+          "订购日期"
+        ],
+        "grain": "year"
+      },
+      "variants": [
+        "近五年逐年营收及同比"
+      ],
+      "tags": [
+        "yoy",
+        "derived"
+      ]
+    },
+    {
+      "id": "sales-003",
+      "question": "按财务口径统计收入",
+      "risk": "high",
+      "expected": {
+        "status": "needs_clarification",
+        "metrics": [],
+        "dimensions": [],
+        "clarification": true
+      },
+      "tags": [
+        "ambiguity",
+        "high-risk"
+      ]
+    },
+    {
+      "id": "sales-004",
+      "question": "统计每年销售排名前三的城市和销售额",
+      "risk": "medium",
+      "expected": {
+        "status": "supported",
+        "metrics": [
+          "订单金额"
+        ],
+        "dimensions": [
+          "客户城市",
+          "订购日期"
+        ],
+        "grain": "year"
+      },
+      "variants": [
+        "逐年列出销售额最高的三个城市",
+        "各年度城市销售额前三名"
+      ],
+      "tags": [
+        "partition-ranking",
+        "open-time-range"
+      ]
+    },
+    {
+      "id": "sales-005",
+      "question": "统计每年销售额、利润和订单数量",
+      "risk": "medium",
+      "expected": {
+        "status": "supported",
+        "metrics": [
+          "订单金额",
+          "订单利润",
+          "订单编号"
+        ],
+        "dimensions": [
+          "订购日期"
+        ],
+        "grain": "year"
+      },
+      "variants": [
+        "逐年看营收毛利和订单笔数",
+        "每年度销售收入利润及订单量"
+      ],
+      "tags": [
+        "skill-metric",
+        "mixed-units"
+      ]
+    },
+    {
+      "id": "sales-006",
+      "question": "去年各省份的销售额和同比增长率",
+      "risk": "medium",
+      "expected": {
+        "status": "supported",
+        "metrics": [
+          "订单金额"
+        ],
+        "dimensions": [
+          "客户省份"
+        ],
+        "grain": "year"
+      },
+      "variants": [
+        "各省去年营收及同比",
+        "按省看上一年度销售收入同比变化"
+      ],
+      "tags": [
+        "derived-support-grain",
+        "hidden-baseline"
+      ]
+    },
+    {
+      "id": "sales-007",
+      "question": "去年每个大区的销售额和同比增长率",
+      "risk": "medium",
+      "expected": {
+        "status": "supported",
+        "metrics": [
+          "订单金额"
+        ],
+        "dimensions": [
+          "客户地区"
+        ],
+        "grain": "year"
+      },
+      "variants": [
+        "各销售大区上一年收入同比",
+        "去年分区域看销售额及同比"
+      ],
+      "tags": [
+        "skill-entity",
+        "region"
+      ]
+    }
+  ]
+}

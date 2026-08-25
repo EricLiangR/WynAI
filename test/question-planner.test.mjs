@@ -69,7 +69,7 @@ test('内部 Planner 和适配器诊断不再显示为用户数据范围警告',
   assert.deepEqual(warnings, ['结果达到上限，可能不完整']);
 });
 
-test('二维或多指标结果不绘制会丢失编码信息的单系列图表', () => {
+test('二维结果完整编码为分类和系列并同时保留明细表格', () => {
   const plan = planBusinessQuestion({ metadata: {
     ...metadata,
     fields: [...metadata.fields, { name: '客户省份', role: 'geography', type: 'String', rawType: 'String' }],
@@ -85,6 +85,10 @@ test('二维或多指标结果不绘制会丢失编码信息的单系列图表',
       quality: {},
     },
   });
-  assert.equal(document.blocks.some(block => block.type === 'chart'), false);
+  const chart = document.blocks.find(block => block.type === 'chart');
+  assert.ok(chart);
+  assert.equal(chart.visualization.type, 'line');
+  assert.equal(chart.visualization.encoding.category.field, 'period');
+  assert.equal(chart.visualization.encoding.seriesDimension.field, 'province');
   assert.equal(document.blocks.some(block => block.type === 'table'), true);
 });

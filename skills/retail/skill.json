@@ -1,0 +1,64 @@
+{
+  "schema": "wynai.skill/v1",
+  "id": "retail-baseline",
+  "version": "1.0.0",
+  "name": "零售经营基础分析",
+  "scope": "dataset",
+  "datasetIds": [
+    "8875ab24-8d24-4a9e-be39-01e44a5678a9"
+  ],
+  "triggers": [
+    "零售",
+    "销售",
+    "销售额",
+    "收入",
+    "利润",
+    "类别",
+    "商品",
+    "产品"
+  ],
+  "metrics": [
+    {
+      "name": "销售额",
+      "field": "订单金额",
+      "aggregation": "sum",
+      "definition": "订单金额求和"
+    },
+    {
+      "name": "利润",
+      "field": "订单利润",
+      "aggregation": "sum",
+      "definition": "订单利润求和"
+    }
+  ],
+  "businessEntities": [
+    {
+      "id": "category",
+      "concept": "productCategory",
+      "name": "商品类别",
+      "field": "类别名称",
+      "synonyms": [
+        "类别",
+        "品类",
+        "商品类别",
+        "产品类别"
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "id": "retail-performance",
+      "steps": [
+        "category-comparison",
+        "product-drilldown",
+        "profit-review"
+      ]
+    }
+  ],
+  "forbidden": [
+    "将订单金额解释为利润",
+    "将明细样本外推为完整零售业绩"
+  ],
+  "status": "approved"
+}
+

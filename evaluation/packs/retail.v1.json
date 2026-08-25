@@ -1,0 +1,53 @@
+{
+  "schema": "wynai.evaluation-pack/v1",
+  "id": "retail-core",
+  "version": "1.0.0",
+  "domain": "零售",
+  "datasetId": "8875ab24-8d24-4a9e-be39-01e44a5678a9",
+  "owner": "零售数据负责人",
+  "status": "draft",
+  "cases": [
+    {
+      "id": "retail-001",
+      "question": "各商品类别的销售额和利润",
+      "risk": "low",
+      "expected": {
+        "status": "supported",
+        "metrics": [
+          "订单金额",
+          "订单利润"
+        ],
+        "dimensions": [
+          "类别名称"
+        ]
+      },
+      "variants": [
+        "按品类看收入和利润"
+      ],
+      "tags": [
+        "category",
+        "multiple-metrics"
+      ]
+    },
+    {
+      "id": "retail-002",
+      "question": "利润率最低的类别是否应该下架",
+      "risk": "high",
+      "expected": {
+        "status": "needs_clarification",
+        "metrics": [
+          "订单利润"
+        ],
+        "dimensions": [
+          "类别名称"
+        ],
+        "clarification": true
+      },
+      "tags": [
+        "decision",
+        "high-risk"
+      ]
+    }
+  ]
+}
+

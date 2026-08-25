@@ -112,6 +112,7 @@ const state = {
   smartConversationId: null,
   smartTurns: 0,
   smartAbortController: null,
+  smartCharts: [],
   reportTemplates: [],
   reportTemplate: null,
   reportProposal: null,
@@ -1137,7 +1138,185 @@ function renderSmartAnalysisDetails(queryRequests = [], scope = {}) {
   return `<section class="smart-analysis-details" aria-label="详情"><div class="smart-analysis-details-head"><strong>详情</strong></div><dl>${rows.map(([label, value]) => `<div class="smart-analysis-detail-item"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl></section>`;
 }
 
-function renderSmartDocument(document, resultSets = [], runtimeStatus = null, queryRequests = []) {
+const SMART_CHART_TYPE_LABELS = {
+  line: '折线图', column: '柱形图', bar: '条形图', pie: '饼图', donut: '环形图', combo: '组合图', 'stacked-column': '堆叠图',
+};
+
+function disposeSmartCharts() {
+  for (const entry of state.smartCharts) {
+    entry.observer?.disconnect();
+    entry.chart?.dispose();
+  }
+  state.smartCharts = [];
+}
+
+function smartChartFormatPeriod(value, schema, result) {
+  if (schema?.type !== 'date' && !schema?.grain) return value ?? '—';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value ?? '—';
+  const timeZone = result?.scope?.timeZone || 'Asia/Shanghai';
+  const parts = new Intl.DateTimeFormat('zh-CN', { timeZone, year: 'numeric', month: 'numeric', day: 'numeric' }).formatToParts(date);
+  const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+  if (schema.grain === 'year') return `${values.year}年`;
+  if (schema.grain === 'quarter') return `${values.year}年第${Math.floor((Number(values.month) - 1) / 3) + 1}季度`;
+  if (schema.grain === 'month') return `${values.year}年${values.month}月`;
+  if (schema.grain === 'week') return `${values.year}年${values.month}月${values.day}日所在周`;
+  return `${values.year}年${values.month}月${values.day}日`;
+}
+
+function legacySmartVisualization(block, result) {
+  const dimension = result?.schema?.find(column => column.role === 'dimension') || result?.schema?.[0];
+  const measure = result?.schema?.find(column => column.role === 'measure') || result?.schema?.find(column => column.name !== dimension?.name);
+  if (!dimension?.name || !measure?.name) return null;
+  const type = block.chartType === 'line' ? 'line' : 'bar';
+  return {
+    schema: 'wynai.visualization-spec/v1', type, dataRef: block.dataRef, title: block.title || '分析图表',
+    encoding: {
+      category: { field: block.encoding?.x || dimension.name, label: dimension.displayName || dimension.sourceField || dimension.name, type: dimension.type === 'date' || dimension.grain ? 'temporal' : 'nominal' },
+      seriesDimension: null,
+      measures: [{ field: block.encoding?.y || measure.name, label: measure.displayName || measure.sourceField || measure.name, mark: type === 'line' ? 'line' : 'bar', axis: 'left', format: measure.format === 'percentage' ? 'percentage' : 'number', order: 0 }],
+    },
+    options: { stack: false, showLegend: false, showLabels: type === 'bar', categoryLimit: type === 'bar' ? 20 : 0, seriesLimit: 0, groupRemainderAsOther: false, dataZoom: false },
+    decision: { source: 'automatic', reason: type === 'line' ? '时间维度适合展示变化趋势。' : '分类结果适合展示数值比较。', warnings: [], allowedTypes: ['line', 'column', 'bar'] },
+  };
+}
+
+function smartChartSeriesData(spec, result, type) {
+  const rows = Array.isArray(result?.rows) ? result.rows : [];
+  const categoryField = spec.encoding.category.field;
+  const categorySchema = result?.schema?.find(column => column.name === categoryField);
+  const seriesField = spec.encoding.seriesDimension?.field || null;
+  const measures = spec.encoding.measures || [];
+  const categoryKeys = [...new Set(rows.map(row => row?.[categoryField]).filter(value => value != null))];
+  const aggregate = (filteredRows, field) => {
+    const values = filteredRows.map(row => Number(row?.[field])).filter(Number.isFinite);
+    return values.length ? values.reduce((sum, value) => sum + value, 0) : null;
+  };
+  if (type === 'pie' || type === 'donut') {
+    const measure = measures[0];
+    let data = categoryKeys.map(key => ({ name: String(smartChartFormatPeriod(key, categorySchema, result)), value: aggregate(rows.filter(row => row?.[categoryField] === key), measure.field) || 0 }));
+    data.sort((a, b) => b.value - a.value);
+    const limit = spec.options?.categoryLimit || 0;
+    if (limit && data.length > limit) {
+      const remainder = data.slice(limit).reduce((sum, item) => sum + item.value, 0);
+      data = data.slice(0, limit);
+      if (spec.options?.groupRemainderAsOther && remainder) data.push({ name: '其他', value: remainder });
+    }
+    return { categories: data.map(item => item.name), series: [{ name: measure.label, mark: 'pie', axis: 'left', format: measure.format, data }] };
+  }
+  const limit = spec.options?.categoryLimit || 0;
+  const selectedKeys = limit ? categoryKeys.slice(0, limit) : categoryKeys;
+  const categories = selectedKeys.map(key => String(smartChartFormatPeriod(key, categorySchema, result)));
+  if (!seriesField) {
+    return {
+      categories,
+      series: measures.map(measure => ({
+        name: measure.label,
+        mark: type === 'combo' ? measure.mark : type === 'line' ? 'line' : 'bar',
+        axis: type === 'combo' ? measure.axis : 'left',
+        format: measure.format,
+        data: selectedKeys.map(key => aggregate(rows.filter(row => row?.[categoryField] === key), measure.field)),
+      })),
+    };
+  }
+  const seriesTotals = new Map();
+  for (const row of rows) {
+    const key = row?.[seriesField];
+    if (key == null) continue;
+    const total = measures.reduce((sum, measure) => sum + Math.abs(Number(row?.[measure.field]) || 0), 0);
+    seriesTotals.set(key, (seriesTotals.get(key) || 0) + total);
+  }
+  let seriesKeys = [...seriesTotals.keys()].sort((a, b) => seriesTotals.get(b) - seriesTotals.get(a));
+  if (spec.options?.seriesLimit) seriesKeys = seriesKeys.slice(0, spec.options.seriesLimit);
+  return {
+    categories,
+    series: seriesKeys.flatMap(seriesKey => measures.map(measure => ({
+      name: measures.length > 1 ? `${seriesKey} · ${measure.label}` : String(seriesKey),
+      mark: type === 'line' ? 'line' : 'bar',
+      axis: 'left',
+      format: measure.format,
+      data: selectedKeys.map(categoryKey => aggregate(rows.filter(row => row?.[categoryField] === categoryKey && row?.[seriesField] === seriesKey), measure.field)),
+    }))),
+  };
+}
+
+function smartChartOption(spec, result, selectedType = spec.type) {
+  const type = selectedType;
+  const data = smartChartSeriesData(spec, result, type);
+  const palette = ['#5f4ac7', '#2388a2', '#1ca579', '#bd852e', '#c55c67', '#527780', '#806b4c', '#69749a'];
+  const percentAxis = spec.encoding.measures.some(measure => measure.axis === 'right' && measure.format === 'percentage');
+  const valueFormatter = format => value => format === 'percentage'
+    ? new Intl.NumberFormat('zh-CN', { style: 'percent', maximumFractionDigits: 2 }).format(Number(value) || 0)
+    : new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(Number(value) || 0);
+  if (type === 'pie' || type === 'donut') {
+    return {
+      animationDuration: 450,
+      color: palette,
+      tooltip: { trigger: 'item', valueFormatter: valueFormatter(spec.encoding.measures[0]?.format) },
+      legend: { type: 'scroll', orient: 'vertical', right: 16, top: 'middle', textStyle: { color: '#657178', fontSize: 11 } },
+      series: [{ name: data.series[0]?.name, type: 'pie', radius: type === 'donut' ? ['42%', '68%'] : '68%', center: ['40%', '52%'], avoidLabelOverlap: true, minShowLabelAngle: 4, label: { color: '#59676e', fontSize: 11, formatter: '{b}\n{d}%' }, data: data.series[0]?.data || [] }],
+    };
+  }
+  const horizontal = type === 'bar';
+  const yAxes = type === 'combo' ? [
+    { type: 'value', position: 'left', splitLine: { lineStyle: { color: '#edf0f1' } }, axisLabel: { color: '#858c91', fontSize: 10 } },
+    { type: 'value', position: 'right', splitLine: { show: false }, axisLabel: { color: '#858c91', fontSize: 10, formatter: value => percentAxis ? `${Math.round(value * 100)}%` : value } },
+  ] : { type: horizontal ? 'category' : 'value', data: horizontal ? data.categories : undefined, inverse: horizontal, splitLine: { show: !horizontal, lineStyle: { color: '#edf0f1' } }, axisLine: { lineStyle: { color: '#ccd3d6' } }, axisTick: { show: false }, axisLabel: { color: '#777f84', fontSize: 10, width: horizontal ? 120 : undefined, overflow: 'truncate' } };
+  const categoryAxis = { type: 'category', data: data.categories, axisLine: { lineStyle: { color: '#ccd3d6' } }, axisTick: { show: false }, axisLabel: { color: '#777f84', fontSize: 10, margin: 11, rotate: !horizontal && data.categories.some(label => String(label).length > 7) ? 24 : 0 } };
+  return {
+    animationDuration: 450,
+    color: palette,
+    tooltip: { trigger: 'axis', confine: true },
+    legend: spec.options?.showLegend && data.series.length > 1 ? { type: 'scroll', top: 2, right: 10, textStyle: { color: '#667177', fontSize: 10 } } : undefined,
+    grid: { left: horizontal ? 118 : 58, right: type === 'combo' ? 62 : horizontal && spec.options?.showLabels ? 94 : 24, top: data.series.length > 1 ? 42 : 20, bottom: spec.options?.dataZoom ? 62 : 45, containLabel: false },
+    xAxis: horizontal ? { type: 'value', splitLine: { lineStyle: { color: '#edf0f1' } }, axisLabel: { color: '#858c91', fontSize: 10 } } : categoryAxis,
+    yAxis: horizontal ? yAxes : type === 'combo' ? yAxes : { type: 'value', splitLine: { lineStyle: { color: '#edf0f1' } }, axisLabel: { color: '#858c91', fontSize: 10 } },
+    dataZoom: spec.options?.dataZoom && !horizontal ? [{ type: 'inside' }, { type: 'slider', height: 16, bottom: 12 }] : undefined,
+    series: data.series.map(series => ({
+      name: series.name,
+      type: series.mark,
+      data: series.data,
+      yAxisIndex: type === 'combo' && series.axis === 'right' ? 1 : 0,
+      stack: type === 'stacked-column' || spec.options?.stack ? 'total' : undefined,
+      smooth: false,
+      symbolSize: 6,
+      lineStyle: series.mark === 'line' ? { width: 2.5 } : undefined,
+      areaStyle: series.mark === 'line' && data.series.length === 1 ? { opacity: .04 } : undefined,
+      barMaxWidth: 34,
+      itemStyle: series.mark === 'bar' ? { borderRadius: horizontal ? [0, 3, 3, 0] : [3, 3, 0, 0] } : undefined,
+      label: spec.options?.showLabels && data.categories.length <= 20 ? { show: true, position: horizontal ? 'right' : 'top', color: '#50636b', fontSize: 10, formatter: params => valueFormatter(series.format)(params.value) } : undefined,
+      tooltip: { valueFormatter: valueFormatter(series.format) },
+    })),
+  };
+}
+
+function hydrateSmartCharts(root, document, resultSets = []) {
+  if (!root || !globalThis.echarts) return;
+  const blockMap = new Map((document?.blocks || []).filter(block => block.type === 'chart').map(block => [block.id, block]));
+  const resultMap = new Map(resultSets.map(result => [result.id, result]));
+  for (const container of root.querySelectorAll('[data-smart-chart-id]')) {
+    const block = blockMap.get(container.dataset.smartChartId);
+    const result = resultMap.get(block?.dataRef);
+    const spec = block?.visualization || legacySmartVisualization(block, result);
+    if (!block || !result || !spec) continue;
+    const chart = globalThis.echarts.init(container, null, { renderer: 'canvas' });
+    const render = type => {
+      const rowCount = result.rows?.length || 0;
+      container.style.height = type === 'bar' ? `${Math.min(520, Math.max(250, rowCount * 28 + 70))}px` : '300px';
+      chart.clear();
+      chart.setOption(smartChartOption(spec, result, type), true);
+      container.setAttribute('aria-label', `${block.title || '分析图表'}，${SMART_CHART_TYPE_LABELS[type] || type}`);
+      root.querySelectorAll(`[data-smart-chart-block="${CSS.escape(block.id)}"]`).forEach(button => button.classList.toggle('active', button.dataset.smartChartType === type));
+      requestAnimationFrame(() => chart.resize());
+    };
+    root.querySelectorAll(`[data-smart-chart-block="${CSS.escape(block.id)}"]`).forEach(button => button.addEventListener('click', () => render(button.dataset.smartChartType)));
+    const observer = globalThis.ResizeObserver ? new ResizeObserver(() => chart.resize()) : null;
+    observer?.observe(container);
+    state.smartCharts.push({ chart, observer });
+    render(spec.type);
+  }
+}
+function renderSmartDocument(document, resultSets = [], runtimeStatus = null, queryRequests = [], feedbackContext = null) {
   if (!document) return '';
   const blocks = Array.isArray(document.blocks) ? document.blocks : [];
   const resultMap = new Map(resultSets.map(result => [result.id, result]));
@@ -1161,14 +1340,14 @@ function renderSmartDocument(document, resultSets = [], runtimeStatus = null, qu
   };
   const renderChart = block => {
     const result = resultMap.get(block.dataRef);
-    const rows = result?.rows || [];
-    const dimensionSchema = result?.schema?.find(column => column.role === 'dimension');
-    const dimension = dimensionSchema?.name || Object.keys(rows[0] || {})[0];
-    const measure = result?.schema?.find(column => column.role === 'measure')?.name || Object.keys(rows[0] || {}).find(key => key !== dimension);
-    const values = rows.map(row => Number(row[measure])).filter(Number.isFinite);
-    const maximum = Math.max(...values, 0);
-    if (!rows.length || !dimension || !measure || !values.length) return `<p>暂无可绘制的聚合数据 · 结果集 ${escapeHtml(block.dataRef || '—')}</p>`;
-    return `<div class="smart-query-chart" role="img" aria-label="${escapeHtml(block.title || '数据图表')}">${rows.slice(0, 12).map(row => { const value = Number(row[measure]); const width = maximum > 0 ? Math.max(2, value / maximum * 100) : 2; const label = formatPeriod(row[dimension], dimensionSchema, result); return `<div class="smart-query-bar"><span title="${escapeHtml(label)}">${escapeHtml(label)}</span><i style="width:${width.toFixed(2)}%"></i><strong>${escapeHtml(formatCompactNumber(value))}</strong></div>`; }).join('')}</div>`;
+    if (!result?.rows?.length) return `<p>暂无可绘制的聚合数据 · 结果集 ${escapeHtml(block.dataRef || '—')}</p>`;
+    const spec = block.visualization || legacySmartVisualization(block, result);
+    if (!spec) return `<p>当前结果形状不适合绘图，已保留查询明细。</p>`;
+    const allowedTypes = [...new Set([spec.type, ...(spec.decision?.allowedTypes || [])])];
+    const controls = allowedTypes.length > 1 ? `<div class="smart-chart-type-switch" role="group" aria-label="切换图表类型">${allowedTypes.map(type => `<button type="button" class="${type === spec.type ? 'active' : ''}" data-smart-chart-block="${escapeHtml(block.id)}" data-smart-chart-type="${escapeHtml(type)}" title="切换为${escapeHtml(SMART_CHART_TYPE_LABELS[type] || type)}">${escapeHtml(SMART_CHART_TYPE_LABELS[type] || type)}</button>`).join('')}</div>` : '';
+    const decision = spec.decision?.reason ? `<p class="smart-chart-decision">${escapeHtml(spec.decision.reason)}</p>` : '';
+    const warnings = spec.decision?.warnings?.length ? `<p class="smart-chart-warning">${escapeHtml(spec.decision.warnings.join('；'))}</p>` : '';
+    return `${controls}<div class="smart-echart" data-smart-chart-id="${escapeHtml(block.id)}" role="img" aria-label="${escapeHtml(block.title || '分析图表')}"></div>${decision}${warnings}`;
   };
   const renderTable = block => {
     const result = resultMap.get(block.dataRef);
@@ -1206,7 +1385,43 @@ function renderSmartDocument(document, resultSets = [], runtimeStatus = null, qu
   const blockHtml = `${answerHtml}${blocks.filter(block => block !== answerBlock).map(renderBlock).join('')}`;
   const status = runtimeStatus?.message ? `<p class="smart-runtime-note ${runtimeStatus.level === 'warning' ? 'warning' : ''}"><i></i>${escapeHtml(runtimeStatus.message)}</p>` : '';
   const suggestions = (document.followUpActions || []).map(action => `<button type="button" title="${escapeHtml(action.label)}" data-smart-followup="${escapeHtml(action.question)}">${escapeHtml(action.label)}</button>`).join('');
-  return `<article class="smart-message smart-message-assistant"><div class="smart-assistant-avatar">问</div><div class="smart-assistant-response"><div class="smart-query-blocks">${blockHtml}</div>${suggestions ? `<div class="smart-followups">${suggestions}</div>` : ''}${status}</div></article>`;
+  const feedback = feedbackContext?.turnId
+    ? `<div class="smart-answer-feedback" data-smart-feedback-turn="${escapeHtml(feedbackContext.turnId)}" data-smart-feedback-trace="${escapeHtml(feedbackContext.traceId || '')}"><div class="smart-feedback-actions"><span>这次回答是否有帮助？</span><button type="button" data-smart-feedback="correct">有帮助</button><button type="button" data-smart-feedback="wrong_understanding">理解有误</button><button type="button" data-smart-feedback="wrong_metric">口径有误</button></div><form class="smart-feedback-correction" hidden><label for="smart-feedback-correction-${escapeHtml(feedbackContext.turnId)}">请补充纠正信息</label><textarea id="smart-feedback-correction-${escapeHtml(feedbackContext.turnId)}" rows="2" maxlength="1000"></textarea><div><button type="submit" data-smart-feedback-submit>提交反馈</button><button type="button" data-smart-feedback-cancel>取消</button></div></form></div>`
+    : '';
+  return `<article class="smart-message smart-message-assistant"><div class="smart-assistant-avatar">问</div><div class="smart-assistant-response"><div class="smart-query-blocks">${blockHtml}</div>${suggestions ? `<div class="smart-followups">${suggestions}</div>` : ''}${status}${feedback}</div></article>`;
+}
+
+
+async function sendSmartFeedback(container, category, correction = '') {
+  container.querySelectorAll('button, textarea').forEach(item => { item.disabled = true; });
+  try {
+    const response = await fetch(`/api/smart-query/conversations/${encodeURIComponent(state.smartConversationId)}/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ category, correction, turnId: container.dataset.smartFeedbackTurn, traceId: container.dataset.smartFeedbackTrace }),
+    });
+    const payload = await response.json();
+    if (!response.ok) throw new Error(payload.message || '反馈提交失败');
+    container.innerHTML = '<span>感谢反馈，已进入待审核学习队列</span>';
+    container.classList.add('submitted');
+  } catch (error) {
+    container.querySelectorAll('button, textarea').forEach(item => { item.disabled = false; });
+    elements.smartStatus.textContent = error.message;
+  }
+}
+
+function submitSmartFeedback(button) {
+  const container = button.closest('[data-smart-feedback-turn]');
+  if (!container || !state.smartConversationId || button.disabled) return;
+  const category = button.dataset.smartFeedback;
+  if (category === 'correct') return sendSmartFeedback(container, category);
+  const form = container.querySelector('.smart-feedback-correction');
+  const textarea = form?.querySelector('textarea');
+  if (!form || !textarea) return;
+  container.dataset.smartFeedbackCategory = category;
+  form.querySelector('label').textContent = category === 'wrong_metric' ? '请说明正确的指标口径' : '请说明系统理解错在哪里';
+  form.hidden = false;
+  textarea.focus();
 }
 
 function smartWelcomeMarkup() {
@@ -1214,6 +1429,7 @@ function smartWelcomeMarkup() {
 }
 
 function resetSmartConversation() {
+  disposeSmartCharts();
   state.smartConversationId = null;
   state.smartTurns = 0;
   elements.smartTurnCount.textContent = '0 轮';
@@ -1258,13 +1474,19 @@ async function askSmartQuery() {
   elements.smartAsk.title = '取消本轮查询';
   elements.smartAsk.innerHTML = '<span aria-hidden="true">×</span>';
   const startedAt = Date.now();
-  const phases = ['正在理解业务意图', '正在校验指标、维度和时间约束', '正在调用 Wyn 查询数据', '正在校验结果并组织回答'];
-  elements.smartStatus.textContent = phases[0];
+  const waitingLabel = elapsed => elapsed >= 20
+    ? '处理时间较长，可以取消后重试'
+    : elapsed >= 8
+      ? '服务仍在处理，请稍候'
+      : elapsed >= 2
+        ? '正在处理业务问题'
+        : '正在提交问题';
+  elements.smartStatus.textContent = waitingLabel(0);
   elements.smartMessages.querySelector('.smart-chat-welcome')?.remove();
-  elements.smartMessages.insertAdjacentHTML('beforeend', `<article class="smart-message smart-message-user"><div>${escapeHtml(question)}</div></article><article class="smart-message smart-message-assistant smart-message-loading" id="smart-message-loading"><div class="smart-assistant-avatar">问</div><div class="smart-loading-body"><div><span></span><span></span><span></span></div><p data-smart-loading-phase>${phases[0]} · 0 秒</p></div></article>`);
+  elements.smartMessages.insertAdjacentHTML('beforeend', `<article class="smart-message smart-message-user"><div>${escapeHtml(question)}</div></article><article class="smart-message smart-message-assistant smart-message-loading" id="smart-message-loading"><div class="smart-assistant-avatar">问</div><div class="smart-loading-body"><div><span></span><span></span><span></span></div><p data-smart-loading-phase>${waitingLabel(0)} · 0 秒</p></div></article>`);
   const loadingTimer = window.setInterval(() => {
     const elapsed = Math.floor((Date.now() - startedAt) / 1000);
-    const phase = phases[Math.min(phases.length - 1, Math.floor(elapsed / 4))];
+    const phase = waitingLabel(elapsed);
     const label = document.querySelector('[data-smart-loading-phase]');
     if (label) label.textContent = `${phase} · ${elapsed} 秒`;
     elements.smartStatus.textContent = phase;
@@ -1288,7 +1510,8 @@ async function askSmartQuery() {
       elements.smartStatus.textContent = '等待你补充信息';
       updateSmartContext(payload);
     } else {
-      elements.smartMessages.insertAdjacentHTML('beforeend', renderSmartDocument(payload.response?.document, payload.response?.resultSets || [], payload.response?.runtimeStatus, payload.response?.queryRequests || []));
+      elements.smartMessages.insertAdjacentHTML('beforeend', renderSmartDocument(payload.response?.document, payload.response?.resultSets || [], payload.response?.runtimeStatus, payload.response?.queryRequests || [], payload.response?.trace || null));
+      hydrateSmartCharts(elements.smartMessages.lastElementChild, payload.response?.document, payload.response?.resultSets || []);
       elements.smartStatus.textContent = '已完成，可以继续追问';
       updateSmartContext(payload);
     }
@@ -1447,12 +1670,34 @@ elements.smartQuestion.addEventListener('keydown', event => {
   if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); askSmartQuery(); }
 });
 elements.smartMessages.addEventListener('click', event => {
+  const feedbackCancel = event.target.closest('[data-smart-feedback-cancel]');
+  if (feedbackCancel) {
+    const container = feedbackCancel.closest('[data-smart-feedback-turn]');
+    const form = feedbackCancel.closest('.smart-feedback-correction');
+    if (form) form.hidden = true;
+    if (container) delete container.dataset.smartFeedbackCategory;
+    return;
+  }
+  const feedback = event.target.closest('[data-smart-feedback]');
+  if (feedback) {
+    submitSmartFeedback(feedback);
+    return;
+  }
   const prompt = event.target.closest('[data-smart-prompt]');
   const followup = event.target.closest('[data-smart-followup]');
   const question = prompt?.dataset.smartPrompt || followup?.dataset.smartFollowup;
   if (!question) return;
   elements.smartQuestion.value = question;
   askSmartQuery();
+});
+elements.smartMessages.addEventListener('submit', event => {
+  const form = event.target.closest('.smart-feedback-correction');
+  if (!form) return;
+  event.preventDefault();
+  const container = form.closest('[data-smart-feedback-turn]');
+  const category = container?.dataset.smartFeedbackCategory;
+  if (!container || !category) return;
+  sendSmartFeedback(container, category, form.querySelector('textarea')?.value.trim() || '');
 });
 elements.reportUpload.addEventListener('click', uploadReportTemplate);
 elements.reportTemplateSelect.addEventListener('change', () => selectReportTemplate(elements.reportTemplateSelect.value).catch(error => { elements.reportStatus.textContent = error.message; }));
@@ -1565,7 +1810,10 @@ window.addEventListener('message', event => {
   elements.messages.scrollBy({ top: deltaY, left: 0, behavior: 'auto' });
 });
 
-window.addEventListener('resize', () => state.agentCharts.forEach(chart => chart.resize()));
+window.addEventListener('resize', () => {
+  state.agentCharts.forEach(chart => chart.resize());
+  state.smartCharts.forEach(entry => entry.chart.resize());
+});
 
 initializeSidebar();
 renderAgentFilters();

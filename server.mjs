@@ -17,6 +17,8 @@ import { parseDocxTemplate } from './lib/template/docx-parser.mjs';
 import { composeDocxTemplate } from './lib/template/docx-composer.mjs';
 import { loadSkillsFromDirectory } from './lib/skills/skill-registry.mjs';
 import { SkillGovernanceService } from './lib/skills/skill-governance.mjs';
+import { OperationalEventLog, createTraceId } from './lib/observability/operational-event-log.mjs';
+import { FeedbackLearningService } from './lib/learning/feedback-learning.mjs';
 import { RequestAuditLog, SlidingWindowRateLimiter, requestIdentity } from './lib/security/request-governance.mjs';
 import { TemplatePackageRepository } from './lib/template/template-model.mjs';
 import { proposeCanonicalQueries, proposeFormula } from './lib/reporting/binding-resolver.mjs';
@@ -81,6 +83,7 @@ const config = {
   llmApiKey: process.env.LLM_API_KEY || '',
   llmModel: process.env.LLM_MODEL || '',
   llmTimeoutMs: Math.max(10_000, Number(process.env.LLM_TIMEOUT_MS) || 180_000),
+  intentLlmTimeoutMs: Math.max(1_000, Number(process.env.INTENT_LLM_TIMEOUT_MS) || 10_000),
   llmEnableThinking: configuredBoolean(process.env.LLM_ENABLE_THINKING, /dashscope\.aliyuncs\.com/i.test(process.env.LLM_BASE_URL || '') ? false : null),
   skillAdminToken: process.env.WYN_AI_SKILL_ADMIN_TOKEN || '',
 };
@@ -92,6 +95,13 @@ const explorationLlm = createExplorationLlm({
   apiKey: config.llmApiKey,
   model: config.llmModel,
   timeoutMs: config.llmTimeoutMs,
+  enableThinking: config.llmEnableThinking,
+});
+const intentLlm = createExplorationLlm({
+  baseUrl: config.llmBaseUrl,
+  apiKey: config.llmApiKey,
+  model: config.llmModel,
+  timeoutMs: config.intentLlmTimeoutMs,
   enableThinking: config.llmEnableThinking,
 });
 config.viewProxyPort = validPort(
@@ -115,6 +125,15 @@ const dataDir = resolveRuntimePath(process.env.WYN_AI_DATA_DIR, join(rootDir, 'd
 const runStore = new JsonRunStore(join(dataDir, 'analysis-runs'), { maxItems: 100 });
 for (const run of (await runStore.init()).reverse()) agentRuns.set(run.id, run);
 const conversationStore = new JsonRunStore(join(dataDir, 'smart-query-conversations'), { maxItems: 100 });
+const operationalEventLog = new OperationalEventLog({ persistence: new JsonRunStore(join(dataDir, 'operation-events'), { maxItems: 10_000 }), maxItems: 10_000 });
+await operationalEventLog.init();
+const feedbackLearning = new FeedbackLearningService({
+  feedbackPersistence: new JsonRunStore(join(dataDir, 'user-feedback'), { maxItems: 5000 }),
+  candidatePersistence: new JsonRunStore(join(dataDir, 'learning-candidates'), { maxItems: 5000 }),
+  maxItems: 5000,
+});
+await feedbackLearning.init();
+
 const skillRegistry = await loadSkillsFromDirectory(join(rootDir, 'skills'));
 const skillGovernance = new SkillGovernanceService({
   registry: skillRegistry,
@@ -134,8 +153,9 @@ const multiDatasetQueries = new MultiDatasetQueryService({
 });
 const conversations = new SmartQueryConversationStore({
   loadMetadata: datasetId => loadDatasetMetadata(datasetId),
+  eventLog: operationalEventLog,
   executeQuery: input => multiDatasetQueries.execute(input),
-  intentLlm: explorationLlm,
+  intentLlm,
   skillRegistry,
   skillGovernance,
   persistence: conversationStore,
@@ -423,6 +443,7 @@ async function handleHealth(response) {
       llmModel: config.llmModel || 'Atlas 内置洞察引擎',
       llmProvider: config.llmBaseUrl && config.llmModel ? 'project-env' : 'local-fallback',
       llmEndpointHost,
+      intentLlmTimeoutMs: config.intentLlmTimeoutMs,
       status: upstream.status,
       message: upstream.ok ? 'Wyn 服务连接正常' : `Wyn 返回 ${upstream.status}`,
     });
@@ -990,8 +1011,34 @@ async function handleConversationMessage(request, response, conversationId) {
     requestAudit.record({ method: request.method, path: request.url, status: 403, durationMs: Date.now() - startedAt, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId });
     return sendJson(response, 403, { message: '无权访问该智能问数会话' });
   }
-  const result = await conversations.ask(conversationId, body);
-  requestAudit.record({ method: request.method, path: request.url, status: 200, durationMs: Date.now() - startedAt, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId });
+  const controller = new AbortController();
+  const traceId = createTraceId();
+  operationalEventLog.record({ traceId, conversationId, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, event: 'request.accepted', phase: 'transport', details: { method: request.method, path: request.url } });
+
+  const abort = () => {
+    if (!controller.signal.aborted) controller.abort(new Error('客户端已取消智能问数请求'));
+  };
+  request.once('aborted', abort);
+  response.once('close', abort);
+  let result;
+  try {
+    result = await conversations.ask(conversationId, { ...body, signal: controller.signal, traceId });
+  } catch (error) {
+    if (controller.signal.aborted || error?.code === 'REQUEST_ABORTED') {
+      operationalEventLog.record({ traceId, conversationId, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, event: 'request.cancelled', phase: 'transport', outcome: 'cancelled', durationMs: Date.now() - startedAt });
+      requestAudit.record({ method: request.method, path: request.url, status: 499, durationMs: Date.now() - startedAt, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, requestId: traceId, plannerMode: 'cancelled', planningDurationMs: Date.now() - startedAt });
+      if (!response.destroyed && !response.writableEnded) sendJson(response, 499, { message: '本轮智能问数已取消' });
+      return;
+    }
+    throw error;
+  } finally {
+    request.removeListener('aborted', abort);
+    response.removeListener('close', abort);
+  }
+  const planning = result.response?.planningDiagnostics || {};
+  result.response = { ...(result.response || {}), trace: { traceId, ...(result.response?.trace || {}) } };
+  operationalEventLog.record({ traceId, conversationId, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, event: 'request.completed', phase: 'transport', outcome: result.response.status || 'ok', durationMs: Date.now() - startedAt, details: { plannerMode: planning.route, risk: planning.riskAssessment } });
+  requestAudit.record({ method: request.method, path: request.url, status: 200, durationMs: Date.now() - startedAt, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, requestId: traceId, plannerMode: planning.route, planningDurationMs: planning.planningDurationMs, llmAttempted: planning.llmAttempted, llmDurationMs: planning.llmDurationMs });
   sendJson(response, 200, { ...result, conversation: publicConversation(result.conversation) });
 }
 
@@ -1179,6 +1226,52 @@ function handleRequestAudit(request, response) {
   const limit = new URL(request.url, 'http://localhost').searchParams.get('limit') || 100;
   sendJson(response, 200, { schema: 'wynai.request-audit/v1', items: requestAudit.list(limit), total: requestAudit.items.length });
 }
+
+async function handleConversationFeedback(request, response, conversationId) {
+  const identity = guardSmartQuery(request, response);
+  if (!identity) return;
+  if (!conversations.canAccess(conversationId, identity)) return sendJson(response, 403, { message: '无权反馈该智能问数会话' });
+  const body = await readJson(request);
+  const conversation = conversations.get(conversationId);
+  const turnId = String(body.turnId || '').slice(0, 120) || null;
+  const messages = conversation.messages || [];
+  const assistant = [...messages].reverse().find(message => message.role === 'assistant' && (!turnId || message.turnId === turnId)) || null;
+  const user = [...messages].reverse().find(message => message.role === 'user' && (!turnId || message.turnId === turnId)) || null;
+  const result = await feedbackLearning.submit(body, {
+    conversationId, turnId: turnId || assistant?.turnId, traceId: body.traceId || assistant?.traceId, datasetId: conversation.dataset.id,
+    organizationId: identity.organizationId, userId: identity.userId, question: user?.content || '', answer: assistant?.content || '',
+    semanticSnapshot: { intent: conversation.activeBusinessIntent, queryRequest: conversation.activeQueryRequest, skillRefs: conversation.loadedSkillRefs || [] },
+  });
+  operationalEventLog.record({ traceId: result.feedback.traceId || createTraceId(), conversationId, turnId: result.feedback.turnId, datasetId: conversation.dataset.id, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, event: 'feedback.received', phase: 'learning', outcome: result.feedback.category, details: { feedbackId: result.feedback.id, candidateId: result.candidate.id, comment: result.feedback.comment, correction: result.feedback.correction } });
+  sendJson(response, 201, { schema: 'wynai.feedback-submission/v1', feedback: { id: result.feedback.id, category: result.feedback.category }, candidate: { id: result.candidate.id, kind: result.candidate.kind, status: result.candidate.status } });
+}
+
+function handleFeedbackList(request, response) {
+  if (!requireSkillAdmin(request, response)) return;
+  const limit = new URL(request.url, 'http://localhost').searchParams.get('limit') || 100;
+  sendJson(response, 200, { schema: 'wynai.user-feedback-list/v1', items: feedbackLearning.listFeedback({ limit }), total: feedbackLearning.feedback.length });
+}
+
+function handleLearningCandidateList(request, response) {
+  if (!requireSkillAdmin(request, response)) return;
+  const params = new URL(request.url, 'http://localhost').searchParams;
+  sendJson(response, 200, { schema: 'wynai.learning-candidate-list/v1', items: feedbackLearning.listCandidates({ limit: params.get('limit') || 100, status: params.get('status') || null }), total: feedbackLearning.candidates.length });
+}
+
+async function handleLearningCandidateReview(request, response, id, action) {
+  if (!requireSkillAdmin(request, response)) return;
+  const body = await readJson(request);
+  const reviewed = await feedbackLearning.review(id, action === 'approve' ? 'approved_for_authoring' : 'rejected', { actor: skillActor(request), reason: body.reason || '' });
+  sendJson(response, 200, reviewed);
+}
+
+function handleOperationEvents(request, response, traceId = null) {
+  if (!requireSkillAdmin(request, response)) return;
+  const params = new URL(request.url, 'http://localhost').searchParams;
+  const items = traceId ? operationalEventLog.trace(traceId) : operationalEventLog.list({ limit: params.get('limit') || 100, conversationId: params.get('conversationId') || null, event: params.get('event') || null });
+  sendJson(response, 200, { schema: 'wynai.operation-event-list/v1', traceId, items, total: items.length });
+}
+
 
 function handleAgentReportExport(runId, format, response) {
   const run = agentRuns.get(runId);
@@ -1480,6 +1573,13 @@ const server = http.createServer(async (request, response) => {
     if (request.method === 'GET' && pathname === '/api/smart-query/audit') {
       return handleRequestAudit(request, response);
     }
+    if (request.method === 'GET' && pathname === '/api/smart-query/feedback') return handleFeedbackList(request, response);
+    if (request.method === 'GET' && pathname === '/api/smart-query/learning-candidates') return handleLearningCandidateList(request, response);
+    if (request.method === 'GET' && pathname === '/api/smart-query/operation-events') return handleOperationEvents(request, response);
+    const operationTraceRoute = pathname.match(/^\/api\/smart-query\/operation-events\/(trace-[a-zA-Z0-9-]{8,100})$/);
+    if (request.method === 'GET' && operationTraceRoute) return handleOperationEvents(request, response, operationTraceRoute[1]);
+    const learningReviewRoute = pathname.match(/^\/api\/smart-query\/learning-candidates\/(learning-candidate-[a-zA-Z0-9-]{8,100})\/(approve|reject)$/);
+    if (request.method === 'POST' && learningReviewRoute) return await handleLearningCandidateReview(request, response, learningReviewRoute[1], learningReviewRoute[2]);
     const skillVersionsRoute = pathname.match(/^\/api\/smart-query\/skills\/([a-zA-Z0-9-]{2,80})\/versions$/);
     if (request.method === 'GET' && skillVersionsRoute) return handleSkillVersions(request, response, skillVersionsRoute[1]);
     const skillLifecycleRoute = pathname.match(/^\/api\/smart-query\/skills\/([a-zA-Z0-9-]{2,80})\/versions\/([^/]+)\/(approve|retire|rollback)$/);
@@ -1514,6 +1614,8 @@ const server = http.createServer(async (request, response) => {
     const templateReportRoute = pathname.match(/^\/api\/report-runs\/([a-zA-Z0-9-]{8,100})$/);
     if (request.method === 'GET' && templateReportRoute) return handleReportRunGet(templateReportRoute[1], response);
     const conversationMessageRoute = pathname.match(/^\/api\/smart-query\/conversations\/([a-zA-Z0-9-]{8,100})\/messages$/);
+    const conversationFeedbackRoute = pathname.match(/^\/api\/smart-query\/conversations\/([a-zA-Z0-9-]{8,100})\/feedback$/);
+    if (request.method === 'POST' && conversationFeedbackRoute) return await handleConversationFeedback(request, response, conversationFeedbackRoute[1]);
     if (request.method === 'POST' && conversationMessageRoute) {
       return await handleConversationMessage(request, response, conversationMessageRoute[1]);
     }

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wynai.local/schemas/wynai.user-feedback.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema",
+    "id",
+    "conversationId",
+    "datasetId",
+    "category",
+    "createdAt"
+  ],
+  "properties": {
+    "schema": {
+      "const": "wynai.user-feedback/v1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^feedback-"
+    },
+    "category": {
+      "enum": [
+        "correct",
+        "wrong_data",
+        "wrong_understanding",
+        "wrong_metric",
+        "wrong_display",
+        "other"
+      ]
+    }
+  },
+  "additionalProperties": true
+}
+

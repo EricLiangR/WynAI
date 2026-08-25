@@ -1,7 +1,7 @@
 {
   "schema": "wynai.skill/v1",
   "id": "sales-baseline",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "name": "销售基础分析",
   "scope": "dataset",
   "datasetIds": [
@@ -17,26 +17,53 @@
     "销售经理",
     "销售员",
     "业务员",
-    "销售代表"
+    "销售代表",
+    "订单数",
+    "订单数量",
+    "大区"
   ],
   "metrics": [
     {
       "name": "销售额",
       "field": "订单金额",
       "aggregation": "sum",
-      "definition": "订单金额求和"
+      "definition": "订单金额求和",
+      "id": "revenue",
+      "concept": "revenue",
+      "synonyms": [
+        "销售收入",
+        "营收",
+        "收入"
+      ],
+      "unitFamily": "currency"
     },
     {
       "name": "利润",
       "field": "订单利润",
       "aggregation": "sum",
-      "definition": "订单利润求和"
+      "definition": "订单利润求和",
+      "id": "profit",
+      "concept": "profit",
+      "synonyms": [
+        "毛利",
+        "盈利"
+      ],
+      "unitFamily": "currency"
     },
     {
       "name": "订单数",
       "field": "订单编号",
       "aggregation": "distinctCount",
-      "definition": "订单编号去重计数"
+      "definition": "订单编号去重计数",
+      "id": "orderCount",
+      "concept": "orderCount",
+      "synonyms": [
+        "订单数量",
+        "订单量",
+        "订单笔数",
+        "下单数"
+      ],
+      "unitFamily": "count"
     }
   ],
   "workflows": [
@@ -65,6 +92,18 @@
         "销售员",
         "业务员",
         "销售代表"
+      ]
+    },
+    {
+      "id": "salesRegion",
+      "concept": "region",
+      "name": "销售大区",
+      "field": "客户地区",
+      "synonyms": [
+        "大区",
+        "销售大区",
+        "区域",
+        "地区"
       ]
     }
   ]

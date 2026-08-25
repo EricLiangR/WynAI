@@ -63,8 +63,11 @@ test('请求限流和审计记录具备主体边界', () => {
   assert.equal(limiter.check('org:u1').allowed, false);
   assert.equal(limiter.check('org:u2').allowed, true);
   const audit = new RequestAuditLog();
-  const event = audit.record({ method: 'POST', path: '/api/smart-query/conversations', status: 429, actor: 'u1', organizationId: 'org', userId: 'u1', rateLimited: true });
+  const event = audit.record({ method: 'POST', path: '/api/smart-query/conversations', status: 429, actor: 'u1', organizationId: 'org', userId: 'u1', rateLimited: true, plannerMode: 'deterministic-fast-path', planningDurationMs: 12, llmAttempted: false, llmDurationMs: 0 });
   assert.equal(event.rateLimited, true);
+  assert.equal(event.plannerMode, 'deterministic-fast-path');
+  assert.equal(event.planningDurationMs, 12);
+  assert.equal(event.llmAttempted, false);
   assert.equal(audit.list()[0].organizationId, 'org');
 });
 

@@ -37,7 +37,8 @@
               "derive-period-growth",
               "partition-rank",
               "project-periods",
-              "validate"
+              "validate",
+              "drop-internal-dimensions"
             ]
           }
         }

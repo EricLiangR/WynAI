@@ -1,0 +1,52 @@
+{
+  "schema": "wynai.evaluation-pack/v1",
+  "id": "laboratory-core",
+  "version": "1.0.0",
+  "domain": "实验室运营",
+  "datasetId": "ebbbbf49-60dd-4761-9722-fa6543eac4a9",
+  "owner": "实验室数据负责人",
+  "status": "draft",
+  "cases": [
+    {
+      "id": "lab-001",
+      "question": "各科室平均总TAT是多少",
+      "risk": "low",
+      "expected": {
+        "status": "supported",
+        "metrics": [
+          "总TAT"
+        ],
+        "dimensions": [
+          "科室名称"
+        ]
+      },
+      "variants": [
+        "按送检科室比较平均周转时间"
+      ],
+      "tags": [
+        "tat",
+        "department"
+      ]
+    },
+    {
+      "id": "lab-002",
+      "question": "哪些科室TAT异常，原因是什么",
+      "risk": "high",
+      "expected": {
+        "status": "needs_clarification",
+        "metrics": [
+          "总TAT"
+        ],
+        "dimensions": [
+          "科室名称"
+        ],
+        "clarification": true
+      },
+      "tags": [
+        "diagnosis",
+        "high-risk"
+      ]
+    }
+  ]
+}
+

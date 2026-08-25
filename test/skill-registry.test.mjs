@@ -18,7 +18,7 @@ test('Skill 按作用域和触发词解析，并检测指标冲突', () => {
 test('Skill Registry 可从本地 skill.json 加载并按数据集触发', async () => {
   const registry = await loadSkillsFromDirectory(fileURLToPath(new URL('../skills', import.meta.url)));
   const resolved = registry.resolveForQuestion({ datasetId: '2b445034-38fe-4350-9cab-b7684c28b5f8', question: '查看销售额趋势' });
-  assert.ok(resolved.refs.includes('sales-baseline@1.0.0'));
+  assert.ok(resolved.refs.includes('sales-baseline@1.1.0'));
   assert.equal(resolved.conflicts.length, 0);
 });
 

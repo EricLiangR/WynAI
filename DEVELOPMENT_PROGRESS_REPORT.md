@@ -2,7 +2,7 @@
 
 > 本文件随每个阶段、测试批次和 Bug 修复持续更新。
 
-> 最近一次回归与用户验收批次：2026-08-24（Asia/Shanghai）。在 2026-08-23 平台语义 50 组基础上，完成高级语义与真正澄清状态增强：自动化测试 128/128；真实 Wyn 高级 UAT 50/50（101 轮）；桌面 50/50、移动 10/10；60 张截图/API 交叉核验 60/60；控制台错误、页面/消息横向溢出和输入区遮挡均为 0。B-010 至 B-028 在各自范围内关闭；外部依赖项继续单独列示。
+> 最近一次回归与用户验收批次：2026-08-25（Asia/Shanghai）。完成独立问数系统性语义修复、LLM 语义非扩张、图表说明一致性和运行提示分类。全量自动化 164/164；真实 Wyn API UAT 7/7；浏览器 7 张 1280×720 截图通过；最终 trace 9 个事件完整回放。B-039 至 B-045、E-004、E-005 已关闭；受限账号、非索引数据集和跨行业口径审批仍按外部依赖推进。
 
 ## 总体状态
 
@@ -12,6 +12,9 @@
 | Phase 1 | 统一版本化 LLM 交互协议和 InsightDocument | 已完成 | Request/Response/Document v1 规范化器、危险字段拒绝和契约测试已交付 |
 | Phase 2 | 独立查询内核、范围标识、审计和测试 | 已完成（首期） | Canonical/Router/Adapter 已执行 Wyn 查询；新增 limitReached/truncationConfidence |
 | Phase 3 | 单数据集多轮问数和多元素页面 | 高级语义与澄清范围已完成 | QuestionSemanticFrame v2、BusinessQueryIntent v2、QueryProgram v1、IntentPatch v1、Pending/Committed 状态、同比/环比、分区 TopN、完整年度和 Skill 实体映射已接入；高级 50 组/101 轮及桌面移动截图 UAT 通过 |
+| Phase 3-V | 独立问数可视化增强 | 已完成 | VisualizationSpec v1、7 种图表、分类/系列/数值推断、自然语言控制、多轮修改、即时切换和阈值降级已交付；真实页面 UAT 11/11 |
+| Phase 3-P | 意图规划性能与可靠性 | 已完成 | 完整意图零 LLM 快路径、意图专用超时、熔断、取消传播、规划审计和真实等待状态已交付；180351ms 用例降至 379ms |
+| Phase 3-R | 风险路由、反馈学习与跨行业治理 | 已完成 | 风险评估 v1、分级 LLM 路由、双重校验、10 阶段 trace 回放、受控学习候选、销售/实验室/零售 Skill 和评测包已交付；实验室/零售黄金答案审批保留为业务依赖 |
 | Phase 4 | 结构化 Skills 第一阶段 | 已完成（基础版） | 本地 Skill 加载、作用域/优先级、冲突澄清、Planner/Critic 注入、确定性指标口径和治理 API 已实现；完整可视化管理界面仍待后续 |
 | Phase 5 | 生产化增强和高级能力 | 部分完成 | 已交付受控多数据集查询/对齐合并、缓存和预算 POC、Skill 版本治理、请求限流/审计，并完成桌面/移动端 UI 回归；身份代理、分布式存储、向量库和任意 Join 仍按依赖推进 |
 | Template Report MVP | 通用 DOCX 模板上传、业务标注、绑定、查询、公式、动态表格/图表、AI 内容协作和 Word 导出 | 已完成 MVP | 真实能耗模板端到端 UAT 通过；网页动态块编辑已接入；ONLYOFFICE/Collabora、复杂文本框/SmartArt 和任意跨数据集 Join 明确留到后续 |
@@ -62,6 +65,14 @@
 | 2026-08-24 | 真正澄清状态机 | Pending/Committed 双上下文、awaiting_clarification、受控 IntentPatch v1、取消待澄清；Skill 将销售经理映射到员工姓名 | 10 组澄清场景，均先澄清后执行；核对原时间/累计/排名未丢失 | 通过：10/10 | B-025、B-026 已关闭 |
 | 2026-08-24 | 复合多轮继承 | 筛选追问继承全部复合/派生指标；指标切换重绑派生指标；年/月/季粒度与范围独立继承 | 50 组复杂客户场景，共 101 轮真实 Wyn 查询 | 通过：50/50；首轮问题全部修复后整批重跑 | B-027、B-028 已关闭 |
 | 2026-08-24 | 高级桌面/移动 UAT | 从独立问数入口执行同比、环比、组内 TopN、累计、澄清、复合指标与三轮追问；逐场景截图 | 桌面 1440x1000 50/50；移动 390x844 10/10；60 张证据交叉核验 | 通过：控制台/横向溢出/输入遮挡均为 0；60 个唯一哈希 | 无开放缺陷 |
+| 2026-08-25 | Phase 3-V 可视化协议与决策 | 新增 `wynai.visualization-spec/v1`、JSON Schema、InsightDocument chart 绑定和 `activeVisualization` 会话状态；放开单维单指标限制；支持分类/系列/数值编码和 7 种图表 | `test/visualization-spec.test.mjs`；全量 `npm test`；`npm run check` | 通过：142/142，语法检查通过；协议拒绝任意图表类型和不受控 Payload | B-029、B-030、B-032、B-033 已关闭 |
+| 2026-08-25 | Phase 3-V ECharts 与真实页面 UAT | ECharts 渲染折线、柱形、条形、饼/环、组合、多系列和堆叠；允许类型即时切换；高基数 TopN/表格降级；移动响应式 | 指定销售数据集、管理员 Token、`http://127.0.0.1:8787`；真实页面 11 例、11 张截图及 SHA-256 清单；390x844 Canvas/溢出检查；控制台检查 | 通过：UAT 11/11，Canvas 非空；移动 root/body scrollWidth=390；控制台 error/warn 0 | B-031 已关闭；无开放缺陷 |
+| 2026-08-25 | Phase 3-P 根因与性能修复 | 移除“复杂度 >= 3 强制调用 LLM”；增加完整意图覆盖校验快路径、INTENT_LLM_TIMEOUT_MS=10000、连续 2 次失败/60 秒熔断、取消信号传播和规划诊断审计 | 专项测试 3 类；npm test；npm run check；git diff --check | 通过：145/145；静态检查和空白检查通过 | B-034、B-035、B-036 已关闭 |
+| 2026-08-25 | Phase 3-P 真实 Wyn 与浏览器 UAT | 指定销售数据集执行“过去五年，每年的销售收入和同比增长率”，再追问“只看华东”；核对年份、同比、组合图、详情、表格、上下文和多轮继承 | 服务 8787；真实 API；浏览器 1280x720；3 张截图；请求审计 | 通过：首轮 API 379ms/审计 353ms/规划 7ms/LLM 0 次；浏览器首轮 318ms；追问 270ms/规划 1ms；结果 5 行且语义正确 | 无新缺陷 |
+| 2026-08-25 | Phase 3-R 风险路由与学习闭环 | 新增风险评估、低/中/高分级路由、确定性/LLM 双校验、运行事件日志、反馈候选、审核隔离、三领域 Skill 和版本化评测包 | npm test；npm run check；npm run check:risk-learning | 通过：153/153；静态和专项检查通过；仅 approved Skill 进入生产 | B-038 已关闭 |
+| 2026-08-25 | Phase 3-R 真实 Wyn 与日志 UAT | 低风险收入、中风险五年同比、trace 回放、口径纠正、候选审核和生产 Skill 隔离 | npm run uat:risk-learning；真实服务 8787；指定销售数据集 | 通过：6/6；五年数值正确；中风险 hybrid-llm-validated；9 个执行事件加反馈事件可回放 | E-002、E-003 已关闭 |
+| 2026-08-25 | Phase 3-R 浏览器截图 UAT | 从独立问数入口完成低风险问答、正向反馈、中风险同比组合图、负向内联纠错和提交；截图与 trace 交叉分析 | 1280×720；7 张截图；3 条 trace；Canvas、溢出、控制台检查 | 通过：Canvas 515×300；body/root 1280=1280；干净页面 error/warn 0；每条 trace 10 个事件 | B-037 已关闭 |
+
 ## Bug 台账
 
 | 编号 | 发现阶段 | 严重度 | 问题 | 影响 | 修复 | 回归状态 |
@@ -96,6 +107,18 @@
 | B-027 | Phase 3 多轮继承 | P1 | 只看华东等筛选追问可能丢复合或派生指标 | 后续回答偏离首轮问题 | 修改式追问继承全部未显式替换槽位 | 已关闭：复合/派生追问真实回归通过 |
 | B-028 | Phase 3 派生重绑 | P1 | 改成利润/再看同比后派生指标可能仍绑定旧指标 | 标题与计算来源不一致 | 派生指标按当前显式指标重绑 source/alias | 已关闭：AMT-011 至 017、047 至 050 |
 
+| B-029 | Phase 3-V 组合图 | P1 | ResultSet 的同比列角色为 `derived-measure`，旧识别只接受精确 `measure` | 销售额+同比错误退化为单折线图 | 指标发现规则接受包含 `measure` 的受控角色，并增加不依赖 request.measures 的派生列回归 | 已关闭：组合图真实 UAT 和专项测试通过 |
+| B-030 | Phase 3-V 自动选图 | P1 | Canonical 默认排序被当成用户排名意图 | 普通地区比较错误选择横向条形图 | 排名图只由原问题的排名、Top、前 N 或极值语言触发 | 已关闭：UAT-V09 自动选择柱形图 |
+| B-031 | Phase 3-V 条形图 | P2 | 横向条形图右侧数值标签空间不足 | 排名金额标签被裁剪，影响读取 | 增加 ECharts grid 右侧边距 | 已关闭：UAT-V04 三个数值完整可见 |
+| B-032 | Phase 3-V 多轮 | P2 | 上一轮图表类型存在无条件继承风险 | 新问题可能沿用不适合的旧图表 | 每轮根据当前问题、合并后的查询语义和当前 ResultSet 重新决策；仅查询语义受控继承 | 已关闭：折线到堆叠多轮 UAT 通过 |
+| B-033 | Phase 3-V 排名意图 | P2 | 中文数字“前三名”未被独立排名正则覆盖 | 不含“排名”字样的中文 TopN 可能选择柱形图 | 排名识别补充一至百中文数词形式并固化自动回归 | 已关闭：142/142 |
+| B-034 | Phase 3-P 规划路由 | P1 | 确定性意图已经完整，仍因 complexity >= 3 强制调用意图 LLM | 正确问题无收益等待 180 秒 | 以 supported + 约束覆盖通过 + 无必需未决槽位作为 deterministic-fast-path 资格 | 已关闭：专项零调用测试及真实 379ms UAT 通过 |
+| B-035 | Phase 3-P 超时可靠性 | P1 | 意图规划与报告生成共用 180 秒超时，且连续失败没有熔断 | 模型异常会持续阻塞每个复杂请求 | 独立 INTENT_LLM_TIMEOUT_MS=10000；连续 2 次失败后熔断 60 秒 | 已关闭：超时、熔断和第三次跳过 LLM 自动化通过 |
+| B-036 | Phase 3-P 取消与状态 | P2 | 浏览器取消未中断服务端意图 LLM；前端按时间伪造具体执行阶段 | 后台继续消耗资源，用户被误导当前进度 | HTTP 关闭传播 AbortSignal，取消审计 499；等待文案改为通用可证明状态 | 已关闭：REQUEST_ABORTED 专项和真实页面文案回归通过；Wyn 查询协作式取消仍取决于上游能力 |
+| B-037 | Phase 3-R 反馈 UX | P1 | 负向反馈调用 window.prompt，应用内浏览器不支持 | 用户无法提交理解/口径纠正，控制台报错，学习闭环中断 | 改为回答区内联 textarea、提交/取消；增加禁止 window.prompt 的契约测试 | 已关闭：实际提交成功；新页面控制台 error/warn 0 |
+| B-038 | Phase 3-R 风险提示 | P2 | deterministic-risk-fallback 被显示成普通受控解析成功 | 用户无法识别中风险 LLM 校验发生降级 | runtimeStatus 改为 warning 并说明采用已验证备用规划 | 已关闭：153/153 与静态检查通过 |
+| E-002 | Phase 3-R UAT 环境 | P2 | 首次专项 UAT 未配置 UAT_ADMIN_TOKEN | 日志回放和候选审核被权限边界正确拒绝 | 使用 X-Wyn-Skill-Admin-Token 与仅限本地 UAT 的临时管理员令牌重跑 | 已关闭：6/6 通过 |
+| E-003 | Phase 3-R UAT 证据 | P3 | 沙箱拒绝在 Windows 重解析工作区覆盖 latest.json | 首次失败批次无法写入最终证据文件 | 使用允许写入验收目录的执行权限生成产物 | 已关闭：latest.json 和 7 张 PNG 已归档 |
 ## 模板报告 MVP 交付明细
 
 ### 已实现
@@ -150,6 +173,8 @@
 | UAT-3-11 | 同比/环比基期扩展、分区 TopN、完整年度和复合多轮 | 指定数据集 revision 7；管理员身份；服务 8787 | 通过：高级真实 Wyn 50/50，共 101 轮；自动化专项 7/7 |
 | UAT-3-12 | Pending/Committed 澄清与受控 IntentPatch | 10 组自然语言补充维度场景 | 通过：10/10；补充后原时间、累计、排名和指标保留 |
 | UAT-3-13 | 高级桌面/移动截图验收 | 1440x1000 与 390x844；独立问数入口 | 通过：桌面 50/50、移动 10/10、60 张截图/API 交叉核验 60/60 |
+| UAT-3-14 | 完整意图快路径、超时熔断、取消传播和真实等待状态 | 指定数据集 revision 7；服务 8787；浏览器 1280x720 | 通过：原 180351ms 用例 API 379ms、规划 7ms、LLM 0 次；华东追问 270ms；3 张截图通过 |
+| UAT-3-15 | 风险分级、日志回放、反馈学习、跨行业 Skill/评测和浏览器纠错闭环 | 指定销售数据集；服务 8787；浏览器 1280×720；本地 UAT 管理令牌 | 通过：API 6/6、自动化 153/153、7 张截图；三条 trace 各 10 个事件；反馈候选不自动发布；控制台 0 错误 |
 | UAT-LLM-01 | 固定文本验证 DashScope 账号、地址和模型连通 | `.env.local` 有效；允许外部网络访问 | 通过：HTTP 200，`1/1`，模型 `deepseek-v4-flash-0731` |
 | UAT-LLM-02 | 严格 Planner/Critic/报告使用真实数据语义和聚合证据，任何回退均判失败 | 已取得指定外发授权 | 通过：`14/14`；9 个持久化运行全部完成，无确定性回退或敏感凭据泄漏 |
 
@@ -196,6 +221,15 @@
 - 高级 50 组真实 API：test/uat-artifacts/advanced-multiturn-50/2026-08-24/api-results.json（50/50，101 轮）
 - 高级桌面/移动浏览器结果：test/uat-artifacts/advanced-multiturn-50/2026-08-24/browser-evidence/
 - 高级 60 张截图交叉核验：test/uat-artifacts/advanced-multiturn-50/2026-08-24/browser-evidence-verification.json（60/60）
+- 意图规划性能需求与设计：SMART_QUERY_INTENT_LATENCY_REQUIREMENTS_AND_DESIGN.md
+- 意图规划性能 UAT：test/uat-artifacts/intent-latency-2026-08-25/latest.json
+- UAT-LAT-001 回答与组合图：test/uat-artifacts/intent-latency-2026-08-25/UAT-LAT-001-five-year-revenue-yoy-top.png
+- UAT-LAT-001 明细：test/uat-artifacts/intent-latency-2026-08-25/UAT-LAT-001-five-year-revenue-yoy-detail.png
+- UAT-LAT-002 多轮华东筛选：test/uat-artifacts/intent-latency-2026-08-25/UAT-LAT-002-followup-east-region.png
+- 风险路由、学习闭环需求设计：SMART_QUERY_RISK_ROUTING_LEARNING_REQUIREMENTS_AND_DESIGN.md
+- 风险路由、学习闭环 UAT 报告：SMART_QUERY_RISK_ROUTING_LEARNING_UAT_REPORT_2026-08-25.md
+- 风险学习真实 API 证据：test/uat-artifacts/risk-learning-2026-08-25/latest.json（6/6）
+- 风险学习浏览器证据：test/uat-artifacts/risk-learning-2026-08-25/risk-learning-final-*.png（7 张，截图与 trace 交叉验证）
 ## 动态后续操作 UAT（2026-08-24）
 
 ### 本轮交付
@@ -220,3 +254,31 @@
 | --- | --- | --- |
 | DF-01 | 动态操作生成的自定义目录字段未始终进入正确语义维度。 | 已修复并在销售/实验室 UAT 复验通过。 |
 | DF-02 | 当前实验室源数据的 `总TAT` 聚合为负数。 | 非本次 UE/快捷操作范围；保留为数据口径与聚合治理事项，未将其误判为前端或追问问题。 |
+
+## 2026-08-25 系统性语义修复专项
+
+| 日期 | 阶段 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|---|
+| 2026-08-25 | Phase 3-S 语义内核 | 年度分区 TopN、orderCount 去重口径、单年同比内部维度、大区别名、追加式多轮和未决槽位澄清 | 高级语义专项 17/17；全量 npm test 164/164；npm run check | 通过 | B-039 至 B-042 已关闭 |
+| 2026-08-25 | Phase 3-S LLM 边界 | 原问题覆盖校验增加语义非扩张，内部计算维度协调；校验失败不计入供应商熔断 | 新增内部维度和额外维度两项回归；同一真实问题重复 LLM/回退复验 | 通过 | B-044 已关闭 |
+| 2026-08-25 | Phase 3-S 可视化与说明 | 混合单位组合图、最终图表类型和说明统一；回退原因分类展示 | 可视化专项 11/11；省份和大区双轴图截图 | 通过 | B-043、B-045 已关闭 |
+| 2026-08-25 | Phase 3-S 真实 Wyn | 7 个 API 用例覆盖四个用户问题、变体、追加式多轮和澄清恢复 | test/uat-artifacts/systemic-semantic-fix-2026-08-25/api-uat-results.json | 7/7 | 无开放功能缺陷 |
+| 2026-08-25 | Phase 3-S 浏览器与日志 | 左侧独立问数入口完成 7 张截图和逐项合理性核对；保存 9 事件 trace | 1280×720；回答、详情、组合图/表格、上下文、多轮和澄清；operation-trace-replay.json | 通过 | E-004、E-005 已关闭 |
+
+### 本轮 Bug 闭环
+
+| 编号 | 严重度 | 问题 | 修复 | 最终状态 |
+|---|---|---|---|---|
+| B-039 | P1 | 每年 Top3 退化为全局 Top3 | 开放年度分区排名 | 已关闭 |
+| B-040 | P1 | 订单数误用购买数量求和 | Skill orderCount 映射订单编号 distinctCount | 已关闭 |
+| B-041 | P1 | 单年同比缺少稳定基期 | 内部年度维度、基期扩展和投影 | 已关闭 |
+| B-042 | P1 | 大区语义无法命中字段 | 销售 Skill 实体映射到客户地区 | 已关闭 |
+| B-043 | P2 | 组合图与推荐说明冲突 | 按最终图表类型统一生成说明 | 已关闭 |
+| B-044 | P1 | LLM 可增加未要求的年度维度 | 语义非扩张校验和内部维度协调 | 已关闭 |
+| B-045 | P2 | 校验失败误报为 AI 不可用 | 校验拒绝、超时、不可用分类说明 | 已关闭 |
+| E-004 | P2 | 工作区权限阻断会话与 UAT 落盘 | 以工作区写权限运行 8787 和 UAT | 已关闭 |
+| E-005 | P3 | 截图未落盘且扩展名不匹配 | 显式保存 JPEG 字节、正确命名并逐张目视核验 | 已关闭 |
+
+详细报告：SMART_QUERY_SYSTEMIC_SEMANTIC_FIX_UAT_REPORT_2026-08-25.md
+
+证据目录：test/uat-artifacts/systemic-semantic-fix-2026-08-25/

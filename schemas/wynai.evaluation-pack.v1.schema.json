@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wynai.local/schemas/wynai.evaluation-pack.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema",
+    "id",
+    "version",
+    "domain",
+    "datasetId",
+    "owner",
+    "status",
+    "cases"
+  ],
+  "properties": {
+    "schema": {
+      "const": "wynai.evaluation-pack/v1"
+    },
+    "id": {
+      "type": "string"
+    },
+    "version": {
+      "type": "string"
+    },
+    "domain": {
+      "type": "string"
+    },
+    "datasetId": {
+      "type": "string"
+    },
+    "owner": {
+      "type": "string"
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "approved"
+      ]
+    },
+    "cases": {
+      "type": "array",
+      "minItems": 1
+    }
+  },
+  "additionalProperties": true
+}
+

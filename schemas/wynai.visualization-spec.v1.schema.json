@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wynai.local/schemas/wynai.visualization-spec.v1.schema.json",
+  "title": "WynAI VisualizationSpec v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "type", "dataRef", "title", "encoding", "options", "decision"],
+  "properties": {
+    "schema": { "const": "wynai.visualization-spec/v1" },
+    "type": { "enum": ["line", "column", "bar", "pie", "donut", "combo", "stacked-column"] },
+    "dataRef": { "type": "string", "minLength": 1 },
+    "title": { "type": "string", "maxLength": 200 },
+    "encoding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["category", "seriesDimension", "measures"],
+      "properties": {
+        "category": { "$ref": "#/$defs/fieldEncoding" },
+        "seriesDimension": { "anyOf": [{ "$ref": "#/$defs/fieldEncoding" }, { "type": "null" }] },
+        "measures": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 8,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["field", "label", "mark", "axis", "format", "order"],
+            "properties": {
+              "field": { "type": "string" },
+              "label": { "type": "string" },
+              "mark": { "enum": ["line", "bar"] },
+              "axis": { "enum": ["left", "right"] },
+              "format": { "enum": ["number", "percentage"] },
+              "order": { "type": "number" }
+            }
+          }
+        }
+      }
+    },
+    "options": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["stack", "showLegend", "showLabels", "categoryLimit", "seriesLimit", "groupRemainderAsOther", "dataZoom"],
+      "properties": {
+        "stack": { "type": "boolean" },
+        "showLegend": { "type": "boolean" },
+        "showLabels": { "type": "boolean" },
+        "categoryLimit": { "type": "integer", "minimum": 0, "maximum": 120 },
+        "seriesLimit": { "type": "integer", "minimum": 0, "maximum": 12 },
+        "groupRemainderAsOther": { "type": "boolean" },
+        "dataZoom": { "type": "boolean" }
+      }
+    },
+    "decision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "reason", "warnings", "allowedTypes"],
+      "properties": {
+        "source": { "enum": ["user", "automatic"] },
+        "reason": { "type": "string", "maxLength": 500 },
+        "warnings": { "type": "array", "maxItems": 8, "items": { "type": "string" } },
+        "allowedTypes": { "type": "array", "maxItems": 8, "items": { "enum": ["line", "column", "bar", "pie", "donut", "combo", "stacked-column"] } }
+      }
+    }
+  },
+  "$defs": {
+    "fieldEncoding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["field", "label"],
+      "properties": {
+        "field": { "type": "string", "minLength": 1 },
+        "label": { "type": "string" },
+        "type": { "enum": ["temporal", "nominal"] }
+      }
+    }
+  }
+}

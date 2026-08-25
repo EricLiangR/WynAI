@@ -1,0 +1,61 @@
+{
+  "schema": "wynai.skill/v1",
+  "id": "laboratory-baseline",
+  "version": "1.0.0",
+  "name": "实验室运营基础分析",
+  "scope": "dataset",
+  "datasetIds": [
+    "ebbbbf49-60dd-4761-9722-fa6543eac4a9"
+  ],
+  "triggers": [
+    "实验室",
+    "科室",
+    "TAT",
+    "周转时间",
+    "标本",
+    "检验"
+  ],
+  "metrics": [
+    {
+      "name": "平均总TAT",
+      "field": "总TAT",
+      "aggregation": "average",
+      "definition": "总TAT字段的算术平均值"
+    },
+    {
+      "name": "记录数",
+      "field": null,
+      "aggregation": "countRows",
+      "definition": "满足当前筛选条件的记录行数"
+    }
+  ],
+  "businessEntities": [
+    {
+      "id": "department",
+      "concept": "department",
+      "name": "科室",
+      "field": "科室名称",
+      "synonyms": [
+        "科室",
+        "送检科室",
+        "部门"
+      ]
+    }
+  ],
+  "workflows": [
+    {
+      "id": "tat-monitoring",
+      "steps": [
+        "department-comparison",
+        "tat-ranking",
+        "detail-review"
+      ]
+    }
+  ],
+  "forbidden": [
+    "将总TAT求和解释为平均周转时间",
+    "在未确认时间单位时跨数据集比较TAT"
+  ],
+  "status": "approved"
+}
+

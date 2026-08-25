@@ -1,6 +1,6 @@
 # 独立问数语义准确性全覆盖增强计划
 
-> 文档状态：Ready for staged implementation
+> 文档状态：Implemented baseline / continuous regression
 >
 > 创建日期：2026-08-22（Asia/Shanghai）
 >
@@ -8,7 +8,7 @@
 >
 > 基线数据集：`2b445034-38fe-4350-9cab-b7684c28b5f8`（销售数据集，revision 7）
 >
-> 关联文档：`NEW_SMART_QUERY_DEVELOPMENT_PLAN.md`、`DEVELOPMENT_PROGRESS_REPORT.md`、`WYN_API_CAPABILITY_MATRIX.md`
+> 关联文档：`NEW_SMART_QUERY_DEVELOPMENT_PLAN.md`、`DEVELOPMENT_PROGRESS_REPORT.md`、`WYN_API_CAPABILITY_MATRIX.md`、`SMART_QUERY_INTENT_LATENCY_REQUIREMENTS_AND_DESIGN.md`
 
 ## 1. 结论
 
@@ -792,3 +792,50 @@ E0-E4 具备立即开发条件，不需要新的外部信息。E5-E7 中不依�
 | E8 全量评测/灰度 | 未启动 | 当前管理员数据集 9/9 | 受限账号、性能并发、生产 shadow 和回滚演练 |
 
 本批详细证据：`test/uat-artifacts/intent-v2/2026-08-22/latest.json`。修复前证据未覆盖，仍保留在 `test/uat-artifacts/phase3-semantic-ui/2026-08-22/`，用于前后对照。
+
+## 22. 2026-08-25 意图规划性能增强
+
+### 22.1 新增生产门槛
+
+语义准确性通过后，不能仍以不必要的大模型等待牺牲可用性。确定性意图同时满足以下条件时，必须直接进入查询：
+
+1. 计划状态为 supported；
+2. QuestionSemanticFrame → BusinessQueryIntent 约束覆盖校验通过；
+3. 不存在 required=true 且未解决的约束；
+4. Canonical 编译和结果校验边界不变。
+
+复杂度不再作为强制调用大模型的条件。大模型只处理确定性路径未完整覆盖的模糊问题，其输出仍必须通过覆盖和 Canonical 编译校验。
+
+### 22.2 可靠性控制
+
+- 意图模型使用独立的 INTENT_LLM_TIMEOUT_MS，默认 10 秒；报告和开放探索仍使用通用 180 秒预算。
+- 同一模型实例连续失败 2 次后熔断 60 秒，期间返回受控澄清。
+- 浏览器取消传递到服务端意图 LLM；取消请求以 499 留痕。
+- 响应和请求审计增加规划路径、规划耗时、LLM 是否调用及耗时。
+- 前端等待提示改为通用状态，取消按固定计时器伪造后端执行阶段。
+
+### 22.3 验收结果
+
+“过去五年，每年的销售收入和同比增长率”从 180351ms 降至真实 API 379ms，服务端规划 7ms、LLM 0 次；输出 2021-2025 五个年度、销售收入、同比增长率和组合图。多轮追问“只看华东”保留全部上轮槽位，仅新增地区筛选，服务端 270ms、规划 1ms。
+
+专项与全量自动化 145/145 通过，浏览器截图证据见 test/uat-artifacts/intent-latency-2026-08-25/。详细需求、设计和验收口径见 SMART_QUERY_INTENT_LATENCY_REQUIREMENTS_AND_DESIGN.md。
+## 20. 风险分级和持续学习扩展
+
+语义准确性不再只以销售黄金问题回归衡量。后续 Planner 按 low/medium/high 风险路由，完整约束覆盖只是执行条件之一；行业 Skill 覆盖、派生指标、高影响领域和置信度共同决定是否必须调用 LLM 或澄清。用户反馈通过版本化日志关联原问题、意图、查询和答案，形成待审核评测或 Skill 候选。完整设计见 SMART_QUERY_RISK_ROUTING_LEARNING_REQUIREMENTS_AND_DESIGN.md。
+
+## 23. 2026-08-25 系统性语义修复完成
+
+本轮以用户四类失败截图为阻断集，但实施范围落在共享语义平台，不增加固定问句特判。新增或增强：
+
+- 开放式年度分区 TopN；
+- orderCount 业务指标和 Skill 聚合口径；
+- 单期间同比的内部计算维度与基期扩展；
+- 大区、区域、地区实体映射；
+- 追加式多轮操作；
+- LLM 原问题覆盖与语义非扩张双重校验；
+- 混合单位图表类型与解释一致性；
+- 按 trace 的端到端日志回放。
+
+生产门槛新增：当确定性意图已完整时，LLM 可以在同一语义槽位内复核或纠正字段，但不得无依据增加用户可见指标、维度或筛选；同比等计算依赖必须标记为 internal，并在结果投影前删除。
+
+验收结果：npm test 164/164；真实 Wyn API 7/7；浏览器 7 张截图通过；9 事件 trace 完整。详细证据见 SMART_QUERY_SYSTEMIC_SEMANTIC_FIX_UAT_REPORT_2026-08-25.md。

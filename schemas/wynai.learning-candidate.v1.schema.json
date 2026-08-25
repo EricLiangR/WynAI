@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wynai.local/schemas/wynai.learning-candidate.v1.schema.json",
+  "type": "object",
+  "required": [
+    "schema",
+    "id",
+    "kind",
+    "status",
+    "sourceFeedbackId"
+  ],
+  "properties": {
+    "schema": {
+      "const": "wynai.learning-candidate/v1"
+    },
+    "kind": {
+      "enum": [
+        "skill-rule",
+        "evaluation-case"
+      ]
+    },
+    "status": {
+      "enum": [
+        "pending_review",
+        "approved_for_authoring",
+        "rejected"
+      ]
+    }
+  },
+  "additionalProperties": true
+}
+
