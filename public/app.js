@@ -387,16 +387,16 @@ function renderResultList() {
     return;
   }
   elements.resultList.innerHTML = state.analysisResults.map(item => `
-    <button class="result-item ${state.activeResult?.viewId === item.viewId ? 'active' : ''}" type="button" data-result-id="${escapeHtml(item.viewId)}">
-      <span class="result-item-top"><span class="result-type">${escapeHtml(chartTypeLabel(item.chartType))}</span><time>${formatDate(item.capturedAt)}</time></span>
-      <strong>${escapeHtml(item.topic || item.queryName || 'Wyn 分析结果')}</strong>
+    <button class="result-item ${state.activeResult?.insightId === item.insightId ? 'active' : ''}" type="button" data-result-id="${escapeHtml(item.insightId)}">
+      <span class="result-item-top"><span class="result-type">${escapeHtml(item.source?.type === 'wyn-query' ? 'Wyn 问数' : '标准输入')}</span><time>${formatDate(item.updatedAt || item.createdAt)}</time></span>
+      <strong>${escapeHtml(item.title || '数据洞察结果')}</strong>
       <span class="result-item-meta"><span>${item.rowCount} 行</span><span>${item.columnCount} 字段</span><span>${item.completeness}% 完整</span></span>
     </button>`).join('');
 }
 
 function renderResultDetail(result) {
   state.activeResult = result;
-  const resultIndex = state.analysisResults.findIndex(item => item.viewId === result.viewId);
+  const resultIndex = state.analysisResults.findIndex(item => item.insightId === result.insightId);
   if (resultIndex >= 0) {
     state.analysisResults[resultIndex] = {
       ...state.analysisResults[resultIndex],
@@ -409,8 +409,8 @@ function renderResultDetail(result) {
   }
   elements.insightEmpty.hidden = true;
   elements.insightDetail.hidden = false;
-  document.querySelector('#insight-view-id').textContent = result.viewId.slice(0, 12);
-  document.querySelector('#insight-topic').textContent = result.topic || result.queryName || 'Wyn 分析结果';
+  document.querySelector('#insight-id').textContent = result.insightId.slice(0, 16);
+  document.querySelector('#insight-topic').textContent = result.title || '数据洞察结果';
   document.querySelector('#stat-rows').textContent = result.rowCount;
   document.querySelector('#stat-columns').textContent = result.columnCount;
   document.querySelector('#stat-completeness').textContent = `${result.completeness}%`;
@@ -430,24 +430,29 @@ function renderResultDetail(result) {
   renderResultList();
 }
 
-async function selectAnalysisResult(viewId) {
-  const response = await fetch(`/api/analysis-results/${encodeURIComponent(viewId)}`);
+async function selectAnalysisResult(insightId) {
+  const response = await fetch(`/api/data-insights/${encodeURIComponent(insightId)}`);
   const result = await response.json();
   if (!response.ok) throw new Error(result.message || '结果集加载失败');
   renderResultDetail(result);
 }
 
-async function loadAnalysisResults(preferredViewId = '') {
+async function loadAnalysisResults(preferredInsightId = '', sourceId = '') {
   try {
-    const response = await fetch('/api/analysis-results');
+    const params = new URLSearchParams();
+    if (sourceId) {
+      params.set('sourceType', 'wyn-query');
+      params.set('sourceId', sourceId);
+    }
+    const response = await fetch(`/api/data-insights${params.size ? `?${params}` : ''}`);
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || '结果列表加载失败');
     state.analysisResults = data.items || [];
     state.llmConfigured = Boolean(data.llmConfigured);
     elements.modelStatus.querySelector('span').textContent = state.llmConfigured ? '外部大模型已连接' : '内置洞察引擎';
     renderResultList();
-    const targetId = preferredViewId || state.activeResult?.viewId || state.analysisResults[0]?.viewId;
-    if (targetId && state.analysisResults.some(item => item.viewId === targetId)) await selectAnalysisResult(targetId);
+    const targetId = preferredInsightId || state.activeResult?.insightId || state.analysisResults[0]?.insightId;
+    if (targetId && state.analysisResults.some(item => item.insightId === targetId)) await selectAnalysisResult(targetId);
     else if (!state.analysisResults.length) {
       state.activeResult = null;
       elements.insightEmpty.hidden = false;
@@ -461,8 +466,8 @@ async function loadAnalysisResults(preferredViewId = '') {
 async function openInsightsForView(viewId) {
   switchSection('insights');
   for (let attempt = 0; attempt < 6; attempt += 1) {
-    await loadAnalysisResults(viewId);
-    const captured = state.analysisResults.find(item => item.viewId === viewId);
+    await loadAnalysisResults('', viewId);
+    const captured = state.analysisResults.find(item => item.source?.type === 'wyn-query' && item.source?.sourceId === viewId);
     if (captured?.rowCount > 0) return;
     await new Promise(resolve => setTimeout(resolve, 800));
   }
@@ -477,10 +482,10 @@ async function generateSecondaryInsight() {
   elements.outputContent.innerHTML = '<div class="insight-loading"><i></i><i></i><i></i><span>正在读取结构化结果并生成二次洞察</span></div>';
   elements.secondaryOutput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   try {
-    const response = await fetch('/api/secondary-insights', {
+    const response = await fetch(`/api/data-insights/${encodeURIComponent(state.activeResult.insightId)}/generate`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ viewId: state.activeResult.viewId, prompt: elements.secondaryPrompt.value.trim() }),
+      body: JSON.stringify({ prompt: elements.secondaryPrompt.value.trim() }),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || '二次洞察失败');
@@ -1058,7 +1063,7 @@ async function readWynResponse(response, bubble) {
     const iframe = bubble.querySelector('.wyn-view-frame');
     iframe?.addEventListener('load', () => {
       bubble.querySelector('.wyn-frame-wrap')?.classList.add('loaded');
-      setTimeout(() => loadAnalysisResults(viewId), 1200);
+      setTimeout(() => loadAnalysisResults('', viewId), 1200);
     }, { once: true });
     return;
   }
@@ -1114,7 +1119,7 @@ function selectedSmartDatasets() {
 }
 
 function smartAggregationLabel(value) {
-  return ({ sum: '求和', average: '平均值', min: '最小值', max: '最大值', countRows: '计数', distinctCount: '去重计数' })[value] || value || '聚合';
+  return ({ sum: '求和', average: '平均值', min: '最小值', max: '最大值', countRows: '计数', distinctCount: '去重计数', ratio: '聚合后比值', difference: '差值', percentage: '比例', yoy: '同比', mom: '环比' })[value] || value || '聚合';
 }
 
 function smartFilterLabel(filter) {

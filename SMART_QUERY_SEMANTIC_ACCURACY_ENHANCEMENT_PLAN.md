@@ -839,3 +839,13 @@ E0-E4 具备立即开发条件，不需要新的外部信息。E5-E7 中不依�
 生产门槛新增：当确定性意图已完整时，LLM 可以在同一语义槽位内复核或纠正字段，但不得无依据增加用户可见指标、维度或筛选；同比等计算依赖必须标记为 internal，并在结果投影前删除。
 
 验收结果：npm test 164/164；真实 Wyn API 7/7；浏览器 7 张截图通过；9 事件 trace 完整。详细证据见 SMART_QUERY_SYSTEMIC_SEMANTIC_FIX_UAT_REPORT_2026-08-25.md。
+## 2026-08-25 通用公式派生指标落地
+
+状态：已完成。
+
+- `QuestionSemanticFrame v2` 和 `BusinessQueryIntent v2` 已扩展公式派生指标、依赖、聚合顺序、单位、除零策略和 Skill 版本引用。
+- `QueryProgram v1` 新增聚合后公式执行与内部指标裁剪。
+- 销售 Skill 升级为 `sales-baseline@1.2.0`，毛利率口径为 `SUM(订单利润) / SUM(订单金额)`。
+- 未审批率类指标必须澄清；LLM 不得遗漏、发明或修改生产公式。
+- 专项自动化 11/11，真实 Wyn UAT 7/7，浏览器截图 3/3。
+- 详细需求、设计、结果和缺陷闭环见 `SMART_QUERY_FORMULA_DERIVED_METRICS_REQUIREMENTS_DESIGN_AND_UAT_2026-08-25.md`。

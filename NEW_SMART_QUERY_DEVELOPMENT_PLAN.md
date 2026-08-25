@@ -575,3 +575,15 @@ Phase 3 的“接口、查询执行和页面可用”与“自然语言语义准
 | 缺陷 | B-039 至 B-045、E-004、E-005 均关闭 |
 
 详细需求、设计、测试、截图和 Bug 闭环见 SMART_QUERY_SYSTEMIC_SEMANTIC_FIX_UAT_REPORT_2026-08-25.md。仍依赖外部输入的事项为两类受限账号、非索引数据集和跨行业口径审批。
+## Phase 3-F：通用公式派生指标（2026-08-25，已完成）
+
+| 工作项 | 交付 | 状态 |
+| --- | --- | --- |
+| 公式指标 Skill 模型 | 白名单算子、稳定依赖 ID、聚合顺序、单位、除零策略 | 完成 |
+| 版本化交互协议 | QuestionSemanticFrame v2、BusinessQueryIntent v2、QueryProgram v1 兼容扩展 | 完成 |
+| 受控执行 | Wyn 基础聚合后计算、内部依赖裁剪、结果完整性校验 | 完成 |
+| LLM 治理 | 中风险复核、遗漏/发明/篡改拒绝、展示元数据确定性恢复 | 完成 |
+| 首个业务指标 | sales-baseline@1.2.0 毛利率 | 完成 |
+| 自动化与真实 UAT | 专项 11 例、全量回归、真实 Wyn 7 例、浏览器截图 3 例 | 完成 |
+
+专项文档：`SMART_QUERY_FORMULA_DERIVED_METRICS_REQUIREMENTS_DESIGN_AND_UAT_2026-08-25.md`。

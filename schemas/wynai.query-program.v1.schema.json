@@ -35,10 +35,12 @@
           "type": {
             "enum": [
               "derive-period-growth",
+              "derive-formula",
               "partition-rank",
               "project-periods",
               "validate",
-              "drop-internal-dimensions"
+              "drop-internal-dimensions",
+              "drop-internal-metrics"
             ]
           }
         }

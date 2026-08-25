@@ -23,6 +23,8 @@ import { RequestAuditLog, SlidingWindowRateLimiter, requestIdentity } from './li
 import { TemplatePackageRepository } from './lib/template/template-model.mjs';
 import { proposeCanonicalQueries, proposeFormula } from './lib/reporting/binding-resolver.mjs';
 import { ReportRunRepository } from './lib/reporting/report-runner.mjs';
+import { DataInsightStore } from './lib/data-insights/insight-store.mjs';
+import { WynQueryInsightAdapter } from './lib/data-insights/wyn-query-adapter.mjs';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 const publicDir = join(rootDir, 'public');
@@ -112,12 +114,15 @@ if (config.viewProxyPort === config.port) {
   throw new Error('PORT and WYN_VIEW_PROXY_PORT must be different');
 }
 
-const analysisResults = new Map();
+const dataInsightStore = new DataInsightStore({ maxItems: 30 });
 const viewDefinitions = new Map();
+const wynQueryInsightAdapter = new WynQueryInsightAdapter({
+  register: input => dataInsightStore.register(input).record,
+  maxItems: 30,
+});
 const agentRuns = new Map();
 const datasetMetadataCache = new Map();
 let datasetDocumentCache = { expiresAt: 0, items: [] };
-const MAX_CAPTURED_RESULTS = 30;
 const MAX_AGENT_RUNS = 100;
 const MAX_DATASET_ROWS = 5000;
 const MAX_QUERY_ROWS = 5000;
@@ -211,12 +216,6 @@ function sendDownload(response, exportFile) {
   response.end(exportFile.body);
 }
 
-function trimResultCache() {
-  while (analysisResults.size > MAX_CAPTURED_RESULTS) {
-    analysisResults.delete(analysisResults.keys().next().value);
-  }
-}
-
 function trimAgentRuns() {
   while (agentRuns.size > MAX_AGENT_RUNS) {
     agentRuns.delete(agentRuns.keys().next().value);
@@ -260,88 +259,12 @@ function extractViewId(value = '') {
   }
 }
 
-function findRowArray(value, depth = 0, candidates = []) {
-  if (depth > 12 || value == null) return candidates;
-  if (Array.isArray(value)) {
-    if (value.length && value.some(item => item && typeof item === 'object' && !Array.isArray(item))) {
-      candidates.push(value);
-    }
-    for (const item of value.slice(0, 8)) findRowArray(item, depth + 1, candidates);
-  } else if (typeof value === 'object') {
-    for (const child of Object.values(value)) findRowArray(child, depth + 1, candidates);
-  }
-  return candidates;
-}
-
-function matrixRows(value, depth = 0, candidates = []) {
-  if (depth > 12 || value == null) return candidates;
-  if (Array.isArray(value)) {
-    if (value.length >= 2 && value.every(row => Array.isArray(row))) {
-      const headers = value[0];
-      if (headers.length && headers.every(header => ['string', 'number'].includes(typeof header))) {
-        candidates.push({ headers: headers.map(header => String(header)), rows: value.slice(1) });
-      }
-    }
-    for (const item of value.slice(0, 12)) matrixRows(item, depth + 1, candidates);
-  } else if (typeof value === 'object') {
-    const rows = value.rows || value.dataRows || value.values;
-    const columns = value.columns || value.fields || value.headers;
-    if (Array.isArray(rows) && rows.length && rows.every(row => Array.isArray(row)) && Array.isArray(columns)) {
-      const headers = columns.map(column => typeof column === 'string' ? column : column?.name || column?.label || column?.alias || '').filter(Boolean);
-      if (headers.length) candidates.push({ headers, rows });
-    }
-    for (const child of Object.values(value)) matrixRows(child, depth + 1, candidates);
-  }
-  return candidates;
-}
-
 function resultRows(record) {
-  const aggregationResult = record?.aggregationResult;
-  const directCandidates = [
-    aggregationResult?.data,
-    aggregationResult?.rows,
-    aggregationResult?.result?.data,
-    aggregationResult?.result?.rows,
-    aggregationResult?.resultSet?.data,
-    aggregationResult?.resultSet?.rows,
-  ].filter(candidate => Array.isArray(candidate) && candidate.length);
-  if (directCandidates.length) return directCandidates.sort((a, b) => b.length - a.length)[0];
-
-  const candidates = [
-    ...findRowArray(aggregationResult),
-    ...findRowArray(record?.pivotPayload),
-  ];
-  const objectRows = candidates.sort((a, b) => b.length - a.length)[0];
-  if (objectRows?.length) return objectRows;
-
-  const matrices = [
-    ...matrixRows(aggregationResult),
-    ...matrixRows(record?.pivotPayload),
-  ].sort((a, b) => b.rows.length - a.rows.length);
-  const matrix = matrices[0];
-  if (!matrix) return [];
-  return matrix.rows.map(row => Object.fromEntries(matrix.headers.map((header, index) => [header, row[index] ?? null])));
-}
-function unwrapValue(value, depth = 0) {
-  if (depth > 5) return value;
-  if (Array.isArray(value)) {
-    if (!value.length) return null;
-    if (value.length === 1) return unwrapValue(value[0], depth + 1);
-    return value.map(item => unwrapValue(item, depth + 1));
-  }
-  if (value && typeof value === 'object') {
-    for (const key of ['raw', 'displayValue', 'formattedValue', 'value', 'display', 'label']) {
-      if (value[key] != null) return unwrapValue(value[key], depth + 1);
-    }
-  }
-  return value;
+  return record?.input?.resultSets?.[0]?.rows || [];
 }
 
 function normalizedRows(record, limit = 1000) {
-  return resultRows(record).slice(0, limit).map((row, index) => {
-    if (!row || typeof row !== 'object' || Array.isArray(row)) return { 序号: index + 1, 值: unwrapValue(row) };
-    return Object.fromEntries(Object.entries(row).map(([key, value]) => [key, unwrapValue(value)]));
-  });
+  return resultRows(record).slice(0, limit);
 }
 
 function resultSummary(record) {
@@ -360,12 +283,8 @@ function resultSummary(record) {
   };
 }
 
-function upsertAnalysisResult(viewId, patch) {
-  if (!viewId) return;
-  const existing = analysisResults.get(viewId) || { viewId, capturedAt: new Date().toISOString() };
-  analysisResults.delete(viewId);
-  analysisResults.set(viewId, { ...existing, ...patch, viewId, capturedAt: new Date().toISOString() });
-  trimResultCache();
+function insightRecord(detail) {
+  return { insightId: detail.insightId, input: detail.input, createdAt: detail.createdAt, updatedAt: detail.updatedAt };
 }
 
 function readJson(request) {
@@ -1345,54 +1264,59 @@ async function handleView(viewId, response) {
   let payload;
   try { payload = JSON.parse(raw); }
   catch { payload = { message: raw || `Wyn 返回 ${upstream.status}` }; }
-  if (upstream.ok) viewDefinitions.set(viewId, payload);
+  if (upstream.ok) {
+    viewDefinitions.set(viewId, payload);
+    wynQueryInsightAdapter.updateView(viewId, payload);
+  }
   sendJson(response, upstream.status, payload);
 }
 
-function analysisListItem(record) {
-  const view = viewDefinitions.get(record.viewId) || {};
+function dataInsightListItem(detail) {
+  const record = insightRecord(detail);
   const summary = resultSummary(record);
   return {
-    viewId: record.viewId,
-    datasetId: record.datasetId || record.aggregationResult?.datasetId || view.chart?.datasetId || '',
-    topic: record.topic || view.insight?.topic || view.chart?.query?.name || 'Wyn 分析结果',
-    queryName: view.chart?.query?.name || '',
-    chartType: view.chart?.visualization?.chartType || '',
-    capturedAt: record.capturedAt,
-    source: record.aggregationResult ? 'aggregation-result' : 'pivot',
+    insightId: detail.insightId,
+    title: detail.input.title,
+    source: detail.input.source || null,
+    datasets: detail.input.datasets || [],
+    resultSetCount: detail.input.resultSets.length,
+    createdAt: detail.createdAt,
+    updatedAt: detail.updatedAt,
     ...summary,
   };
 }
 
-function handleAnalysisResults(pathname, response) {
-  const viewId = pathname.slice('/api/analysis-results/'.length);
-  if (!viewId) {
-    const items = [...analysisResults.values()].reverse().map(analysisListItem);
-    sendJson(response, 200, {
-      items,
-      total: items.length,
-      llmConfigured: Boolean(config.llmBaseUrl && config.llmModel),
-      llmProvider: config.llmBaseUrl && config.llmModel ? 'project-env' : 'local-fallback',
-      llmModel: config.llmModel || null,
-      llmEndpointHost,
-    });
+function handleDataInsights(pathname, requestUrl, response) {
+  const insightId = pathname.slice('/api/data-insights/'.length);
+  if (!insightId) {
+    const items = dataInsightStore.list({ sourceType: requestUrl.searchParams.get('sourceType'), sourceId: requestUrl.searchParams.get('sourceId') });
+    sendJson(response, 200, { items, total: items.length, llmConfigured: Boolean(config.llmBaseUrl && config.llmModel), llmProvider: config.llmBaseUrl && config.llmModel ? 'project-env' : 'local-fallback', llmModel: config.llmModel || null, llmEndpointHost });
     return;
   }
-
-  const record = analysisResults.get(viewId);
-  if (!record) {
-    sendJson(response, 404, { message: '尚未捕获该分析的结果集，请先在智能问数中生成并加载图表。' });
-    return;
-  }
+  const detail = dataInsightStore.get(insightId);
+  if (!detail) return sendJson(response, 404, { message: '数据洞察结果不存在或已过期' });
+  const record = insightRecord(detail);
   const rows = normalizedRows(record);
-  const totalRows = resultRows(record).length;
   sendJson(response, 200, {
-    ...analysisListItem(record),
+    ...dataInsightListItem(detail),
+    insightId,
     rows,
-    truncated: totalRows > rows.length,
-    query: record.query || viewDefinitions.get(viewId)?.chart?.query || null,
-    aggregationResultId: record.aggregationResult?.id || '',
+    truncated: resultRows(record).length > rows.length || Boolean(detail.input.quality?.isTruncated),
+    input: detail.input,
+    primaryResultSet: detail.primaryResultSet,
   });
+}
+
+async function handleDataInsightInput(request, response) {
+  const body = await readJson(request);
+  try {
+    const idempotencyKey = request.headers['idempotency-key'] || null;
+    const result = dataInsightStore.register(body, { idempotencyKey });
+    sendJson(response, result.created ? 201 : 200, { schema: 'wynai.insight-input-ack/v1', insightId: result.record.insightId, status: result.created ? 'accepted' : 'updated' });
+  } catch (error) {
+    if (error?.name === 'InsightInputError') return sendJson(response, error.status || 422, { code: error.code, path: error.path, message: error.message });
+    throw error;
+  }
 }
 
 function numericInsights(rows, columns) {
@@ -1451,7 +1375,6 @@ function buildLocalInsight(record, prompt) {
 async function callConfiguredLlm(record, prompt) {
   const rows = normalizedRows(record, 120);
   const summary = resultSummary(record);
-  const view = viewDefinitions.get(record.viewId) || {};
   const url = /\/chat\/completions$/i.test(config.llmBaseUrl)
     ? config.llmBaseUrl
     : `${config.llmBaseUrl}/chat/completions`;
@@ -1474,8 +1397,8 @@ async function callConfiguredLlm(record, prompt) {
           role: 'user',
           content: JSON.stringify({
             analysisGoal: prompt,
-            topic: record.topic || view.insight?.topic,
-            query: record.query || view.chart?.query,
+            topic: record.input?.title,
+            query: record.input?.context?.query || null,
             summary,
             rows,
             note: resultRows(record).length > rows.length ? `仅提供前 ${rows.length} 行样本` : '已提供完整结果',
@@ -1494,18 +1417,19 @@ async function callConfiguredLlm(record, prompt) {
   };
 }
 
-async function handleSecondaryInsight(request, response) {
-  const body = await readJson(request);
-  const viewId = String(body.viewId || '').trim();
+async function handleSecondaryInsight(request, response, providedBody = null) {
+  const body = providedBody || await readJson(request);
+  const insightId = String(body.insightId || '').trim();
   const prompt = String(body.prompt || '').trim().slice(0, 4000);
-  const record = analysisResults.get(viewId);
-  if (!record) return sendJson(response, 404, { message: '结果集不存在或已过期，请重新执行一次智能问数。' });
+  const detail = dataInsightStore.get(insightId);
+  if (!detail) return sendJson(response, 404, { message: '数据洞察结果不存在或已过期，请重新提交标准结果。' });
+  const record = insightRecord(detail);
 
   try {
     const result = config.llmBaseUrl && config.llmModel
       ? await callConfiguredLlm(record, prompt)
       : buildLocalInsight(record, prompt);
-    sendJson(response, 200, { ...result, viewId, generatedAt: new Date().toISOString() });
+    sendJson(response, 200, { ...result, insightId, generatedAt: new Date().toISOString() });
   } catch (error) {
     sendJson(response, 502, { message: `项目 LLM 二次洞察失败（${llmEndpointHost || '未配置端点'}）：${error.message}` });
   }
@@ -1650,11 +1574,16 @@ const server = http.createServer(async (request, response) => {
     if (request.method === 'GET' && (pathname === '/api/analysis-agent/runs' || pathname.startsWith('/api/analysis-agent/runs/'))) {
       return handleAgentRuns(pathname, response);
     }
-    if (request.method === 'GET' && (pathname === '/api/analysis-results' || pathname.startsWith('/api/analysis-results/'))) {
-      return handleAnalysisResults(pathname, response);
+    if (request.method === 'POST' && pathname === '/api/data-insights/inputs') {
+      return await handleDataInsightInput(request, response);
     }
-    if (request.method === 'POST' && pathname === '/api/secondary-insights') {
-      return await handleSecondaryInsight(request, response);
+    const dataInsightGenerateRoute = pathname.match(/^\/api\/data-insights\/([A-Za-z0-9-]{8,100})\/generate$/);
+    if (request.method === 'POST' && dataInsightGenerateRoute) {
+      const body = await readJson(request);
+      return await handleSecondaryInsight(request, response, { ...body, insightId: dataInsightGenerateRoute[1] });
+    }
+    if (request.method === 'GET' && (pathname === '/api/data-insights' || pathname.startsWith('/api/data-insights/'))) {
+      return handleDataInsights(pathname, requestUrl, response);
     }
     if (request.method === 'GET' && pathname.startsWith('/api/views/')) {
       return await handleView(pathname.slice('/api/views/'.length), response);
@@ -1691,7 +1620,7 @@ const viewProxyServer = http.createServer(async (request, response) => {
     if (isDataInsightRequest && requestViewId && body?.length) {
       try {
         const insightRequest = JSON.parse(body.toString('utf8'));
-        upsertAnalysisResult(requestViewId, {
+        wynQueryInsightAdapter.capture(requestViewId, {
           topic: insightRequest.topic || '',
           query: insightRequest.query || null,
           datasetId: insightRequest.aggregationResult?.datasetId || '',
@@ -1737,7 +1666,7 @@ const viewProxyServer = http.createServer(async (request, response) => {
         try {
           const pivotPayload = JSON.parse(rawPivot.toString('utf8'));
           console.log(`[pivot-shape] ${JSON.stringify(describePayloadShape(pivotPayload))}`);
-          upsertAnalysisResult(requestViewId, { pivotPayload });
+          wynQueryInsightAdapter.capture(requestViewId, { pivotPayload });
         } catch {
           // 非 JSON 结果仍按原样返回给 Wyn 视图。
         }

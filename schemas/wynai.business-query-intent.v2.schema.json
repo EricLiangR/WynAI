@@ -91,6 +91,15 @@
               "string",
               "null"
             ]
+          },
+          "metricId": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "internal": {
+            "type": "boolean"
           }
         }
       }
@@ -102,14 +111,14 @@
         "type": "object",
         "required": [
           "type",
-          "sourceAlias",
           "alias"
         ],
         "properties": {
           "type": {
             "enum": [
               "yoy",
-              "mom"
+              "mom",
+              "formula"
             ]
           },
           "sourceAlias": {
@@ -119,7 +128,60 @@
             "type": "string"
           },
           "resultType": {
-            "const": "percentage"
+            "enum": [
+              "percentage",
+              "number"
+            ]
+          },
+          "operator": {
+            "enum": [
+              "ratio",
+              "difference",
+              "percentage"
+            ]
+          },
+          "metricId": {
+            "type": "string"
+          },
+          "concept": {
+            "type": "string"
+          },
+          "dependencies": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "required": [
+                "metricId",
+                "sourceAlias"
+              ],
+              "properties": {
+                "metricId": {
+                  "type": "string"
+                },
+                "sourceAlias": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "unitFamily": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "aggregationOrder": {
+            "const": "aggregate-then-calculate"
+          },
+          "zeroDivision": {
+            "enum": [
+              "null",
+              "zero"
+            ]
+          },
+          "skillRef": {
+            "type": "string"
           }
         }
       }

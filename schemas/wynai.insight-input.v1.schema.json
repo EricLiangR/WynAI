@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wynai.local/schemas/wynai.insight-input.v1.schema.json",
+  "title": "WynAI Data Insight Input v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "title", "resultSets"],
+  "properties": {
+    "schema": { "const": "wynai.insight-input/v1" },
+    "title": { "type": "string", "minLength": 1, "maxLength": 200 },
+    "source": { "type": "object", "additionalProperties": true, "properties": {
+      "type": { "type": "string", "minLength": 1, "maxLength": 80 },
+      "sourceId": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "traceId": { "type": "string", "maxLength": 200 }
+    } },
+    "datasets": { "type": "array", "maxItems": 16, "items": { "type": "object", "additionalProperties": true, "required": ["id"], "properties": {
+      "id": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "name": { "type": "string", "maxLength": 200 },
+      "revision": {}
+    } } },
+    "context": { "type": "object", "additionalProperties": true },
+    "scope": { "type": "object", "additionalProperties": true },
+    "quality": { "$ref": "#/$defs/quality" },
+    "evidence": { "type": "array", "maxItems": 100, "items": { "type": "object", "additionalProperties": true } },
+    "resultSets": { "type": "array", "minItems": 1, "maxItems": 8, "items": { "$ref": "#/$defs/resultSet" } }
+  },
+  "$defs": {
+    "quality": { "type": "object", "additionalProperties": true, "properties": {
+      "accuracy": { "enum": ["exact", "sample", "estimated", "unknown"] },
+      "isSample": { "type": ["boolean", "null"] },
+      "isTruncated": { "type": ["boolean", "null"] },
+      "isEstimated": { "type": ["boolean", "null"] },
+      "warnings": { "type": "array", "maxItems": 50, "items": { "type": "string" } }
+    } },
+    "field": { "type": "object", "additionalProperties": false, "required": ["name", "type"], "properties": {
+      "name": { "type": "string", "minLength": 1, "maxLength": 200 },
+      "type": { "enum": ["string", "number", "integer", "boolean", "date", "datetime", "object", "array", "unknown"] },
+      "role": { "enum": ["dimension", "measure", "identifier", "attribute", "time", "unknown"] },
+      "displayName": { "type": "string", "maxLength": 200 },
+      "sourceField": { "type": "string", "maxLength": 200 },
+      "format": { "type": "string", "maxLength": 80 },
+      "unit": { "type": "string", "maxLength": 80 },
+      "grain": { "type": "string", "maxLength": 40 }
+    } },
+    "resultSet": { "type": "object", "additionalProperties": false, "required": ["id", "schema", "rows"], "properties": {
+      "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$" },
+      "schema": { "type": "array", "minItems": 1, "maxItems": 100, "items": { "$ref": "#/$defs/field" } },
+      "rows": { "type": "array", "minItems": 1, "maxItems": 5000, "items": { "type": "object" } },
+      "scope": { "type": "object", "additionalProperties": true },
+      "quality": { "$ref": "#/$defs/quality" },
+      "statistics": { "type": "object", "additionalProperties": true }
+    } }
+  }
+}

@@ -114,7 +114,6 @@
         "type": "object",
         "required": [
           "type",
-          "sourceConcept",
           "alias",
           "resultType"
         ],
@@ -122,7 +121,8 @@
           "type": {
             "enum": [
               "yoy",
-              "mom"
+              "mom",
+              "formula"
             ]
           },
           "sourceConcept": {
@@ -132,7 +132,51 @@
             "type": "string"
           },
           "resultType": {
-            "const": "percentage"
+            "enum": [
+              "percentage",
+              "number"
+            ]
+          },
+          "operator": {
+            "enum": [
+              "ratio",
+              "difference",
+              "percentage"
+            ]
+          },
+          "metricId": {
+            "type": "string"
+          },
+          "concept": {
+            "type": "string"
+          },
+          "dependencyMetricIds": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "string"
+            }
+          },
+          "unitFamily": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "aggregationOrder": {
+            "const": "aggregate-then-calculate"
+          },
+          "zeroDivision": {
+            "enum": [
+              "null",
+              "zero"
+            ]
+          },
+          "skillRef": {
+            "type": [
+              "string",
+              "null"
+            ]
           }
         }
       }

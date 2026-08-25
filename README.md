@@ -70,8 +70,9 @@ LLM_ENABLE_THINKING=false
 - `GET /api/analysis-agent/runs/:id`：读取完整运行和证据。
 - `GET /api/analysis-agent/runs/:id/report?format=html|markdown|json`：导出正式报告。
 - `POST /api/chat`：代理 Wyn AI 问数流式接口。
-- `GET /api/analysis-results/:viewId`：读取问数结构化结果集。
-- `POST /api/secondary-insights`：对问数聚合结果执行二次洞察。
+- `POST /api/data-insights/inputs`：按 `InsightInput v1` 注册标准洞察输入并返回 `insightId`。
+- `GET /api/data-insights`、`GET /api/data-insights/:insightId`：读取标准洞察输入列表和详情。
+- `POST /api/data-insights/:insightId/generate`：对标准结果集执行二次洞察。
 - `POST /api/analysis-agent/v2/runs`：仅以数据集和可选关注方向启动自主分析。
 - `GET /api/analysis-agent/v2/runs`：读取 V2 运行历史。
 - `GET /api/analysis-agent/v2/runs/:id`：读取假设、查询、统一结果集、发现和证据。

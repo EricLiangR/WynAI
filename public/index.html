@@ -174,7 +174,7 @@
             <div>
               <div class="insights-kicker">AI 二次分析</div>
               <h2>数据洞察工作台</h2>
-              <p>复用 Wyn 问数结果集，让大模型继续完成趋势、异常与归因分析。</p>
+              <p>接收标准结果集，让洞察引擎继续完成趋势、异常与归因分析。</p>
             </div>
             <div class="insights-toolbar-actions">
               <span class="model-status" id="model-status"><i></i><span>检测洞察引擎</span></span>
@@ -192,7 +192,7 @@
           <div class="insights-layout">
             <aside class="result-library">
               <div class="library-head">
-                <div><strong>Wyn 结果集</strong><small>最近捕获的分析</small></div>
+                <div><strong>洞察结果</strong><small>最近接收的标准输入</small></div>
                 <span id="result-count">0</span>
               </div>
               <div class="result-list" id="analysis-result-list"></div>
@@ -207,7 +207,7 @@
                 <div class="empty-orbit"><span></span><i></i></div>
                 <div class="empty-label">等待结果集</div>
                 <h3>从一次 Wyn 问数开始</h3>
-                <p>完成智能问数并加载图表后，结构化结果会自动出现在这里，可继续交给大模型分析。</p>
+                <p>完成 Wyn 问数并加载图表后，标准化结果会自动出现在这里，可继续交给洞察引擎分析。</p>
                 <button class="primary-insight-button" type="button" data-action="go-chat">去智能问数</button>
               </div>
 
@@ -215,7 +215,7 @@
                 <div class="dataset-heading">
                   <div class="dataset-title-wrap">
                     <span class="dataset-glyph"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></span>
-                    <div><div class="dataset-breadcrumb">Wyn 结果 / <span id="insight-view-id">—</span></div><h3 id="insight-topic">分析结果</h3></div>
+                    <div><div class="dataset-breadcrumb">标准输入 / <span id="insight-id">—</span></div><h3 id="insight-topic">分析结果</h3></div>
                   </div>
                   <span class="capture-status"><i></i> 已捕获结果集</span>
                 </div>
@@ -236,7 +236,7 @@
                     <table class="data-table"><thead id="insight-table-head"></thead><tbody id="insight-table-body"></tbody></table>
                   </div>
                   <pre class="raw-data" id="raw-data" hidden></pre>
-                  <div class="table-foot"><span id="table-quality-note">等待结果质量检查</span><span>由 Wyn 聚合计算</span></div>
+                  <div class="table-foot"><span id="table-quality-note">等待结果质量检查</span><span>InsightInput v1</span></div>
                 </article>
 
                 <article class="analysis-studio">

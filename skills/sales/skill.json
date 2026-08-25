@@ -1,7 +1,7 @@
 {
   "schema": "wynai.skill/v1",
   "id": "sales-baseline",
-  "version": "1.1.0",
+  "version": "1.3.0",
   "name": "销售基础分析",
   "scope": "dataset",
   "datasetIds": [
@@ -20,7 +20,9 @@
     "销售代表",
     "订单数",
     "订单数量",
-    "大区"
+    "大区",
+    "毛利率",
+    "客单价"
   ],
   "metrics": [
     {
@@ -64,6 +66,51 @@
         "下单数"
       ],
       "unitFamily": "count"
+    },
+    {
+      "id": "grossMarginRate",
+      "concept": "grossMarginRate",
+      "name": "毛利率",
+      "definition": "汇总粒度下订单利润合计除以订单金额合计；禁止先计算明细比例再平均",
+      "synonyms": [
+        "销售毛利率"
+      ],
+      "unitFamily": "percentage",
+      "outputAlias": "gross_margin_rate",
+      "formula": {
+        "schema": "wynai.metric-formula/v1",
+        "operator": "ratio",
+        "inputs": [
+          "profit",
+          "revenue"
+        ],
+        "aggregationOrder": "aggregate-then-calculate",
+        "zeroDivision": "null"
+      }
+    },
+    {
+      "id": "averageOrderValue",
+      "concept": "averageOrderValue",
+      "name": "客单价",
+      "definition": "汇总粒度下订单金额合计除以订单编号去重计数；表示平均每笔订单金额，不按客户数计算",
+      "synonyms": [
+        "平均客单价",
+        "平均订单金额",
+        "每单金额",
+        "订单均价"
+      ],
+      "unitFamily": "currency",
+      "outputAlias": "average_order_value",
+      "formula": {
+        "schema": "wynai.metric-formula/v1",
+        "operator": "ratio",
+        "inputs": [
+          "revenue",
+          "orderCount"
+        ],
+        "aggregationOrder": "aggregate-then-calculate",
+        "zeroDivision": "null"
+      }
     }
   ],
   "workflows": [
@@ -78,7 +125,9 @@
   ],
   "forbidden": [
     "将订单明细样本当作全量总额",
-    "将订单金额直接解释为利润"
+    "将订单金额直接解释为利润",
+    "将毛利率计算为行级利润率的平均值",
+    "将客单价按客户数计算，或将订单明细金额直接平均"
   ],
   "status": "approved",
   "businessEntities": [
