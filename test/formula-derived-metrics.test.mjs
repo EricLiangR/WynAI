@@ -99,7 +99,7 @@ test('派生指标排名在公式计算后执行，不按利润依赖误取 TopN
   const planned = plan('毛利率最高的地区');
   assert.equal(planned.status, 'supported');
   assert.equal(planned.intent.ranking.orderBy, 'gross_margin_rate');
-  assert.equal(planned.request.limit, 5000);
+  assert.equal(planned.request.limit, 20000);
   assert.deepEqual(planned.request.orderBy, []);
   const output = applyQueryProgram(rawResult(planned.request, [
     { region: '利润高但收入更高', profit: 100, revenue: 1000 },

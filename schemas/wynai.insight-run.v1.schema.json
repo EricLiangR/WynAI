@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wynai.local/schemas/wynai.insight-run.v1.schema.json",
+  "title": "WynAI Insight Run v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "id", "mode", "status", "createdAt", "updatedAt"],
+  "properties": {
+    "schema": { "const": "wynai.insight-run/v1" },
+    "id": { "type": "string", "pattern": "^[A-Za-z0-9-]{8,100}$" },
+    "mode": { "enum": ["interpret", "explore"] },
+    "status": { "enum": ["queued", "planning", "running", "completed", "failed"] },
+    "insightId": { "type": ["string", "null"] },
+    "parentRunId": { "type": ["string", "null"] },
+    "datasetIds": { "type": "array", "maxItems": 16, "items": { "type": "string" } },
+    "question": { "type": "string", "maxLength": 4000 },
+    "actor": { "type": ["string", "null"] },
+    "organizationId": { "type": ["string", "null"] },
+    "skill": {}, "plan": {}, "toolCalls": { "type": "array" },
+    "evidenceIds": { "type": "array", "items": { "type": "string" } },
+    "document": {}, "error": {}, "attempt": { "type": "integer", "minimum": 1 },
+    "createdAt": { "type": "string", "format": "date-time" }, "updatedAt": { "type": "string", "format": "date-time" },
+    "completedAt": { "type": "string", "format": "date-time" }, "failedAt": { "type": "string", "format": "date-time" },
+    "metadata": { "type": "object" }
+  }
+}

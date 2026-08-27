@@ -56,6 +56,40 @@
     "将总TAT求和解释为平均周转时间",
     "在未确认时间单位时跨数据集比较TAT"
   ],
-  "status": "approved"
+  "status": "approved",
+  "diagnostics": [
+    {
+      "id": "tat-breach",
+      "name": "TAT 达标诊断",
+      "triggers": [
+        "超时",
+        "达标",
+        "瓶颈"
+      ],
+      "requiredEvidence": [
+        "tat-trend",
+        "department-comparison",
+        "detail-review"
+      ],
+      "riskRules": [
+        {
+          "id": "negative-duration",
+          "when": "存在负时长记录",
+          "severity": "critical",
+          "action": "排除正常效率排名并核验数据"
+        }
+      ],
+      "playbook": [
+        "确认时间单位",
+        "比较科室和检测项目",
+        "回查超时明细和流程状态"
+      ]
+    }
+  ],
+  "assumptions": [
+    "TAT 单位需由数据集语义确认"
+  ],
+  "evaluationRefs": [
+    "laboratory-golden-diagnostics-v1"
+  ]
 }
-

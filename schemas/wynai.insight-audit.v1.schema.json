@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wynai.local/schemas/wynai.insight-audit.v1.schema.json",
+  "title": "WynAI Insight Audit v1",
+  "type": "object",
+  "required": ["id", "schema", "at", "actor", "action", "status", "externalDataPolicy"],
+  "properties": { "id": { "type": "string" }, "schema": { "const": "wynai.insight-audit/v1" }, "at": { "type": "string" }, "actor": { "type": "string" }, "organizationId": { "type": ["string", "null"] }, "insightId": { "type": ["string", "null"] }, "runId": { "type": ["string", "null"] }, "action": { "type": "string" }, "status": { "type": "string" }, "model": { "type": ["string", "null"] }, "promptHash": { "type": ["string", "null"] }, "promptLength": { "type": "integer", "minimum": 0 }, "toolCalls": { "type": "array" }, "stageAudit": { "type": "array" }, "skillRefs": { "type": "array" }, "externalDataPolicy": { "type": "object", "properties": { "rawRowsToLlm": { "const": false } }, "required": ["rawRowsToLlm"] }, "errorCode": { "type": ["string", "null"] } },
+  "additionalProperties": false
+}

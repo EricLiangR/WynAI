@@ -1,0 +1,62 @@
+{
+  "schema": "wynai.skill/v1",
+  "id": "temporal-semantics",
+  "version": "1.0.0",
+  "name": "平台时间语义",
+  "scope": "system",
+  "triggers": [],
+  "temporalSemantics": [
+    {
+      "id": "month-grouping",
+      "meaning": "按自然月归并日期字段；结果标签包含年份和月份",
+      "grain": "month",
+      "expressions": [
+        "年月",
+        "年和月",
+        "按月份",
+        "每个月",
+        "每月",
+        "按月",
+        "逐月",
+        "月度",
+        "月趋势"
+      ],
+      "ambiguity": "若明确说分别按年和月或按层级展开，应进入年-月层级语义，而不是单一月份粒度"
+    },
+    {
+      "id": "year-grouping",
+      "meaning": "按自然年归并日期字段",
+      "grain": "year",
+      "expressions": [
+        "按年份",
+        "每年",
+        "逐年",
+        "年度",
+        "各年",
+        "年趋势",
+        "按年"
+      ],
+      "ambiguity": "如果同时出现月份且要求展开层级，应保留年-月层级信息"
+    },
+    {
+      "id": "quarter-grouping",
+      "meaning": "按自然季度归并日期字段",
+      "grain": "quarter",
+      "expressions": [
+        "按季度",
+        "每季度",
+        "逐季",
+        "季度",
+        "季趋势"
+      ],
+      "ambiguity": "财务季度需要额外日历口径，不能默认替换自然季度"
+    }
+  ],
+  "metrics": [],
+  "workflows": [],
+  "forbidden": [
+    "把年月表达当作未知指标",
+    "把年和月层级语义静默改成日粒度"
+  ],
+  "status": "approved"
+}

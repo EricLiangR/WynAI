@@ -106,7 +106,7 @@ test('独立问数在左侧提供单独入口且不复用 Wyn 问数工作区', 
     readFile(new URL('../public/app.js', import.meta.url), 'utf8'),
   ]);
   assert.match(html, /data-section="chat"[\s\S]*Wyn 问数/);
-  assert.match(html, /data-section="smart-query"[\s\S]*独立问数/);
+  assert.match(html, /data-section="smart-query"[\s\S]*智能问数/);
   assert.match(html, /id="agent-workspace-title"/);
   assert.match(html, /id="smart-query-messages"/);
   assert.match(html, /id="smart-new-conversation"/);

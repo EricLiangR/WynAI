@@ -69,6 +69,11 @@ test('同比查询自动扩大基期并只投影用户要求期间', () => {
   assert.deepEqual(output.rows.map(row => row.period.slice(0, 4)), ['2023', '2024', '2025']);
   assert.deepEqual(output.rows.map(row => row.revenue_yoy), [0.2, -0.25, 0.5]);
   assert.equal(output.schema.find(column => column.name === 'revenue_yoy').format, 'percentage');
+  assert.equal(output.statistics.totalRowCount, 3);
+  assert.equal(output.statistics.returnedRowCount, 3);
+  assert.equal(output.statistics.internalCalculationRowCount, 4);
+  assert.equal(output.quality.totalRowCount, 3);
+  assert.equal(output.quality.isTruncated, false);
 });
 
 test('时间分组不再被误当成显式时间范围', () => {
@@ -243,7 +248,7 @@ test('开放式每年排名按时间分区而不是退化为全局 TopN', () => 
   const plan = planBusinessQuestion({ metadata, question: '统计每年，销售排名前三的城市和销售额', now });
   assert.equal(plan.status, 'supported');
   assert.deepEqual(plan.intent.ranking.partitionBy, ['period']);
-  assert.equal(plan.request.limit, 5000);
+  assert.equal(plan.request.limit, 20000);
   const raw = resultSet(plan.request, [
     { city: 'A', period: '2024-01-01', revenue: 10 },
     { city: 'B', period: '2024-01-01', revenue: 40 },
@@ -416,4 +421,30 @@ test('模型新增用户未要求的可见维度时回退到已校验计划且�
   assert.equal(second.plannerDiagnostics.llmAttempted, true);
   assert.equal(second.plannerDiagnostics.circuitOpen, false);
   assert.equal(calls, 2);
+});
+
+test('派生关系语义支持并列指标和分别/全部表达', () => {
+  const first = planBusinessQuestion({ metadata, question: '2023至2025年销售额和同比增长率、利润、订单数量', now });
+  assert.equal(first.status, 'supported');
+  assert.deepEqual(first.intent.metrics.filter(item => !item.internal).map(item => item.concept), ['revenue', 'profit', 'orderCount']);
+  assert.deepEqual(first.intent.derivedMetrics.map(item => item.alias), ['revenue_yoy']);
+  const all = planBusinessQuestion({ metadata, question: '2023至2025年销售额、利润和订单数都做同比增长率', now });
+  assert.equal(all.status, 'supported');
+  assert.deepEqual(all.intent.derivedMetrics.map(item => item.alias), ['revenue_yoy', 'profit_yoy', 'orderCount_yoy']);
+});
+
+test('派生指标澄清支持自由文本全部选择并清除旧待决槽位', async () => {
+  const executeQuery = async ({ requests }) => ({ resultSets: [resultSet(requests[0], [
+    { period: '2023-01-01T00:00:00.000Z', revenue: 100, profit: 20, revenue_yoy: 0.1, profit_yoy: 0.2 },
+    { period: '2024-01-01T00:00:00.000Z', revenue: 110, profit: 24, revenue_yoy: 0.1, profit_yoy: 0.2 },
+    { period: '2025-01-01T00:00:00.000Z', revenue: 120, profit: 28, revenue_yoy: 0.09, profit_yoy: 0.16 },
+  ])] });
+  const store = new SmartQueryConversationStore({ loadMetadata: async () => metadata, runAnalysis: async () => { throw new Error('不应降级'); }, executeQuery });
+  const conversation = await store.create({ datasetId: metadata.id });
+  const first = await store.ask(conversation.id, { question: '2023至2025年销售额、利润和同比增长率' });
+  assert.equal(first.response.status, 'needs_clarification');
+  const second = await store.ask(conversation.id, { question: '三个都算' });
+  assert.equal(second.response.status, 'ok');
+  assert.equal(second.conversation.pendingContext, null);
+  assert.deepEqual(second.conversation.committedContext.intent.derivedMetrics.map(item => item.alias), ['revenue_yoy', 'profit_yoy']);
 });

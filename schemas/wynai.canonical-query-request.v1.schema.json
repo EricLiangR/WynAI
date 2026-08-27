@@ -19,7 +19,7 @@
     "fieldComparisons": { "type": "array", "maxItems": 4 },
     "comparison": {},
     "orderBy": { "type": "array", "maxItems": 3 },
-    "limit": { "type": "integer", "minimum": 1, "maximum": 5000 },
+    "limit": { "type": "integer", "minimum": 1, "maximum": 20000 },
     "expectedResult": { "type": "object" },
     "sensitivity": { "type": "string" },
     "lineage": { "anyOf": [{ "type": "object" }, { "type": "null" }] }

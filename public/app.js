@@ -9,6 +9,8 @@ const elements = {
   suggestions: [...document.querySelectorAll('[data-prompt]')],
   connectionPill: document.querySelector('#connection-pill'),
   connectionText: document.querySelector('#connection-text'),
+  smartConnectionPill: document.querySelector('#smart-connection-pill'),
+  smartConnectionText: document.querySelector('#smart-connection-text'),
   clear: document.querySelector('#clear-chat'),
   userTemplate: document.querySelector('#user-message-template'),
   assistantTemplate: document.querySelector('#assistant-message-template'),
@@ -27,6 +29,9 @@ const elements = {
   insightEmpty: document.querySelector('#insight-empty'),
   insightDetail: document.querySelector('#insight-detail'),
   modelStatus: document.querySelector('#model-status'),
+  insightExportFormat: document.querySelector('#insight-export-format'),
+  insightExport: document.querySelector('#insight-export'),
+  insightVersionBar: document.querySelector('#insight-version-bar'),
   refreshResults: document.querySelector('#refresh-results'),
   backToChat: document.querySelector('#back-to-chat'),
   secondaryPrompt: document.querySelector('#secondary-prompt'),
@@ -98,7 +103,7 @@ const state = {
   datasets: [],
   conversationStarted: false,
   viewProxyPort: Number(location.port || 8787) + 1,
-  currentSection: 'chat',
+  currentSection: 'smart-query',
   analysisResults: [],
   activeResult: null,
   lastViewId: '',
@@ -113,6 +118,8 @@ const state = {
   smartTurns: 0,
   smartAbortController: null,
   smartCharts: [],
+  smartTables: new Map(),
+  insightsReturnSection: 'chat',
   reportTemplates: [],
   reportTemplate: null,
   reportProposal: null,
@@ -266,7 +273,7 @@ function switchSection(section) {
   elements.reportsWorkspace.hidden = !isReports;
   elements.agentWorkspace.classList.toggle('smart-query-mode', isSmartQuery);
   elements.agentWorkspace.classList.toggle('analysis-mode', isAnalysis);
-  elements.workspaceTitle.textContent = isChat ? 'Wyn 问数' : isInsights ? '数据洞察' : isReports ? '智能报告' : isSmartQuery ? '独立问数' : 'AI 数据分析';
+  elements.workspaceTitle.textContent = isChat ? 'Wyn 问数' : isInsights ? '数据洞察' : isReports ? '智能报告' : isSmartQuery ? '智能问数' : 'AI 数据分析';
   elements.clear.hidden = !(isChat || isSmartQuery);
   elements.navItems.forEach(item => item.classList.toggle('active', item.dataset.section === requestedSection));
   if (isChat) elements.input.focus();
@@ -372,8 +379,28 @@ function localizePlanDetail(value) {
     .replace(/(^|\s·\s)open(?=\s·\s|$)/gi, '$1开放探索');
 }
 
-function compactValue(value) {
+function compactValue(value, field = {}, timeZone = 'Asia/Shanghai') {
   if (value == null || value === '') return '<span class="null-value">空值</span>';
+  if (field.type === 'date' || field.type === 'datetime' || field.grain) {
+    const date = new Date(value);
+    if (!Number.isNaN(date.getTime())) {
+      const parts = new Intl.DateTimeFormat('zh-CN', {
+        timeZone,
+        year: 'numeric',
+        month: 'numeric',
+        day: 'numeric',
+      }).formatToParts(date);
+      const values = Object.fromEntries(parts.map(part => [part.type, part.value]));
+      if (field.grain === 'year') return escapeHtml(`${values.year}年`);
+      if (field.grain === 'quarter') return escapeHtml(`${values.year}年第${Math.floor((Number(values.month) - 1) / 3) + 1}季度`);
+      if (field.grain === 'month') return escapeHtml(`${values.year}年${values.month}月`);
+      if (field.grain === 'week') return escapeHtml(`${values.year}年${values.month}月${values.day}日所在周`);
+      return escapeHtml(`${values.year}年${values.month}月${values.day}日`);
+    }
+  }
+  if (field.format === 'percentage' && Number.isFinite(Number(value))) {
+    return escapeHtml(new Intl.NumberFormat('zh-CN', { style: 'percent', maximumFractionDigits: 2 }).format(Number(value)));
+  }
   if (typeof value === 'number') return escapeHtml(new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(value));
   if (typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T/.test(value)) return escapeHtml(value.slice(0, 10));
   if (typeof value === 'object') return escapeHtml(JSON.stringify(value));
@@ -388,7 +415,7 @@ function renderResultList() {
   }
   elements.resultList.innerHTML = state.analysisResults.map(item => `
     <button class="result-item ${state.activeResult?.insightId === item.insightId ? 'active' : ''}" type="button" data-result-id="${escapeHtml(item.insightId)}">
-      <span class="result-item-top"><span class="result-type">${escapeHtml(item.source?.type === 'wyn-query' ? 'Wyn 问数' : '标准输入')}</span><time>${formatDate(item.updatedAt || item.createdAt)}</time></span>
+      <span class="result-item-top"><span class="result-type">${escapeHtml(item.source?.type === 'wyn-query' ? 'Wyn 问数' : item.source?.type === 'independent-query' ? '智能问数' : '标准输入')}</span><time>${formatDate(item.updatedAt || item.createdAt)}</time></span>
       <strong>${escapeHtml(item.title || '数据洞察结果')}</strong>
       <span class="result-item-meta"><span>${item.rowCount} 行</span><span>${item.columnCount} 字段</span><span>${item.completeness}% 完整</span></span>
     </button>`).join('');
@@ -415,19 +442,51 @@ function renderResultDetail(result) {
   document.querySelector('#stat-columns').textContent = result.columnCount;
   document.querySelector('#stat-completeness').textContent = `${result.completeness}%`;
   document.querySelector('#stat-model').textContent = state.llmConfigured ? '外部大模型' : '内置引擎';
+  elements.insightExport.disabled = !result.document;
   const columns = (result.columns || []).slice(0, 12);
   const rows = (result.rows || []).slice(0, 40);
+  const primaryResultSet = result.primaryResultSet || result.input?.resultSets?.[0] || {};
+  const schemaMap = new Map((primaryResultSet.schema || []).map(field => [field.name, field]));
+  const timeZone = primaryResultSet.scope?.timeZone || result.input?.scope?.timeZone || 'Asia/Shanghai';
   document.querySelector('#preview-range').textContent = `前 ${rows.length} 行${result.truncated ? ' · 已截断' : ''}`;
   document.querySelector('#insight-table-head').innerHTML = `<tr><th>#</th>${columns.map(column => `<th>${escapeHtml(column)}</th>`).join('')}</tr>`;
   document.querySelector('#insight-table-body').innerHTML = rows.length
-    ? rows.map((row, index) => `<tr><td>${index + 1}</td>${columns.map(column => `<td title="${escapeHtml(typeof row[column] === 'object' ? JSON.stringify(row[column]) : String(row[column] ?? ''))}">${compactValue(row[column])}</td>`).join('')}</tr>`).join('')
+    ? rows.map((row, index) => `<tr><td>${index + 1}</td>${columns.map(column => `<td title="${escapeHtml(typeof row[column] === 'object' ? JSON.stringify(row[column]) : String(row[column] ?? ''))}">${compactValue(row[column], schemaMap.get(column), timeZone)}</td>`).join('')}</tr>`).join('')
     : `<tr><td colspan="${columns.length + 1}"><span class="null-value">结果集没有有效数据行</span></td></tr>`;
   document.querySelector('#raw-data').textContent = JSON.stringify(result.rows || [], null, 2);
   document.querySelector('#table-quality-note').textContent = result.completeness >= 80
     ? `✓ 数据完整度 ${result.completeness}%，可进入二次分析`
     : `⚠ 数据完整度 ${result.completeness}%，洞察将优先提示质量风险`;
-  elements.secondaryOutput.hidden = true;
+  if (result.document) renderPersistedInsightDocument(result.document, result.versions || []);
+  else {
+    elements.secondaryOutput.hidden = true;
+    elements.outputContent.innerHTML = '';
+    elements.findingGrid.innerHTML = '';
+  }
   renderResultList();
+}
+
+function renderPersistedInsightDocument(documentValue, versions = []) {
+  elements.secondaryOutput.hidden = false;
+  document.querySelector('#output-model').textContent = `InsightDocument v${versions.length || 1}`;
+  const blocks = Array.isArray(documentValue.blocks) ? documentValue.blocks : [];
+  elements.findingGrid.innerHTML = blocks.filter(block => ['ai-narrative', 'text'].includes(block.type)).map(block => `
+    <div class="finding-card violet"><small>${escapeHtml(block.title || '业务洞察')}</small><strong>${escapeHtml(block.content || '')}</strong><span>证据：${escapeHtml((block.evidenceIds || []).join('、') || '待补充')}</span></div>`).join('');
+  elements.outputContent.innerHTML = blocks.filter(block => block.type === 'ai-narrative').map(block => `<section class="insight-document-section"><h5>${escapeHtml(block.title || '洞察')}</h5><p>${markdown(block.content || '')}</p></section>`).join('') || '<div class="insight-loading">暂无已保存的业务洞察</div>';
+  elements.insightVersionBar.hidden = versions.length < 2;
+  elements.insightVersionBar.innerHTML = versions.length > 1 ? `<span>版本 ${versions.map(item => `v${item.version}`).join('、')}</span><button type="button" data-insight-explore="${escapeHtml(state.activeResult?.insightId || '')}">证据不足时发起 Explore</button>` : '';
+}
+
+function exportInsightDocument() {
+  const insightId = state.activeResult?.insightId;
+  if (!insightId || !state.activeResult?.document) return;
+  const format = elements.insightExportFormat.value || 'html';
+  const anchor = document.createElement('a');
+  anchor.href = `/api/data-insights/${encodeURIComponent(insightId)}/export?format=${encodeURIComponent(format)}`;
+  anchor.download = '';
+  document.body.append(anchor);
+  anchor.click();
+  anchor.remove();
 }
 
 async function selectAnalysisResult(insightId) {
@@ -464,6 +523,7 @@ async function loadAnalysisResults(preferredInsightId = '', sourceId = '') {
 }
 
 async function openInsightsForView(viewId) {
+  state.insightsReturnSection = 'chat';
   switchSection('insights');
   for (let attempt = 0; attempt < 6; attempt += 1) {
     await loadAnalysisResults('', viewId);
@@ -471,6 +531,12 @@ async function openInsightsForView(viewId) {
     if (captured?.rowCount > 0) return;
     await new Promise(resolve => setTimeout(resolve, 800));
   }
+}
+
+async function openInsightById(insightId, returnSection = 'smart-query') {
+  state.insightsReturnSection = returnSection;
+  switchSection('insights');
+  await loadAnalysisResults(insightId);
 }
 
 async function generateSecondaryInsight() {
@@ -489,10 +555,15 @@ async function generateSecondaryInsight() {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.message || '二次洞察失败');
+    state.activeResult = { ...(state.activeResult || {}), document: data.document || state.activeResult?.document || null, versions: data.document ? [...(state.activeResult?.versions || []), { version: ((state.activeResult?.versions || []).at(-1)?.version || 0) + 1, document: data.document }] : (state.activeResult?.versions || []) };
+    elements.insightExport.disabled = !data.document;
     document.querySelector('#output-model').textContent = data.model || 'AI 洞察引擎';
-    elements.findingGrid.innerHTML = (data.findings || []).map(item => `
-      <div class="finding-card ${escapeHtml(item.tone || 'violet')}"><small>${escapeHtml(item.label)}</small><strong>${escapeHtml(item.value)}</strong><span>${escapeHtml(item.detail)}</span></div>`).join('');
-    elements.outputContent.innerHTML = markdown(data.content || '洞察已完成。');
+    const narrative = data.structured || data.document?.blocks || {};
+    const findings = Array.isArray(narrative.keyFindings) ? narrative.keyFindings : (data.findings || []);
+    elements.findingGrid.innerHTML = findings.map(item => `<div class="finding-card violet"><small>关键发现</small><strong>${escapeHtml(item.text || item.value || '')}</strong><span>证据：${escapeHtml((item.evidenceIds || []).join('、'))}</span></div>`).join('');
+    elements.outputContent.innerHTML = data.document ? data.document.blocks.filter(block => block.type === 'ai-narrative').map(block => `<section class="insight-document-section"><h5>${escapeHtml(block.title || '洞察')}</h5><p>${markdown(block.content || '')}</p></section>`).join('') : markdown(data.content || '洞察已完成。');
+    if (data.exploreRun) elements.outputContent.insertAdjacentHTML('beforeend', `<div class="insight-followup-note">证据不足，已关联 Explore 运行 ${escapeHtml(data.exploreRun.id)}，状态：${escapeHtml(statusLabel(data.exploreRun.status))}</div>`);
+    if (data.document) renderPersistedInsightDocument(data.document, state.activeResult.versions);
   } catch (error) {
     elements.outputContent.innerHTML = `<div class="error-box"><strong>暂未完成二次洞察</strong><br>${escapeHtml(error.message)}</div>`;
   } finally {
@@ -719,6 +790,31 @@ function renderSemanticMetadata(metadata) {
   populateAgentFilterFields(metadata);
 }
 
+function renderChatSemanticMetadata(metadata) {
+  const status = document.querySelector('#chat-semantic-status');
+  if (!status) return;
+  status.textContent = '已加载';
+  document.querySelector('#chat-semantic-description').textContent = metadata.description || '未配置业务描述';
+  document.querySelector('#chat-semantic-measures').textContent = shortFieldList(metadata.roles?.measure);
+  document.querySelector('#chat-semantic-dimensions').textContent = shortFieldList([...(metadata.roles?.dimension || []), ...(metadata.roles?.geography || [])]);
+  document.querySelector('#chat-semantic-times').textContent = shortFieldList(metadata.roles?.time);
+}
+
+async function loadChatMetadata(datasetId) {
+  const status = document.querySelector('#chat-semantic-status');
+  if (!datasetId || !status) return;
+  status.textContent = '读取中';
+  try {
+    const response = await fetch(`/api/datasets/${encodeURIComponent(datasetId)}/metadata`);
+    const metadata = await response.json();
+    if (!response.ok) throw new Error(metadata.message || '数据集语义读取失败');
+    if (elements.dataset.value !== datasetId) return;
+    renderChatSemanticMetadata(metadata);
+  } catch {
+    status.textContent = '读取失败';
+  }
+}
+
 async function loadAgentMetadata(datasetId) {
   if (!datasetId) return;
   state.agentMetadata = null;
@@ -935,15 +1031,22 @@ async function loadHealth() {
     const data = await response.json();
     elements.connectionPill.classList.toggle('connected', Boolean(data.connected));
     elements.connectionPill.classList.toggle('error', !data.connected);
-    elements.connectionText.textContent = data.connected ? 'Wyn 已连接' : 'Wyn 连接异常';
+    elements.connectionText.textContent = data.connected ? '已连接' : '连接异常';
     elements.connectionPill.title = data.message || '';
+    elements.smartConnectionPill.classList.toggle('connected', Boolean(data.connected));
+    elements.smartConnectionPill.classList.toggle('error', !data.connected);
+    elements.smartConnectionText.textContent = data.connected ? '已连接' : '连接异常';
+    elements.smartConnectionPill.title = data.message || '';
     if (data.viewProxyPort) state.viewProxyPort = Number(data.viewProxyPort);
-    if (data.server) document.querySelector('#server-address').textContent = data.server.replace(/^https?:\/\//, '');
+    const serverAddress = document.querySelector('#server-address');
+    if (data.server && serverAddress) serverAddress.textContent = data.server.replace(/^https?:\/\//, '');
     state.agentEngineLabel = data.llmConfigured ? `${data.llmModel} + 确定性分析` : 'Atlas 确定性分析引擎';
     document.querySelector('#agent-engine-model').textContent = state.agentEngineLabel;
   } catch {
     elements.connectionPill.classList.add('error');
     elements.connectionText.textContent = '代理服务异常';
+    elements.smartConnectionPill.classList.add('error');
+    elements.smartConnectionText.textContent = '代理服务异常';
   }
 }
 
@@ -973,7 +1076,7 @@ async function loadDatasets() {
     elements.smartAsk.disabled = false;
     elements.agentRunButton.disabled = false;
     setSending(false);
-    if (state.datasets[0]) await loadAgentMetadata(state.datasets[0].id);
+    if (state.datasets[0]) await Promise.all([loadAgentMetadata(state.datasets[0].id), loadChatMetadata(state.datasets[0].id)]);
   } catch (error) {
     elements.dataset.innerHTML = '<option value="">数据集加载失败</option>';
     elements.agentDataset.innerHTML = '<option value="">数据集加载失败</option>';
@@ -981,6 +1084,9 @@ async function loadDatasets() {
     elements.connectionPill.classList.add('error');
     elements.connectionText.textContent = '配置需要检查';
     elements.connectionPill.title = error.message;
+    elements.smartConnectionPill.classList.add('error');
+    elements.smartConnectionText.textContent = '配置需要检查';
+    elements.smartConnectionPill.title = error.message;
     elements.dataset.disabled = true;
     elements.agentDataset.disabled = true;
     elements.smartDataset.disabled = true;
@@ -1179,6 +1285,7 @@ function legacySmartVisualization(block, result) {
     encoding: {
       category: { field: block.encoding?.x || dimension.name, label: dimension.displayName || dimension.sourceField || dimension.name, type: dimension.type === 'date' || dimension.grain ? 'temporal' : 'nominal' },
       seriesDimension: null,
+      facetDimension: null,
       measures: [{ field: block.encoding?.y || measure.name, label: measure.displayName || measure.sourceField || measure.name, mark: type === 'line' ? 'line' : 'bar', axis: 'left', format: measure.format === 'percentage' ? 'percentage' : 'number', order: 0 }],
     },
     options: { stack: false, showLegend: false, showLabels: type === 'bar', categoryLimit: type === 'bar' ? 20 : 0, seriesLimit: 0, groupRemainderAsOther: false, dataZoom: false },
@@ -1191,6 +1298,7 @@ function smartChartSeriesData(spec, result, type) {
   const categoryField = spec.encoding.category.field;
   const categorySchema = result?.schema?.find(column => column.name === categoryField);
   const seriesField = spec.encoding.seriesDimension?.field || null;
+  const facetField = spec.encoding.facetDimension?.field || null;
   const measures = spec.encoding.measures || [];
   const categoryKeys = [...new Set(rows.map(row => row?.[categoryField]).filter(value => value != null))];
   const aggregate = (filteredRows, field) => {
@@ -1212,37 +1320,36 @@ function smartChartSeriesData(spec, result, type) {
   const limit = spec.options?.categoryLimit || 0;
   const selectedKeys = limit ? categoryKeys.slice(0, limit) : categoryKeys;
   const categories = selectedKeys.map(key => String(smartChartFormatPeriod(key, categorySchema, result)));
-  if (!seriesField) {
-    return {
-      categories,
-      series: measures.map(measure => ({
-        name: measure.label,
-        mark: type === 'combo' ? measure.mark : type === 'line' ? 'line' : 'bar',
-        axis: type === 'combo' ? measure.axis : 'left',
-        format: measure.format,
-        data: selectedKeys.map(key => aggregate(rows.filter(row => row?.[categoryField] === key), measure.field)),
-      })),
-    };
-  }
-  const seriesTotals = new Map();
-  for (const row of rows) {
-    const key = row?.[seriesField];
-    if (key == null) continue;
-    const total = measures.reduce((sum, measure) => sum + Math.abs(Number(row?.[measure.field]) || 0), 0);
-    seriesTotals.set(key, (seriesTotals.get(key) || 0) + total);
-  }
-  let seriesKeys = [...seriesTotals.keys()].sort((a, b) => seriesTotals.get(b) - seriesTotals.get(a));
-  if (spec.options?.seriesLimit) seriesKeys = seriesKeys.slice(0, spec.options.seriesLimit);
-  return {
-    categories,
-    series: seriesKeys.flatMap(seriesKey => measures.map(measure => ({
-      name: measures.length > 1 ? `${seriesKey} · ${measure.label}` : String(seriesKey),
-      mark: type === 'line' ? 'line' : 'bar',
-      axis: 'left',
+  const buildSeries = scopedRows => {
+    if (!seriesField) return measures.map(measure => ({
+      name: measure.label,
+      mark: type === 'combo' ? measure.mark : type === 'line' ? 'line' : 'bar',
+      axis: type === 'combo' ? measure.axis : 'left',
       format: measure.format,
-      data: selectedKeys.map(categoryKey => aggregate(rows.filter(row => row?.[categoryField] === categoryKey && row?.[seriesField] === seriesKey), measure.field)),
-    }))),
+      data: selectedKeys.map(key => aggregate(scopedRows.filter(row => row?.[categoryField] === key), measure.field)),
+    }));
+    const seriesTotals = new Map();
+    for (const row of scopedRows) {
+      const key = row?.[seriesField];
+      if (key == null) continue;
+      const total = measures.reduce((sum, measure) => sum + Math.abs(Number(row?.[measure.field]) || 0), 0);
+      seriesTotals.set(key, (seriesTotals.get(key) || 0) + total);
+    }
+    let seriesKeys = [...seriesTotals.keys()].sort((a, b) => seriesTotals.get(b) - seriesTotals.get(a));
+    if (spec.options?.seriesLimit) seriesKeys = seriesKeys.slice(0, spec.options.seriesLimit);
+    return seriesKeys.flatMap(seriesKey => measures.map(measure => ({
+      name: measures.length > 1 ? `${seriesKey} · ${measure.label}` : String(seriesKey),
+      mark: type === 'combo' ? measure.mark : type === 'line' ? 'line' : 'bar',
+      axis: type === 'combo' ? measure.axis : 'left',
+      format: measure.format,
+      data: selectedKeys.map(categoryKey => aggregate(scopedRows.filter(row => row?.[categoryField] === categoryKey && row?.[seriesField] === seriesKey), measure.field)),
+    })));
   };
+  if (facetField) {
+    const facetKeys = [...new Set(rows.map(row => row?.[facetField]).filter(value => value != null))];
+    return { categories, panels: facetKeys.map(facetKey => ({ name: String(facetKey), series: buildSeries(rows.filter(row => row?.[facetField] === facetKey)) })) };
+  }
+  return { categories, series: buildSeries(rows) };
 }
 
 function smartChartOption(spec, result, selectedType = spec.type) {
@@ -1263,11 +1370,47 @@ function smartChartOption(spec, result, selectedType = spec.type) {
     };
   }
   const horizontal = type === 'bar';
+  const categoryAxis = { type: 'category', data: data.categories, axisLine: { lineStyle: { color: '#ccd3d6' } }, axisTick: { show: false }, axisLabel: { color: '#777f84', fontSize: 10, margin: 11, rotate: !horizontal && data.categories.some(label => String(label).length > 7) ? 24 : 0 } };
+  if (data.panels?.length) {
+    const panelCount = data.panels.length;
+    const axisCount = type === 'combo' ? panelCount * 2 : panelCount;
+    const panelHeight = Math.max(16, Math.floor(82 / panelCount));
+    const panelGap = 3;
+    const grids = data.panels.map((panel, index) => ({ left: horizontal ? 118 : 58, right: type === 'combo' ? 62 : 24, top: `${8 + index * (panelHeight + panelGap)}%`, height: `${panelHeight}%`, containLabel: false }));
+    const xAxes = data.panels.map(panel => horizontal ? { type: 'value', splitLine: { lineStyle: { color: '#edf0f1' } }, axisLabel: { color: '#858c91', fontSize: 10 } } : { ...categoryAxis, data: data.categories });
+    const yAxes = data.panels.flatMap((panel, index) => type === 'combo' ? [
+      { type: 'value', gridIndex: index, position: 'left', splitLine: { lineStyle: { color: '#edf0f1' } }, axisLabel: { color: '#858c91', fontSize: 10 } },
+      { type: 'value', gridIndex: index, position: 'right', splitLine: { show: false }, axisLabel: { color: '#858c91', fontSize: 10, formatter: value => percentAxis ? `${Math.round(value * 100)}%` : value } },
+    ] : [{ type: horizontal ? 'category' : 'value', gridIndex: index, data: horizontal ? data.categories : undefined, inverse: horizontal, splitLine: { show: !horizontal, lineStyle: { color: '#edf0f1' } }, axisLabel: { color: '#858c91', fontSize: 10 } }]);
+    const series = data.panels.flatMap((panel, panelIndex) => panel.series.map(item => ({
+      name: `${panel.name} · ${item.name}`,
+      type: item.mark,
+      data: item.data,
+      xAxisIndex: panelIndex,
+      yAxisIndex: type === 'combo' && item.axis === 'right' ? panelIndex * 2 + 1 : type === 'combo' ? panelIndex * 2 : panelIndex,
+      stack: type === 'stacked-column' || spec.options?.stack ? `panel-${panelIndex}` : undefined,
+      symbolSize: 6,
+      lineStyle: item.mark === 'line' ? { width: 2.5 } : undefined,
+      barMaxWidth: 34,
+      itemStyle: item.mark === 'bar' ? { borderRadius: horizontal ? [0, 3, 3, 0] : [3, 3, 0, 0] } : undefined,
+      tooltip: { valueFormatter: valueFormatter(item.format) },
+    })));
+    return {
+      animationDuration: 450,
+      color: palette,
+      tooltip: { trigger: 'axis', confine: true },
+      legend: spec.options?.showLegend ? { type: 'scroll', top: 2, right: 10, textStyle: { color: '#667177', fontSize: 10 } } : undefined,
+      grid: grids,
+      xAxis: xAxes.map((axis, index) => ({ ...axis, gridIndex: index })),
+      yAxis: yAxes,
+      dataZoom: spec.options?.dataZoom ? (horizontal ? [{ type: 'inside', yAxisIndex: [...Array(axisCount).keys()] }, { type: 'slider', yAxisIndex: [...Array(axisCount).keys()], width: 16, left: 10 }] : [{ type: 'inside', xAxisIndex: [...Array(panelCount).keys()] }, { type: 'slider', xAxisIndex: [...Array(panelCount).keys()], height: 16, bottom: 12 }]) : undefined,
+      series,
+    };
+  }
   const yAxes = type === 'combo' ? [
     { type: 'value', position: 'left', splitLine: { lineStyle: { color: '#edf0f1' } }, axisLabel: { color: '#858c91', fontSize: 10 } },
     { type: 'value', position: 'right', splitLine: { show: false }, axisLabel: { color: '#858c91', fontSize: 10, formatter: value => percentAxis ? `${Math.round(value * 100)}%` : value } },
   ] : { type: horizontal ? 'category' : 'value', data: horizontal ? data.categories : undefined, inverse: horizontal, splitLine: { show: !horizontal, lineStyle: { color: '#edf0f1' } }, axisLine: { lineStyle: { color: '#ccd3d6' } }, axisTick: { show: false }, axisLabel: { color: '#777f84', fontSize: 10, width: horizontal ? 120 : undefined, overflow: 'truncate' } };
-  const categoryAxis = { type: 'category', data: data.categories, axisLine: { lineStyle: { color: '#ccd3d6' } }, axisTick: { show: false }, axisLabel: { color: '#777f84', fontSize: 10, margin: 11, rotate: !horizontal && data.categories.some(label => String(label).length > 7) ? 24 : 0 } };
   return {
     animationDuration: 450,
     color: palette,
@@ -1276,7 +1419,7 @@ function smartChartOption(spec, result, selectedType = spec.type) {
     grid: { left: horizontal ? 118 : 58, right: type === 'combo' ? 62 : horizontal && spec.options?.showLabels ? 94 : 24, top: data.series.length > 1 ? 42 : 20, bottom: spec.options?.dataZoom ? 62 : 45, containLabel: false },
     xAxis: horizontal ? { type: 'value', splitLine: { lineStyle: { color: '#edf0f1' } }, axisLabel: { color: '#858c91', fontSize: 10 } } : categoryAxis,
     yAxis: horizontal ? yAxes : type === 'combo' ? yAxes : { type: 'value', splitLine: { lineStyle: { color: '#edf0f1' } }, axisLabel: { color: '#858c91', fontSize: 10 } },
-    dataZoom: spec.options?.dataZoom && !horizontal ? [{ type: 'inside' }, { type: 'slider', height: 16, bottom: 12 }] : undefined,
+    dataZoom: spec.options?.dataZoom ? (horizontal ? [{ type: 'inside', yAxisIndex: 0 }, { type: 'slider', yAxisIndex: 0, width: 16, left: 10 }] : [{ type: 'inside' }, { type: 'slider', height: 16, bottom: 12 }]) : undefined,
     series: data.series.map(series => ({
       name: series.name,
       type: series.mark,
@@ -1321,7 +1464,81 @@ function hydrateSmartCharts(root, document, resultSets = []) {
     render(spec.type);
   }
 }
-function renderSmartDocument(document, resultSets = [], runtimeStatus = null, queryRequests = [], feedbackContext = null) {
+const SMART_TABLE_PAGE_SIZE = 100;
+
+function smartTableRange(entry) {
+  const returnedRows = entry.result?.rows?.length || 0;
+  const quality = entry.result?.quality || {};
+  // Post-processing can reduce rows without making the result incomplete.
+  const limited = quality.isTruncated === true || quality.limitReached === true;
+  const totalValue = entry.result?.statistics?.totalRowCount ?? quality.totalRowCount;
+  const numericTotal = Number(totalValue);
+  const totalRows = Number.isFinite(numericTotal) ? numericTotal : null;
+  const label = limited ? `结果可能不完整，已返回 ${returnedRows.toLocaleString('zh-CN')} 行` : '数据';
+  return { returnedRows, totalRows, limited, label };
+}
+
+function renderSmartTableMarkup(tableKey) {
+  const entry = state.smartTables.get(tableKey);
+  if (!entry) return '';
+  const rows = entry.result?.rows || [];
+  const columns = entry.columns || [];
+  const pageCount = Math.max(1, Math.ceil(rows.length / SMART_TABLE_PAGE_SIZE));
+  entry.page = Math.max(0, Math.min(entry.page || 0, pageCount - 1));
+  const start = entry.page * SMART_TABLE_PAGE_SIZE;
+  const pageRows = rows.slice(start, start + SMART_TABLE_PAGE_SIZE);
+  const range = smartTableRange(entry);
+  const cell = row => columns.map(column => `<td>${escapeHtml(entry.formatCell(row, column))}</td>`).join('');
+  const warning = range.limited ? `<p class="smart-table-limit-warning">${escapeHtml(range.label)}，请缩小筛选范围以获取完整结果。</p>` : '';
+  const pageLabel = `${start + 1}-${Math.min(start + pageRows.length, rows.length)}`;
+  const previousDisabled = entry.page <= 0 ? ' disabled' : '';
+  const nextDisabled = entry.page >= pageCount - 1 ? ' disabled' : '';
+  return `<div class="smart-query-table-wrap" data-smart-table="${escapeHtml(tableKey)}"><div class="smart-table-toolbar"><span class="smart-table-range">${escapeHtml(range.label)}${rows.length ? ` · 当前显示 ${pageLabel}` : ''}</span><div class="smart-table-actions"><button type="button" data-smart-table-copy="${escapeHtml(tableKey)}" data-smart-table-copy-mode="page" title="复制当前页数据"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="1"/><path d="M5 16V5a1 1 0 0 1 1-1h11"/></svg>复制当前页</button><button type="button" data-smart-table-copy="${escapeHtml(tableKey)}" data-smart-table-copy-mode="all" title="复制全部返回数据"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="1"/><path d="M5 16V5a1 1 0 0 1 1-1h11M12 12h4m-2-2v4"/></svg>复制全部</button></div></div>${warning}<div class="smart-table-scroll"><table class="smart-query-table"><thead><tr>${columns.map(column => `<th>${escapeHtml(entry.columnLabels[column] || column)}</th>`).join('')}</tr></thead><tbody>${pageRows.map(row => `<tr>${cell(row)}</tr>`).join('')}</tbody></table></div>${pageCount > 1 ? `<div class="smart-table-pagination"><button type="button" data-smart-table-page="${escapeHtml(tableKey)}" data-smart-table-page-delta="-1" aria-label="上一页"${previousDisabled}>上一页</button><span>第 ${entry.page + 1} / ${pageCount} 页</span><button type="button" data-smart-table-page="${escapeHtml(tableKey)}" data-smart-table-page-delta="1" aria-label="下一页"${nextDisabled}>下一页</button></div>` : ''}</div>`;
+}
+
+function smartTableCopyText(entry, mode) {
+  const rows = entry.result?.rows || [];
+  const columns = entry.columns || [];
+  const selected = mode === 'page' ? rows.slice((entry.page || 0) * SMART_TABLE_PAGE_SIZE, (entry.page || 0) * SMART_TABLE_PAGE_SIZE + SMART_TABLE_PAGE_SIZE) : rows;
+  return [columns.map(column => entry.columnLabels[column] || column), ...selected.map(row => columns.map(column => entry.formatCell(row, column)))].map(row => row.map(value => String(value ?? '').replace(/[\t\r\n]+/g, ' ')).join('\t')).join('\n');
+}
+
+function copyTextWithLegacyApi(text) {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.opacity = '0';
+  textarea.style.pointerEvents = 'none';
+  document.body.append(textarea);
+  textarea.select();
+  const copied = document.execCommand('copy');
+  textarea.remove();
+  if (!copied) throw new Error('浏览器未授予剪贴板权限');
+}
+
+async function copySmartTable(tableKey, mode, button) {
+  const entry = state.smartTables.get(tableKey);
+  if (!entry) return;
+  const text = smartTableCopyText(entry, mode);
+  try {
+    let copied = false;
+    if (navigator.clipboard?.writeText) {
+      try {
+        await navigator.clipboard.writeText(text);
+        copied = true;
+      } catch {
+        // Clipboard API can exist but still be unavailable in embedded browsers.
+      }
+    }
+    if (!copied) copyTextWithLegacyApi(text);
+    const original = button.innerHTML;
+    button.textContent = '已复制';
+    window.setTimeout(() => { button.innerHTML = original; }, 1200);
+  } catch (error) {
+    elements.smartStatus.textContent = `复制失败：${error.message}`;
+  }
+}
+function renderSmartDocument(document, resultSets = [], runtimeStatus = null, queryRequests = [], feedbackContext = null, dataInsight = null) {
   if (!document) return '';
   const blocks = Array.isArray(document.blocks) ? document.blocks : [];
   const resultMap = new Map(resultSets.map(result => [result.id, result]));
@@ -1369,13 +1586,19 @@ function renderSmartDocument(document, resultSets = [], runtimeStatus = null, qu
         ? new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(Number(value))
         : value ?? '—';
     };
-    return `<div class="smart-query-table-wrap"><table class="smart-query-table"><thead><tr>${columns.map(column => `<th>${escapeHtml(schemaMap.get(column)?.displayName || schemaMap.get(column)?.sourceField || column)}</th>`).join('')}</tr></thead><tbody>${rows.slice(0, 30).map(row => `<tr>${columns.map(column => `<td>${escapeHtml(cellValue(row, column))}</td>`).join('')}</tr>`).join('')}</tbody></table></div>`;
+    const tableKey = `${block.id}-${result.id}`;
+    state.smartTables.set(tableKey, { block, result, columns, page: 0, formatCell: cellValue, columnLabels: Object.fromEntries(columns.map(column => [column, schemaMap.get(column)?.displayName || schemaMap.get(column)?.sourceField || column])) });
+    return renderSmartTableMarkup(tableKey);
   };
   const datasets = document.scope?.datasets || (document.scope?.datasetId ? [document.scope.datasetId] : []);
   const accuracy = document.scope?.accuracy === 'exact' ? '精确结果' : document.scope?.accuracy === 'sample' ? '样本结果' : '范围待确认';
   elements.smartScope.innerHTML = `<i></i>${datasets.length || 0} 个数据集 · ${accuracy}`;
   const analysisDetails = renderSmartAnalysisDetails(queryRequests, document.scope || {});
   const answerBlock = blocks.find(block => block.id === 'answer-summary' || block.title === '回答');
+  const insightAction = dataInsight?.insightId
+    ? `<button class="smart-insight-action" type="button" data-action="open-smart-insight" data-insight-id="${escapeHtml(dataInsight.insightId)}" title="使用当前回答的结构化结果进入数据洞察"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2"/></svg><span>数据洞察</span></button>`
+    : '';
+  const answerHead = title => `<div class="smart-answer-head"><h4>${escapeHtml(title)}</h4>${insightAction}</div>`;
   const renderBlock = block => {
     const title = escapeHtml(block.title || block.id || '分析块');
     if (block.type === 'kpi') return `<article class="smart-query-block"><h4>${title}</h4><strong class="value">${escapeHtml(block.value ?? '—')}</strong></article>`;
@@ -1385,8 +1608,8 @@ function renderSmartDocument(document, resultSets = [], runtimeStatus = null, qu
     return `<article class="smart-query-block wide"><h4>${title}</h4><p>${escapeHtml(block.content || block.message || '')}</p></article>`;
   };
   const answerHtml = answerBlock
-    ? `<article class="smart-query-block wide smart-query-answer"><h4>${escapeHtml(answerBlock.title || '回答')}</h4><p>${escapeHtml(answerBlock.content || answerBlock.message || '')}</p>${analysisDetails}</article>`
-    : `<article class="smart-query-block wide smart-query-answer"><h4>回答</h4><p>已完成本次分析。</p>${analysisDetails}</article>`;
+    ? `<article class="smart-query-block wide smart-query-answer">${answerHead(answerBlock.title || '回答')}<p>${escapeHtml(answerBlock.content || answerBlock.message || '')}</p>${analysisDetails}</article>`
+    : `<article class="smart-query-block wide smart-query-answer">${answerHead('回答')}<p>已完成本次分析。</p>${analysisDetails}</article>`;
   const blockHtml = `${answerHtml}${blocks.filter(block => block !== answerBlock).map(renderBlock).join('')}`;
   const status = runtimeStatus?.message ? `<p class="smart-runtime-note ${runtimeStatus.level === 'warning' ? 'warning' : ''}"><i></i>${escapeHtml(runtimeStatus.message)}</p>` : '';
   const suggestions = (document.followUpActions || []).map(action => `<button type="button" title="${escapeHtml(action.label)}" data-smart-followup="${escapeHtml(action.question)}">${escapeHtml(action.label)}</button>`).join('');
@@ -1430,10 +1653,11 @@ function submitSmartFeedback(button) {
 }
 
 function smartWelcomeMarkup() {
-  return '<section class="welcome-card smart-chat-welcome"><div class="orb-wrap" aria-hidden="true"><div class="orb smart-orb"><span></span></div></div><h2>让数据，直接回答问题</h2><p>选择一个业务数据集，用自然语言提问。独立问数将基于 Wyn 数据集语义执行受控查询，并支持连续追问。</p><div class="suggestion-grid"><button class="suggestion" type="button" data-smart-prompt="总销售额是多少？"><span class="suggestion-icon violet"><svg viewBox="0 0 24 24"><path d="m4 17 5-5 4 3 7-8M16 7h4v4"/></svg></span><span><strong>核心指标概览</strong><small>总销售额是多少？</small></span><svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button><button class="suggestion" type="button" data-smart-prompt="2023至2025年销售额和同比增长率"><span class="suggestion-icon cyan"><svg viewBox="0 0 24 24"><path d="M4 18h16M6 15l4-5 3 3 5-7"/></svg></span><span><strong>发现趋势变化</strong><small>按年度分析销售额同比</small></span><svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button><button class="suggestion" type="button" data-smart-prompt="过去三年销售额累计排名前三的销售经理是谁"><span class="suggestion-icon amber"><svg viewBox="0 0 24 24"><path d="M5 20V9h4v11M10 20V4h4v16M15 20v-7h4v7"/></svg></span><span><strong>识别业务贡献</strong><small>销售经理累计销售额排名</small></span><svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button><button class="suggestion" type="button" data-smart-prompt="2023至2025年每年利润前三的城市"><span class="suggestion-icon rose"><svg viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3Zm0 6v5m0 3h.01"/></svg></span><span><strong>定位重点对象</strong><small>每年利润前三的城市</small></span><svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button></div></section>';
+  return '<section class="welcome-card smart-chat-welcome"><div class="orb-wrap" aria-hidden="true"><div class="orb smart-orb"><span></span></div></div><h2>让数据，直接回答问题</h2><p>选择一个业务数据集，用自然语言提问。智能问数将基于 Wyn 数据集语义执行受控查询，并支持连续追问。</p><div class="suggestion-grid"><button class="suggestion" type="button" data-smart-prompt="总销售额是多少？"><span class="suggestion-icon violet"><svg viewBox="0 0 24 24"><path d="m4 17 5-5 4 3 7-8M16 7h4v4"/></svg></span><span><strong>核心指标概览</strong><small>总销售额是多少？</small></span><svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button><button class="suggestion" type="button" data-smart-prompt="2023至2025年销售额和同比增长率"><span class="suggestion-icon cyan"><svg viewBox="0 0 24 24"><path d="M4 18h16M6 15l4-5 3 3 5-7"/></svg></span><span><strong>发现趋势变化</strong><small>按年度分析销售额同比</small></span><svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button><button class="suggestion" type="button" data-smart-prompt="过去三年销售额累计排名前三的销售经理是谁"><span class="suggestion-icon amber"><svg viewBox="0 0 24 24"><path d="M5 20V9h4v11M10 20V4h4v16M15 20v-7h4v7"/></svg></span><span><strong>识别业务贡献</strong><small>销售经理累计销售额排名</small></span><svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button><button class="suggestion" type="button" data-smart-prompt="2023至2025年每年利润前三的城市"><span class="suggestion-icon rose"><svg viewBox="0 0 24 24"><path d="M12 3 2.8 20h18.4L12 3Zm0 6v5m0 3h.01"/></svg></span><span><strong>定位重点对象</strong><small>每年利润前三的城市</small></span><svg class="arrow" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></svg></button></div></section>';
 }
 
 function resetSmartConversation() {
+  state.smartTables.clear();
   disposeSmartCharts();
   state.smartConversationId = null;
   state.smartTurns = 0;
@@ -1451,9 +1675,14 @@ function resetSmartConversation() {
 
 function updateSmartContext(payload) {
   const refs = payload.response?.semanticRefs || {};
+  const pendingIntent = payload.response?.pendingContext?.intent || payload.conversation?.pendingContext?.intent || null;
+  const pendingMetrics = pendingIntent?.metrics?.filter(item => !item.internal).map(item => item.field || item.alias) || [];
+  const pendingDimensions = pendingIntent?.dimensions?.filter(item => !item.internal).map(item => item.field || item.alias) || [];
+  const pendingTime = pendingIntent?.time?.source ? [`时间：${pendingIntent.time.source}${pendingIntent.time.grouping ? `（按${pendingIntent.time.grouping}）` : ''}`] : [];
+  const pendingDerived = pendingIntent?.semanticFrame?.derivedMetrics?.filter(item => item.status === 'unresolved').map(item => `待确认：${item.source}`) || [];
   const filters = refs.filters || payload.conversation?.activeFilters || [];
-  elements.smartContextMetrics.textContent = (refs.metrics || payload.conversation?.activeMetrics || []).join('、') || '未指定';
-  elements.smartContextDimensions.textContent = (refs.dimensions || payload.conversation?.activeDimensions || []).join('、') || '未指定';
+  elements.smartContextMetrics.textContent = [...new Set([...(refs.metrics || []), ...pendingMetrics, ...pendingDerived])].join('、') || '未指定';
+  elements.smartContextDimensions.textContent = [...new Set([...(refs.dimensions || []), ...pendingDimensions, ...pendingTime])].join('、') || '未指定';
   elements.smartContextFilters.textContent = filters.length ? filters.map(item => `${item.field} ${item.operator} ${item.value}`).join('；') : '全部数据';
   elements.smartContextSkills.textContent = (payload.response?.diagnostics?.skillRefs || payload.conversation?.loadedSkillRefs || []).join('、') || '未匹配';
   state.smartTurns += 1;
@@ -1504,18 +1733,23 @@ async function askSmartQuery() {
       if (!created.ok) throw new Error(payload.message || '会话创建失败');
       state.smartConversationId = payload.id;
     }
-    const response = await fetch(`/api/smart-query/conversations/${encodeURIComponent(state.smartConversationId)}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question }), signal: abortController.signal });
+    const response = await fetch(`/api/smart-query/conversations/${encodeURIComponent(state.smartConversationId)}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, clarificationSelection: state.smartClarificationSelection || null }), signal: abortController.signal });
+    state.smartClarificationSelection = null;
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.message || '智能问数失败');
     document.querySelector('#smart-message-loading')?.remove();
     if (payload.response?.status === 'needs_clarification') {
       const clarification = payload.response.clarification?.question || '需要进一步确认';
-      const options = (payload.response.clarification?.options || []).map(value => `<button type="button" data-smart-followup="${escapeHtml(value)}">${escapeHtml(value)}</button>`).join('');
+      const options = (payload.response.clarification?.options || []).map(option => {
+        const label = typeof option === 'string' ? option : option.label;
+        const selection = typeof option === 'object' ? ` data-smart-selection='${escapeHtml(JSON.stringify({ slotId: option.slotId, concepts: option.concepts, mode: option.mode }))}'` : '';
+        return `<button type="button" data-smart-followup="${escapeHtml(label)}"${selection}>${escapeHtml(label)}</button>`;
+      }).join('');
       elements.smartMessages.insertAdjacentHTML('beforeend', `<article class="smart-message smart-message-assistant"><div class="smart-assistant-avatar">问</div><div class="smart-clarification"><strong>需要确认</strong><p>${escapeHtml(clarification)}</p>${options ? `<div class="smart-followups">${options}</div>` : ''}</div></article>`);
       elements.smartStatus.textContent = '等待你补充信息';
       updateSmartContext(payload);
     } else {
-      elements.smartMessages.insertAdjacentHTML('beforeend', renderSmartDocument(payload.response?.document, payload.response?.resultSets || [], payload.response?.runtimeStatus, payload.response?.queryRequests || [], payload.response?.trace || null));
+      elements.smartMessages.insertAdjacentHTML('beforeend', renderSmartDocument(payload.response?.document, payload.response?.resultSets || [], payload.response?.runtimeStatus, payload.response?.queryRequests || [], payload.response?.trace || null, payload.response?.dataInsight || null));
       hydrateSmartCharts(elements.smartMessages.lastElementChild, payload.response?.document, payload.response?.resultSets || []);
       elements.smartStatus.textContent = '已完成，可以继续追问';
       updateSmartContext(payload);
@@ -1670,11 +1904,36 @@ elements.smartDataset.addEventListener('change', () => {
   resetSmartConversation();
   if (datasetId) loadAgentMetadata(datasetId);
 });
+elements.dataset.addEventListener('change', () => {
+  resetConversation();
+  loadChatMetadata(elements.dataset.value);
+});
 elements.smartNewConversation.addEventListener('click', resetSmartConversation);
 elements.smartQuestion.addEventListener('keydown', event => {
   if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); askSmartQuery(); }
 });
 elements.smartMessages.addEventListener('click', event => {
+  const tablePage = event.target.closest('[data-smart-table-page]');
+  if (tablePage) {
+    const tableKey = tablePage.dataset.smartTablePage;
+    const entry = state.smartTables.get(tableKey);
+    if (entry) {
+      entry.page = (entry.page || 0) + Number(tablePage.dataset.smartTablePageDelta || 0);
+      const wrap = tablePage.closest('[data-smart-table]');
+      if (wrap) wrap.outerHTML = renderSmartTableMarkup(tableKey);
+    }
+    return;
+  }
+  const tableCopy = event.target.closest('[data-smart-table-copy]');
+  if (tableCopy) {
+    copySmartTable(tableCopy.dataset.smartTableCopy, tableCopy.dataset.smartTableCopyMode || 'all', tableCopy);
+    return;
+  }
+  const insightButton = event.target.closest('[data-action="open-smart-insight"]');
+  if (insightButton) {
+    openInsightById(insightButton.dataset.insightId).catch(error => { elements.smartStatus.textContent = error.message; });
+    return;
+  }
   const feedbackCancel = event.target.closest('[data-smart-feedback-cancel]');
   if (feedbackCancel) {
     const container = feedbackCancel.closest('[data-smart-feedback-turn]');
@@ -1693,6 +1952,14 @@ elements.smartMessages.addEventListener('click', event => {
   const question = prompt?.dataset.smartPrompt || followup?.dataset.smartFollowup;
   if (!question) return;
   elements.smartQuestion.value = question;
+  if (followup?.dataset.smartSelection) {
+    try { state.smartClarificationSelection = JSON.parse(followup.dataset.smartSelection); } catch { state.smartClarificationSelection = null; }
+  } else if (followup) {
+    const label = String(question || '');
+    const concepts = [['销售额', 'revenue'], ['利润', 'profit'], ['订单数量', 'orderCount'], ['订单数', 'orderCount'], ['销量', 'quantity']]
+      .filter(([term]) => label.includes(term)).map(([, concept]) => concept);
+    state.smartClarificationSelection = concepts.length ? { slotId: null, concepts: [...new Set(concepts)], mode: /都做|全部|三个|各项/.test(label) ? 'all' : 'single' } : null;
+  } else state.smartClarificationSelection = null;
   askSmartQuery();
 });
 elements.smartMessages.addEventListener('submit', event => {
@@ -1755,7 +2022,8 @@ document.querySelector('#agent-goal-presets').addEventListener('click', event =>
   elements.agentGoal.focus();
 });
 elements.refreshResults.addEventListener('click', () => loadAnalysisResults());
-elements.backToChat.addEventListener('click', () => switchSection('chat'));
+elements.insightExport.addEventListener('click', exportInsightDocument);
+elements.backToChat.addEventListener('click', () => switchSection(state.insightsReturnSection || 'chat'));
 document.querySelector('[data-action="go-chat"]').addEventListener('click', () => switchSection('chat'));
 elements.resultList.addEventListener('click', event => {
   const item = event.target.closest('[data-result-id]');
@@ -1768,6 +2036,24 @@ document.querySelector('#analysis-presets').addEventListener('click', event => {
   if (!preset) return;
   elements.secondaryPrompt.value = preset.dataset.preset;
   elements.secondaryPrompt.focus();
+});
+elements.insightVersionBar.addEventListener('click', async event => {
+  const button = event.target.closest('[data-insight-explore]');
+  if (!button || !state.activeResult) return;
+  button.disabled = true;
+  button.textContent = '正在启动 Explore';
+  try {
+    const datasets = state.activeResult.input?.datasets?.map(item => item.id).filter(Boolean) || [];
+    const response = await fetch('/api/data-insight-runs', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ mode: 'explore', datasetIds: datasets, question: state.activeResult.title, metadata: { parentInsightId: state.activeResult.insightId } }) });
+    const run = await response.json();
+    if (!response.ok) throw new Error(run.message || 'Explore 启动失败');
+    button.textContent = `Explore ${statusLabel(run.status)}`;
+    elements.outputContent.insertAdjacentHTML('beforeend', `<div class="insight-followup-note">已关联 Explore 运行 ${escapeHtml(run.id)}，状态：${escapeHtml(statusLabel(run.status))}</div>`);
+  } catch (error) {
+    button.disabled = false;
+    button.textContent = '证据不足时发起 Explore';
+    elements.outputContent.insertAdjacentHTML('beforeend', `<div class="error-box">${escapeHtml(error.message)}</div>`);
+  }
 });
 document.querySelector('#toggle-raw-data').addEventListener('click', event => {
   const raw = document.querySelector('#raw-data');
@@ -1823,4 +2109,4 @@ window.addEventListener('resize', () => {
 initializeSidebar();
 renderAgentFilters();
 await Promise.all([loadHealth(), loadDatasets(), loadAgentRuns()]);
-elements.input.focus();
+switchSection(state.currentSection);

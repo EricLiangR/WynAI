@@ -137,14 +137,57 @@ test('双维度根据自然语言确定分类和系列角色', () => {
   assert.match(spec.decision.reason, /自然语言指定/);
 });
 
-test('高基数分类应用 TopN，极高基数与显式仅表格要求停止绘图', () => {
+test('排名应用 TopN，较多分类启用缩放，显式仅表格要求停止绘图', () => {
   const twentyFive = fixture({ dimensions: [{ field: '员工姓名', alias: 'employee' }], rows: Array.from({ length: 25 }, (_, index) => ({ employee: `员工${index + 1}`, revenue: 100 - index })) });
   const limited = decideVisualization({ question: '员工销售额排名', ...twentyFive }).spec;
   assert.equal(limited.type, 'bar');
   assert.equal(limited.options.categoryLimit, 20);
   const sixty = fixture({ dimensions: [{ field: '员工姓名', alias: 'employee' }], rows: Array.from({ length: 60 }, (_, index) => ({ employee: `员工${index + 1}`, revenue: index })) });
-  assert.equal(decideVisualization({ question: '查看全部员工销售额', ...sixty }).spec, null);
+  const zoomed = decideVisualization({ question: '查看全部员工销售额', ...sixty }).spec;
+  assert.equal(zoomed.options.categoryLimit, 0);
+  assert.equal(zoomed.options.dataZoom, true);
   assert.equal(decideVisualization({ question: '不要图表，只显示表格', ...twentyFive }).spec, null);
+});
+
+test('三个可见维度使用分面保留分组层次', () => {
+  const input = fixture({
+    dimensions: [
+      { field: '订购日期', alias: 'period', grain: 'month' },
+      { field: '客户地区', alias: 'region' },
+      { field: '员工姓名', alias: 'employee' },
+    ],
+    rows: [{ period: '2025-01-01', region: '华东', employee: '甲', revenue: 10 }],
+  });
+  const decision = decideVisualization({ question: '按月、地区和员工分析销售额', ...input });
+  assert.equal(decision.spec.encoding.category.field, 'period');
+  assert.equal(decision.spec.encoding.seriesDimension.field, 'region');
+  assert.equal(decision.spec.encoding.facetDimension.field, 'employee');
+});
+
+test('超过三个指标时保留表格，三个指标仍允许图表', () => {
+  const three = fixture({
+    measures: [
+      { field: '订单金额', alias: 'revenue', aggregation: 'sum' },
+      { field: '订单利润', alias: 'profit', aggregation: 'sum' },
+      { field: '订单编号', alias: 'orders', aggregation: 'countRows' },
+    ],
+    rows: monthRows.map(row => ({ ...row, profit: row.revenue * 0.2, orders: 2 })),
+  });
+  assert.ok(decideVisualization({ question: '按月分析销售额、利润和订单数', ...three }).spec);
+
+  const four = fixture({
+    measures: [
+      { field: '订单金额', alias: 'revenue', aggregation: 'sum' },
+      { field: '订单利润', alias: 'profit', aggregation: 'sum' },
+      { field: '订单编号', alias: 'orders', aggregation: 'countRows' },
+      { field: '客单价', alias: 'aov', aggregation: 'average' },
+    ],
+    rows: monthRows.map(row => ({ ...row, profit: row.revenue * 0.2, orders: 2, aov: 20 })),
+  });
+  const decision = decideVisualization({ question: '按月分析销售额、利润、订单数和客单价', ...four });
+  assert.equal(decision.spec, null);
+  assert.deepEqual(decision.decision.warnings, ['measure-count-exceeded']);
+  assert.match(decision.decision.reason, /超过三个指标/);
 });
 
 test('问数文档放开单维度单指标限制并输出版本化可视化规格', () => {
@@ -177,4 +220,67 @@ test('货币与计数指标在时间轴上自动使用双轴组合图', () => {
   assert.equal(spec.encoding.measures.find(item => item.field === 'profit').axis, 'left');
   assert.equal(spec.encoding.measures.find(item => item.field === 'order_count').axis, 'right');
   assert.equal(spec.encoding.measures.find(item => item.field === 'order_count').mark, 'line');
+});
+
+test('混合量纲在存在地区系列时仍使用双轴组合图并保留指标编码', () => {
+  const input = fixture({
+    dimensions: [
+      { field: '订购日期', alias: 'period', grain: 'year' },
+      { field: '客户地区', alias: 'region' },
+    ],
+    measures: [
+      { field: '订单金额', alias: 'revenue', aggregation: 'sum' },
+      { field: '订单利润', alias: 'profit', aggregation: 'sum' },
+      { field: '销售额同比增长率', alias: 'revenue_yoy', aggregation: 'average', format: 'percentage' },
+    ],
+    rows: [
+      { period: '2024-01-01', region: '华东', revenue: 1000, profit: 200, revenue_yoy: 0.1 },
+      { period: '2024-01-01', region: '华南', revenue: 800, profit: 160, revenue_yoy: 0.08 },
+      { period: '2025-01-01', region: '华东', revenue: 1200, profit: 260, revenue_yoy: 0.2 },
+      { period: '2025-01-01', region: '华南', revenue: 900, profit: 190, revenue_yoy: 0.125 },
+    ],
+  });
+  const spec = decideVisualization({ question: '每年按地区展示销售额、利润和同比增长率', ...input }).spec;
+  assert.equal(spec.type, 'combo');
+  assert.equal(spec.encoding.seriesDimension.field, 'region');
+  assert.equal(spec.encoding.measures.find(item => item.field === 'revenue').mark, 'bar');
+  assert.equal(spec.encoding.measures.find(item => item.field === 'revenue_yoy').axis, 'right');
+  assert.equal(spec.encoding.measures.find(item => item.field === 'revenue_yoy').mark, 'line');
+});
+
+test('三维结果自动形成分面编码，分面成员过多时保留表格', () => {
+  const input = fixture({
+    dimensions: [
+      { field: '订购日期', alias: 'period', grain: 'year' },
+      { field: '客户地区', alias: 'region' },
+      { field: '员工姓名', alias: 'employee' },
+    ],
+    rows: [
+      { period: '2025-01-01', region: '华东', employee: '甲', revenue: 10 },
+      { period: '2025-01-01', region: '华南', employee: '甲', revenue: 8 },
+      { period: '2025-01-01', region: '华东', employee: '乙', revenue: 7 },
+    ],
+  });
+  const spec = decideVisualization({ question: '按年、地区和员工分别展示销售额', ...input }).spec;
+  assert.equal(spec.encoding.category.field, 'period');
+  assert.ok(spec.encoding.seriesDimension);
+  assert.ok(spec.encoding.facetDimension);
+  const crowded = fixture({
+    dimensions: input.request.select,
+    rows: Array.from({ length: 9 }, (_, index) => ({ period: '2025-01-01', region: '华东', employee: `员工${index}`, revenue: index + 1 })),
+  });
+  assert.equal(decideVisualization({ question: '按年、地区和员工分别展示销售额', ...crowded }).spec, null);
+});
+
+test('分类基数超过 24 时启用 dataZoom，用户显式图表类型优先保留', () => {
+  const input = fixture({
+    dimensions: [{ field: '员工姓名', alias: 'employee' }],
+    rows: Array.from({ length: 30 }, (_, index) => ({ employee: `员工${index + 1}`, revenue: 100 - index })),
+  });
+  const automatic = decideVisualization({ question: '查看全部员工销售额', ...input }).spec;
+  assert.equal(automatic.type, 'bar');
+  assert.equal(automatic.options.dataZoom, true);
+  const explicit = decideVisualization({ question: '希望展示为柱形图，查看员工销售额', ...input }).spec;
+  assert.equal(explicit.type, 'column');
+  assert.equal(explicit.decision.source, 'user');
 });

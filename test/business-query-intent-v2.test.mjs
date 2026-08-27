@@ -92,3 +92,26 @@ test('结果覆盖校验会拒绝缺失用户明确要求的年份', () => {
   assert.equal(validation.valid, false);
   assert.match(validation.errors.join('；'), /2024/);
 });
+
+test('华东和华南解析为同一地区字段的 in 筛选', () => {
+  const intent = buildBusinessQueryIntent({ metadata, question: '过去五年，华东和华南地区每年的销售额和利润', now: new Date('2026-08-27T00:00:00+08:00') });
+  const plan = compileBusinessQueryIntent(metadata, intent);
+  assert.equal(plan.status, 'supported');
+  const region = intent.filters.find(item => item.field === '客户地区');
+  assert.deepEqual(region, { field: '客户地区', operator: 'in', value: ['华东', '华南'] });
+  assert.deepEqual(plan.request.filters.find(item => item.field === '客户地区').value, ['华东', '华南']);
+});
+
+test('地区 in 筛选的结果覆盖校验会拒绝静默缺失成员', () => {
+  const intent = {
+    expectedResult: { minimumRows: 1, requiredMetrics: ['revenue'], requiredDimensions: ['region'], requiredPeriods: [] },
+    filters: [{ field: '客户地区', operator: 'in', value: ['华东', '华南'] }],
+    dimensions: [{ field: '客户地区', alias: 'region' }],
+  };
+  const validation = validateResultAgainstIntent({
+    schema: [{ name: 'region' }, { name: 'revenue' }],
+    rows: [{ region: '华东', revenue: 100 }],
+  }, intent);
+  assert.equal(validation.valid, false);
+  assert.match(validation.errors.join('；'), /客户地区=华南/);
+});

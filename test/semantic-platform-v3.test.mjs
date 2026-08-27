@@ -120,6 +120,13 @@ test('原问题语义覆盖校验拒绝静默丢失维度', () => {
   assert.match(validation.errors.join('；'), /城市|维度/);
 });
 
+test('商品类别与商品名称并列出现时保留两个产品层级维度', () => {
+  const frame = extractQuestionSemanticFrame('统计每个月、商品类型、商品名称的销售额、利润、产品销量', {
+    time: buildBusinessQueryIntent({ metadata, question: '统计每个月、商品类型、商品名称的销售额、利润、产品销量', now }).time,
+  });
+  assert.deepEqual(frame.dimensions.map(item => item.concept), ['category', 'product']);
+});
+
 test('过去五年累计是过滤窗口，不自动创建年份分组', () => {
   const frame = extractQuestionSemanticFrame('过去五年累计销售排名前五的城市', {
     time: buildBusinessQueryIntent({ metadata, question: '过去五年累计销售排名前五的城市', now }).time,

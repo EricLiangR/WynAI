@@ -59,6 +59,40 @@
     "将订单金额解释为利润",
     "将明细样本外推为完整零售业绩"
   ],
-  "status": "approved"
+  "status": "approved",
+  "diagnostics": [
+    {
+      "id": "category-mix",
+      "name": "品类结构诊断",
+      "triggers": [
+        "品类",
+        "类别",
+        "组合"
+      ],
+      "requiredEvidence": [
+        "category-comparison",
+        "product-drilldown",
+        "profit-review"
+      ],
+      "riskRules": [
+        {
+          "id": "profit-mismatch",
+          "when": "销售额增长但利润下降",
+          "severity": "warning",
+          "action": "检查品类组合和折扣"
+        }
+      ],
+      "playbook": [
+        "比较品类销售额和利润",
+        "下钻到商品层级",
+        "核验利润质量和促销影响"
+      ]
+    }
+  ],
+  "assumptions": [
+    "零售销售额和利润不得跨数据集外推"
+  ],
+  "evaluationRefs": [
+    "retail-golden-diagnostics-v1"
+  ]
 }
-

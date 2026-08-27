@@ -7,10 +7,13 @@ import { analyzeDataset, normalizeDatasetMetadata } from './lib/analysis-core.mj
 import { applyLocalFilters, buildAnalysisQueryBundle, compileFilteredDetailQuery } from './lib/wax-query.mjs';
 import { JsonRunStore } from './lib/run-store.mjs';
 import { buildReportExport } from './lib/report-export.mjs';
+import { buildInsightDocumentExport } from './insight-document-export.mjs';
 import { runAutonomousAnalysis } from './lib/harness/orchestrator.mjs';
 import { createExplorationLlm } from './lib/llm/exploration-agent.mjs';
 import { normalizeCanonicalFilters } from './lib/planning/query-request-schema.mjs';
 import { parseLlmJson, prepareStructuredReport, structuredReportMarkdown, validateStructuredReport } from './lib/report/structured-report.mjs';
+import { normalizeInsightDocument } from './lib/protocol/interaction-contract.mjs';
+import { composeInsightDocument } from './lib/report/insight-document.mjs';
 import { SmartQueryConversationStore } from './lib/conversation/session.mjs';
 import { MultiDatasetQueryService } from './lib/query/multi-dataset.mjs';
 import { parseDocxTemplate } from './lib/template/docx-parser.mjs';
@@ -25,6 +28,11 @@ import { proposeCanonicalQueries, proposeFormula } from './lib/reporting/binding
 import { ReportRunRepository } from './lib/reporting/report-runner.mjs';
 import { DataInsightStore } from './lib/data-insights/insight-store.mjs';
 import { WynQueryInsightAdapter } from './lib/data-insights/wyn-query-adapter.mjs';
+import { IndependentQueryInsightAdapter } from './lib/data-insights/independent-query-adapter.mjs';
+import { InsightRunStore } from './lib/data-insights/insight-run-store.mjs';
+import { buildEvidencePack } from './lib/data-insights/evidence-pack.mjs';
+import { runInsightLlmOrchestration } from './lib/data-insights/llm-orchestrator.mjs';
+import { InsightGovernanceService, redactInsightInput } from './lib/data-insights/insight-governance.mjs';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 const publicDir = join(rootDir, 'public');
@@ -114,19 +122,33 @@ if (config.viewProxyPort === config.port) {
   throw new Error('PORT and WYN_VIEW_PROXY_PORT must be different');
 }
 
-const dataInsightStore = new DataInsightStore({ maxItems: 30 });
+const dataDir = resolveRuntimePath(process.env.WYN_AI_DATA_DIR, join(rootDir, 'data'));
+const dataInsightStore = new DataInsightStore({ maxItems: 30, persistence: new JsonRunStore(join(dataDir, 'data-insights'), { maxItems: 30 }) });
+await dataInsightStore.init();
+const insightGovernance = new InsightGovernanceService({
+  auditPersistence: new JsonRunStore(join(dataDir, 'insight-audit'), { maxItems: 5000 }),
+  maxGenerations: Number(process.env.WYN_AI_INSIGHT_GENERATION_LIMIT || 20),
+  maxConcurrent: Number(process.env.WYN_AI_INSIGHT_MAX_CONCURRENT || 2),
+  timeoutMs: config.llmTimeoutMs,
+});
+await insightGovernance.init();
 const viewDefinitions = new Map();
 const wynQueryInsightAdapter = new WynQueryInsightAdapter({
   register: input => dataInsightStore.register(input).record,
   maxItems: 30,
 });
+const independentQueryInsightAdapter = new IndependentQueryInsightAdapter({
+  register: input => dataInsightStore.register(input).record,
+});
 const agentRuns = new Map();
 const datasetMetadataCache = new Map();
 let datasetDocumentCache = { expiresAt: 0, items: [] };
 const MAX_AGENT_RUNS = 100;
-const MAX_DATASET_ROWS = 5000;
-const MAX_QUERY_ROWS = 5000;
-const dataDir = resolveRuntimePath(process.env.WYN_AI_DATA_DIR, join(rootDir, 'data'));
+const MAX_DATASET_ROWS = 20000;
+const MAX_QUERY_ROWS = 20000;
+const insightRunPersistence = new JsonRunStore(resolveRuntimePath(process.env.WYN_AI_INSIGHT_RUN_DIR, join(rootDir, 'insight-runs')), { maxItems: 200 });
+const insightRunStore = new InsightRunStore({ persistence: insightRunPersistence, maxItems: 200 });
+await insightRunStore.init();
 const runStore = new JsonRunStore(join(dataDir, 'analysis-runs'), { maxItems: 100 });
 for (const run of (await runStore.init()).reverse()) agentRuns.set(run.id, run);
 const conversationStore = new JsonRunStore(join(dataDir, 'smart-query-conversations'), { maxItems: 100 });
@@ -140,6 +162,18 @@ const feedbackLearning = new FeedbackLearningService({
 await feedbackLearning.init();
 
 const skillRegistry = await loadSkillsFromDirectory(join(rootDir, 'skills'));
+for (const skill of skillRegistry.list()) {
+  const usedMetricIds = new Set();
+  skill.metrics = (skill.metrics || []).map((metric, index) => {
+    const preferred = String(metric.id || '').trim();
+    const safe = /^[a-z][a-z0-9_]{0,40}$/i.test(preferred) ? preferred : `metric_${index + 1}`;
+    let id = safe;
+    let suffix = 2;
+    while (usedMetricIds.has(id)) id = `${safe}_${suffix++}`;
+    usedMetricIds.add(id);
+    return { ...metric, id };
+  });
+}
 const skillGovernance = new SkillGovernanceService({
   registry: skillRegistry,
   overridePersistence: new JsonRunStore(join(dataDir, 'skill-overrides'), { maxItems: 500 }),
@@ -956,6 +990,28 @@ async function handleConversationMessage(request, response, conversationId) {
   }
   const planning = result.response?.planningDiagnostics || {};
   result.response = { ...(result.response || {}), trace: { traceId, ...(result.response?.trace || {}) } };
+  const turnId = result.response.trace?.turnId;
+  if (result.response.status === 'ok' && turnId && result.response.resultSets?.some(item => item?.rows?.length)) {
+    try {
+      const insight = independentQueryInsightAdapter.registerTurn({
+        conversationId,
+        turnId,
+        traceId,
+        question: body.question,
+        conversation: result.conversation,
+        response: result.response,
+      });
+      if (insight) {
+        result.response.dataInsight = {
+          schema: 'wynai.data-insight-reference/v1',
+          insightId: insight.insightId,
+          inputSchema: insight.input.schema,
+        };
+      }
+    } catch (error) {
+      console.error('独立问数结果注册数据洞察失败', error);
+    }
+  }
   operationalEventLog.record({ traceId, conversationId, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, event: 'request.completed', phase: 'transport', outcome: result.response.status || 'ok', durationMs: Date.now() - startedAt, details: { plannerMode: planning.route, risk: planning.riskAssessment } });
   requestAudit.record({ method: request.method, path: request.url, status: 200, durationMs: Date.now() - startedAt, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, requestId: traceId, plannerMode: planning.route, planningDurationMs: planning.planningDurationMs, llmAttempted: planning.llmAttempted, llmDurationMs: planning.llmDurationMs });
   sendJson(response, 200, { ...result, conversation: publicConversation(result.conversation) });
@@ -1278,15 +1334,19 @@ function dataInsightListItem(detail) {
     insightId: detail.insightId,
     title: detail.input.title,
     source: detail.input.source || null,
+    actor: detail.actor || null,
+    organizationId: detail.organizationId || null,
     datasets: detail.input.datasets || [],
     resultSetCount: detail.input.resultSets.length,
     createdAt: detail.createdAt,
     updatedAt: detail.updatedAt,
+    document: detail.document || null,
+    versions: detail.versions || [],
     ...summary,
   };
 }
 
-function handleDataInsights(pathname, requestUrl, response) {
+function handleDataInsights(pathname, requestUrl, request, response) {
   const insightId = pathname.slice('/api/data-insights/'.length);
   if (!insightId) {
     const items = dataInsightStore.list({ sourceType: requestUrl.searchParams.get('sourceType'), sourceId: requestUrl.searchParams.get('sourceId') });
@@ -1295,6 +1355,10 @@ function handleDataInsights(pathname, requestUrl, response) {
   }
   const detail = dataInsightStore.get(insightId);
   if (!detail) return sendJson(response, 404, { message: '数据洞察结果不存在或已过期' });
+  const identity = requestIdentity(request);
+  if (detail.actor && detail.actor !== 'anonymous' && detail.actor !== identity.actor && (!detail.organizationId || detail.organizationId !== identity.organizationId)) {
+    return sendJson(response, 403, { code: 'DATA_INSIGHT_FORBIDDEN', message: '无权访问该数据洞察' });
+  }
   const record = insightRecord(detail);
   const rows = normalizedRows(record);
   sendJson(response, 200, {
@@ -1310,13 +1374,104 @@ function handleDataInsights(pathname, requestUrl, response) {
 async function handleDataInsightInput(request, response) {
   const body = await readJson(request);
   try {
+    const identity = requestIdentity(request);
     const idempotencyKey = request.headers['idempotency-key'] || null;
-    const result = dataInsightStore.register(body, { idempotencyKey });
-    sendJson(response, result.created ? 201 : 200, { schema: 'wynai.insight-input-ack/v1', insightId: result.record.insightId, status: result.created ? 'accepted' : 'updated' });
+    const result = dataInsightStore.register(body, { idempotencyKey, actor: identity.actor, organizationId: identity.organizationId });
+    const existingRuns = insightRunStore.list({ mode: 'interpret', insightId: result.record.insightId });
+    const datasetIds = (result.record.input.datasets || []).map(item => item.id);
+    const resolvedSkills = datasetIds.flatMap(datasetId => skillRegistry.resolve({ datasetId, question: result.record.input.title }).map(skill => ({ id: skill.id, version: skill.version, diagnostics: skill.diagnostics || [] })));
+    const run = existingRuns[0] || await insightRunStore.create({ mode: 'interpret', insightId: result.record.insightId, datasetIds, question: result.record.input.title, actor: identity.actor, organizationId: identity.organizationId, skill: { refs: resolvedSkills.map(skill => `${skill.id}@${skill.version}`), diagnostics: resolvedSkills.flatMap(skill => skill.diagnostics) }, metadata: { source: result.record.input.source || null } });
+    sendJson(response, result.created ? 201 : 200, { schema: 'wynai.insight-input-ack/v1', insightId: result.record.insightId, runId: run.id, status: result.created ? 'accepted' : 'updated' });
   } catch (error) {
     if (error?.name === 'InsightInputError') return sendJson(response, error.status || 422, { code: error.code, path: error.path, message: error.message });
     throw error;
   }
+}
+
+async function executeExploreInsightRun(run) {
+  if (!run || run.mode !== 'explore') throw new Error('仅 explore 运行支持自动执行');
+  if (!config.llmBaseUrl || !config.llmModel) {
+    const error = new Error('Explore 运行必须配置外部 LLM');
+    error.code = 'INSIGHT_LLM_REQUIRED';
+    error.status = 503;
+    throw error;
+  }
+  await insightRunStore.transition(run.id, 'planning');
+  await insightRunStore.transition(run.id, 'running');
+  const datasetId = run.datasetIds[0];
+  try {
+    const metadata = await loadDatasetMetadata(datasetId);
+    const skills = skillRegistry.resolve({ datasetId, question: run.question });
+    const result = await runAutonomousAnalysis({
+      metadata,
+      focus: run.question,
+      constraints: run.metadata?.constraints || { filters: [] },
+      executeDatasetQuery,
+      analyzeDataset,
+      explorationAgent: explorationLlm,
+      skills,
+      strictMode: true,
+    });
+    const report = await callAgentReportLlm(result.analysis, metadata);
+    if (!report?.markdown) throw Object.assign(new Error('Explore 未生成 LLM 报告'), { code: 'INSIGHT_LLM_INVALID_OUTPUT', status: 502 });
+    result.analysis.report.aiNarrative = report.markdown;
+    result.analysis.report.aiStructured = report.structured;
+    result.analysis.report.model = config.llmModel;
+    const document = composeInsightDocument({ result, question: run.question });
+    const completed = await insightRunStore.complete(run.id, {
+      plan: result.analysis.plan,
+      toolCalls: result.queries.map(item => ({ id: item.request?.id, hypothesisId: item.request?.hypothesisId || null, status: item.status, mode: item.request?.mode || null, adapter: item.executionPlan?.adapter || null })),
+      evidenceIds: result.analysis.evidence.map(item => item.id),
+      document,
+      metadata: { ...(run.metadata || {}), analysis: result.analysis, resultSets: result.resultSets, audit: result.audit, provider: 'llm-orchestrated', model: config.llmModel },
+    });
+    insightGovernance.record({ actor: run.actor, organizationId: run.organizationId, insightId: null, runId: run.id, action: 'insight.explore', status: 'completed', model: config.llmModel, prompt: run.question, toolCalls: completed.toolCalls, skillRefs: skills.map(skill => `${skill.id}@${skill.version}`), externalDataPolicy: { rawRowsToLlm: false } });
+    return completed;
+  } catch (error) {
+    await insightRunStore.fail(run.id, error);
+    insightGovernance.record({ actor: run.actor, organizationId: run.organizationId, runId: run.id, action: 'insight.explore', status: 'failed', model: config.llmModel, prompt: run.question, errorCode: error.code || 'INSIGHT_EXPLORE_FAILED', externalDataPolicy: { rawRowsToLlm: false } });
+    throw error;
+  }
+}
+
+async function handleInsightRunCreate(request, response) {
+  const body = await readJson(request);
+  try {
+    const identity = requestIdentity(request);
+    const mode = body.mode || 'explore';
+    const run = await insightRunStore.create({ mode, insightId: body.insightId || null, datasetIds: body.datasetIds || (body.datasetId ? [body.datasetId] : []), question: body.question || body.focus || '', actor: identity.actor, organizationId: identity.organizationId, skill: body.skill || null, metadata: { ...(body.metadata || {}), constraints: body.constraints || { filters: body.filters || [] } } });
+    if (mode === 'explore' && body.execute !== false) {
+      try { return sendJson(response, 201, await executeExploreInsightRun(run)); }
+      catch (error) { return sendJson(response, error.status || 502, { ...insightRunStore.get(run.id), code: error.code || 'INSIGHT_EXPLORE_FAILED', message: error.message }); }
+    }
+    sendJson(response, 201, run);
+  } catch (error) {
+    sendJson(response, 422, { code: 'INVALID_INSIGHT_RUN', message: error.message });
+  }
+}
+
+async function handleInsightRuns(pathname, request, response) {
+  const match = pathname.match(/^\/api\/data-insight-runs\/([A-Za-z0-9-]{8,100})(\/retry)?$/);
+  if (!match) {
+    const url = new URL(request.url, 'http://localhost');
+    const identity = requestIdentity(request);
+    const items = insightRunStore.list({ mode: url.searchParams.get('mode'), status: url.searchParams.get('status'), insightId: url.searchParams.get('insightId') }).filter(run => run.actor === 'anonymous' || run.actor === identity.actor || (run.organizationId && run.organizationId === identity.organizationId));
+    return sendJson(response, 200, { schema: 'wynai.insight-run-list/v1', items });
+  }
+  const id = match[1];
+  const run = insightRunStore.get(id);
+  if (!run) return sendJson(response, 404, { message: '洞察运行不存在' });
+  const identity = requestIdentity(request);
+  if (run.actor !== 'anonymous' && run.actor !== identity.actor && (!run.organizationId || run.organizationId !== identity.organizationId)) return sendJson(response, 403, { code: 'INSIGHT_RUN_FORBIDDEN', message: '无权访问该洞察运行' });
+  if (request.method === 'POST' && match[2] === '/retry') {
+    try {
+      const retried = await insightRunStore.retry(id);
+      if (retried.mode === 'explore') return sendJson(response, 200, await executeExploreInsightRun(retried));
+      return sendJson(response, 200, retried);
+    }
+    catch (error) { return sendJson(response, 422, { code: 'INSIGHT_RUN_RETRY_FAILED', message: error.message }); }
+  }
+  return sendJson(response, 200, run);
 }
 
 function numericInsights(rows, columns) {
@@ -1373,47 +1528,30 @@ function buildLocalInsight(record, prompt) {
 }
 
 async function callConfiguredLlm(record, prompt) {
-  const rows = normalizedRows(record, 120);
-  const summary = resultSummary(record);
-  const url = /\/chat\/completions$/i.test(config.llmBaseUrl)
-    ? config.llmBaseUrl
-    : `${config.llmBaseUrl}/chat/completions`;
-  const upstream = await fetch(url, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(config.llmApiKey ? { Authorization: `Bearer ${config.llmApiKey}` } : {}),
-    },
-    body: JSON.stringify({
-      model: config.llmModel,
-      temperature: 0.2,
-      ...(typeof config.llmEnableThinking === 'boolean' ? { enable_thinking: config.llmEnableThinking } : {}),
-      messages: [
-        {
-          role: 'system',
-          content: '你是一名严谨的企业数据分析师。只基于给定结果集回答，明确指出数据质量问题，并用中文输出核心结论、证据、风险和行动建议。',
-        },
-        {
-          role: 'user',
-          content: JSON.stringify({
-            analysisGoal: prompt,
-            topic: record.input?.title,
-            query: record.input?.context?.query || null,
-            summary,
-            rows,
-            note: resultRows(record).length > rows.length ? `仅提供前 ${rows.length} 行样本` : '已提供完整结果',
-          }),
-        },
-      ],
-    }),
+  const sensitiveFields = Array.isArray(record.input.context?.sensitiveFields) ? record.input.context.sensitiveFields : [];
+  const redacted = redactInsightInput(record.input, sensitiveFields);
+  const evidencePack = buildEvidencePack(redacted.input);
+  const resolvedSkills = (record.input.datasets || []).flatMap(dataset => skillRegistry.resolve({ datasetId: dataset.id, question: prompt || record.input.title }));
+  const orchestration = await runInsightLlmOrchestration({
+    llm: explorationLlm,
+    prompt: prompt || record.input.title,
+    input: evidencePack,
+    skills: resolvedSkills.map(skill => ({ id: skill.id, version: skill.version, name: skill.name, diagnostics: skill.diagnostics || [], requiredEvidence: skill.requiredEvidence || [], riskRules: skill.riskRules || [], playbook: skill.playbook || [], assumptions: skill.assumptions || [] })),
   });
-  const payload = await upstream.json().catch(() => ({}));
-  if (!upstream.ok) throw new Error(payload.error?.message || payload.message || `大模型返回 ${upstream.status}`);
   return {
-    provider: 'llm',
-    model: config.llmModel,
-    findings: buildLocalInsight(record, prompt).findings,
-    content: payload.choices?.[0]?.message?.content || payload.output_text || '大模型未返回可展示文本。',
+    provider: 'llm-orchestrated',
+    model: orchestration.model || config.llmModel,
+    findings: orchestration.narrative.keyFindings,
+    content: orchestration.markdown,
+    structured: orchestration.narrative,
+    orchestration: {
+      schema: orchestration.schema,
+      planner: orchestration.planner,
+      critic: orchestration.critic,
+      evidence: orchestration.evidence,
+      stageAudit: orchestration.stageAudit || [],
+      externalDataPolicy: { ...redacted.policy, sampleStrategy: evidencePack.policy.sampleStrategy },
+    },
   };
 }
 
@@ -1423,15 +1561,85 @@ async function handleSecondaryInsight(request, response, providedBody = null) {
   const prompt = String(body.prompt || '').trim().slice(0, 4000);
   const detail = dataInsightStore.get(insightId);
   if (!detail) return sendJson(response, 404, { message: '数据洞察结果不存在或已过期，请重新提交标准结果。' });
+  const identity = requestIdentity(request);
+  if (detail.actor && detail.actor !== 'anonymous' && detail.actor !== identity.actor && (!detail.organizationId || detail.organizationId !== identity.organizationId)) {
+    return sendJson(response, 403, { code: 'DATA_INSIGHT_FORBIDDEN', message: '无权生成该数据洞察' });
+  }
   const record = insightRecord(detail);
+  let releaseGeneration = null;
+  try {
+    releaseGeneration = insightGovernance.beginGeneration(identity);
+  } catch (error) {
+    return sendJson(response, error.status || 429, { code: error.code, message: error.message, retryAfterMs: error.retryAfterMs || null, retryable: true });
+  }
+  const run = insightRunStore.list({ mode: 'interpret', insightId }).at(0) || null;
+  if (run && ['queued', 'completed', 'failed'].includes(run.status)) {
+    try {
+      await insightRunStore.transition(run.id, 'planning', { metadata: { ...(run.metadata || {}), generationPrompt: prompt } });
+      await insightRunStore.transition(run.id, 'running');
+    } catch (error) {
+      return sendJson(response, 409, { code: 'INSIGHT_RUN_STATE_ERROR', message: error.message });
+    }
+  }
 
   try {
-    const result = config.llmBaseUrl && config.llmModel
-      ? await callConfiguredLlm(record, prompt)
-      : buildLocalInsight(record, prompt);
-    sendJson(response, 200, { ...result, insightId, generatedAt: new Date().toISOString() });
+    if (!config.llmBaseUrl || !config.llmModel) {
+      const error = new Error('正式数据洞察必须配置外部 LLM；固定统计仅作为数据准备诊断');
+      error.code = 'INSIGHT_LLM_REQUIRED';
+      error.status = 503;
+      throw error;
+    }
+    const result = await callConfiguredLlm(record, prompt);
+    const orchestration = result.orchestration || {};
+    const narrative = result.structured || {};
+    const evidence = orchestration.evidence || [];
+    const blocks = [
+      { id: 'ai-narrative-summary', type: 'ai-narrative', title: '管理摘要', content: (narrative.managementSummary || []).map(item => item.text).join('\n'), evidenceIds: (narrative.managementSummary || []).flatMap(item => item.evidenceIds || []) },
+      { id: 'ai-narrative-findings', type: 'ai-narrative', title: '关键发现', content: (narrative.keyFindings || []).map(item => item.text).join('\n'), evidenceIds: (narrative.keyFindings || []).flatMap(item => item.evidenceIds || []) },
+      { id: 'ai-narrative-risks', type: 'ai-narrative', title: '风险判断', content: (narrative.risks || []).map(item => item.text).join('\n'), evidenceIds: (narrative.risks || []).flatMap(item => item.evidenceIds || []) },
+      { id: 'ai-narrative-actions', type: 'ai-narrative', title: '行动建议', content: (narrative.actions || []).map(item => item.text).join('\n'), evidenceIds: (narrative.actions || []).flatMap(item => item.evidenceIds || []) },
+    ].filter(block => block.content);
+    const insightDocument = normalizeInsightDocument({
+      documentType: 'business-insight',
+      title: record.input.title,
+      scope: { datasetId: record.input.datasets?.[0]?.id || null, datasets: (record.input.datasets || []).map(item => item.id), filters: record.input.context?.filters || [], timeRange: record.input.scope?.timeRange || null, accuracy: record.input.quality?.accuracy || 'unknown', isSample: Boolean(record.input.quality?.isSample), isTruncated: Boolean(record.input.quality?.isTruncated) },
+      blocks,
+      evidence,
+      followUpActions: [],
+      nextQuestions: narrative.followUps?.map(item => item.question).filter(Boolean) || [],
+    });
+    let exploreRun = null;
+    const inputDatasetIds = (record.input.datasets || []).map(item => item.id).filter(Boolean);
+    if (orchestration.critic?.verdict === 'insufficient' && inputDatasetIds.length) {
+      exploreRun = await insightRunStore.create({
+        mode: 'explore',
+        parentRunId: run?.id || null,
+        datasetIds: inputDatasetIds,
+        question: prompt || record.input.title,
+        actor: identity.actor,
+        organizationId: identity.organizationId,
+        skill: run?.skill || null,
+        metadata: { reason: 'interpret-evidence-insufficient', sourceInsightId: insightId, followUps: narrative.followUps || [] },
+      });
+      try {
+        exploreRun = await executeExploreInsightRun(exploreRun);
+      } catch (error) {
+        exploreRun = insightRunStore.get(exploreRun.id) || { ...exploreRun, status: 'failed', error: { message: error.message, code: error.code || 'INSIGHT_EXPLORE_FAILED' } };
+      }
+    }
+    if (orchestration.critic?.verdict === 'insufficient' && !exploreRun) {
+      insightDocument.nextQuestions = [...new Set([...(insightDocument.nextQuestions || []), '请补充可访问的数据集标识，以便发起受控 Explore 分析。'])].slice(0, 8);
+    }
+    await dataInsightStore.saveDocument(insightId, insightDocument, { runId: run?.id || null, actor: identity.actor, organizationId: identity.organizationId });
+    if (run) await insightRunStore.complete(run.id, { document: insightDocument, metadata: { ...(run.metadata || {}), generatedAt: new Date().toISOString(), provider: result.provider, model: result.model, orchestrationSchema: orchestration.schema || null, exploreRunId: exploreRun?.id || null } });
+    insightGovernance.record({ actor: identity.actor, organizationId: identity.organizationId, insightId, runId: run?.id || null, action: 'insight.generate', status: 'completed', model: result.model, prompt, toolCalls: orchestration.planner?.toolRequests || [], stageAudit: orchestration.stageAudit || [], skillRefs: run?.skill?.refs || [], externalDataPolicy: orchestration.externalDataPolicy || { rawRowsToLlm: false } });
+    sendJson(response, 200, { ...result, document: insightDocument, insightId, exploreRun, generatedAt: new Date().toISOString() });
   } catch (error) {
-    sendJson(response, 502, { message: `项目 LLM 二次洞察失败（${llmEndpointHost || '未配置端点'}）：${error.message}` });
+    if (run) await insightRunStore.fail(run.id, error);
+    insightGovernance.record({ actor: identity.actor, organizationId: identity.organizationId, insightId, runId: run?.id || null, action: 'insight.generate', status: 'failed', model: config.llmModel, prompt, skillRefs: run?.skill?.refs || [], externalDataPolicy: { rawRowsToLlm: false }, errorCode: error.code || 'INSIGHT_LLM_FAILED' });
+    sendJson(response, error.status || 502, { code: error.code || 'INSIGHT_LLM_FAILED', message: `项目 LLM 二次洞察失败（${llmEndpointHost || '未配置端点'}）：${error.message}`, retryable: true });
+  } finally {
+    releaseGeneration?.();
   }
 }
 
@@ -1577,13 +1785,72 @@ const server = http.createServer(async (request, response) => {
     if (request.method === 'POST' && pathname === '/api/data-insights/inputs') {
       return await handleDataInsightInput(request, response);
     }
+    const insightCompareRoute = pathname.match(/^\/api\/data-insights\/([^/]+)\/versions\/compare$/);
+    if (request.method === 'GET' && insightCompareRoute) {
+      const detail = dataInsightStore.get(insightCompareRoute[1]);
+      if (!detail) return sendJson(response, 404, { message: '数据洞察结果不存在' });
+      const identity = requestIdentity(request);
+      if (detail.actor && detail.actor !== 'anonymous' && detail.actor !== identity.actor && (!detail.organizationId || detail.organizationId !== identity.organizationId)) return sendJson(response, 403, { code: 'DATA_INSIGHT_FORBIDDEN', message: '无权访问该数据洞察' });
+      const from = requestUrl.searchParams.get('from');
+      const to = requestUrl.searchParams.get('to');
+      const comparison = dataInsightStore.compareVersions(detail.insightId, from, to);
+      return comparison ? sendJson(response, 200, comparison) : sendJson(response, 404, { code: 'INSIGHT_VERSION_NOT_FOUND', message: '指定的洞察版本不存在' });
+    }
+    const insightExportRoute = pathname.match(/^\/api\/data-insights\/([^/]+)\/export$/);
+    if (request.method === 'GET' && insightExportRoute) {
+      const detail = dataInsightStore.get(insightExportRoute[1]);
+      if (!detail) return sendJson(response, 404, { message: '数据洞察结果不存在' });
+      const identity = requestIdentity(request);
+      if (detail.actor && detail.actor !== 'anonymous' && detail.actor !== identity.actor && (!detail.organizationId || detail.organizationId !== identity.organizationId)) return sendJson(response, 403, { code: 'DATA_INSIGHT_FORBIDDEN', message: '无权导出该数据洞察' });
+      if (!detail.document) return sendJson(response, 409, { code: 'INSIGHT_DOCUMENT_NOT_READY', message: '洞察文档尚未生成' });
+      try {
+        const audit = insightGovernance.list({ actor: identity.actor, organizationId: identity.organizationId }).find(item => item.insightId === detail.insightId && item.status === 'completed') || {};
+        return sendDownload(response, buildInsightDocumentExport(detail.document, requestUrl.searchParams.get('format') || 'html', audit));
+      } catch (error) { return sendJson(response, error.status || 400, { code: 'INSIGHT_EXPORT_FAILED', message: error.message }); }
+    }
+    const insightGovernanceRoute = pathname.match(/^\/api\/data-insights\/([^/]+)\/(versions|archive|restore|delete)$/);
+    if (request.method === 'GET' && insightGovernanceRoute?.[2] === 'versions') {
+      const detail = dataInsightStore.get(insightGovernanceRoute[1]);
+      if (!detail) return sendJson(response, 404, { message: '数据洞察结果不存在' });
+      const identity = requestIdentity(request);
+      if (detail.actor && detail.actor !== 'anonymous' && detail.actor !== identity.actor && (!detail.organizationId || detail.organizationId !== identity.organizationId)) return sendJson(response, 403, { code: 'DATA_INSIGHT_FORBIDDEN', message: '无权访问该数据洞察' });
+      return sendJson(response, 200, { insightId: detail.insightId, versions: dataInsightStore.getVersions(detail.insightId) || [] });
+    }
+    if (request.method === 'POST' && insightGovernanceRoute && ['archive', 'delete'].includes(insightGovernanceRoute[2])) {
+      const detail = dataInsightStore.get(insightGovernanceRoute[1]);
+      if (!detail) return sendJson(response, 404, { message: '数据洞察结果不存在' });
+      const identity = requestIdentity(request);
+      if (detail.actor && detail.actor !== 'anonymous' && detail.actor !== identity.actor && (!detail.organizationId || detail.organizationId !== identity.organizationId)) return sendJson(response, 403, { code: 'DATA_INSIGHT_FORBIDDEN', message: '无权修改该数据洞察' });
+      try {
+        const result = insightGovernanceRoute[2] === 'archive'
+          ? await dataInsightStore.archive(detail.insightId, identity)
+          : insightGovernanceRoute[2] === 'restore'
+            ? await dataInsightStore.restore(detail.insightId, identity)
+            : await dataInsightStore.softDelete(detail.insightId, identity);
+        insightGovernance.record({ ...identity, insightId: detail.insightId, action: `insight.${insightGovernanceRoute[2]}`, status: 'completed' });
+        return sendJson(response, 200, result);
+      } catch (error) { return sendJson(response, 422, { code: 'DATA_INSIGHT_GOVERNANCE_FAILED', message: error.message }); }
+    }
+    if (request.method === 'POST' && pathname === '/api/data-insight-runs') {
+      return await handleInsightRunCreate(request, response);
+    }
+    if (request.method === 'GET' && (pathname === '/api/data-insight-runs' || /^\/api\/data-insight-runs\/[A-Za-z0-9-]{8,100}$/.test(pathname))) {
+      return await handleInsightRuns(pathname, request, response);
+    }
+    if (request.method === 'GET' && pathname === '/api/data-insights/audit') {
+      const identity = requestIdentity(request);
+      return sendJson(response, 200, { schema: 'wynai.insight-audit-list/v1', items: insightGovernance.list({ actor: identity.actor, organizationId: identity.organizationId, limit: Number(requestUrl.searchParams.get('limit')) || 100 }) });
+    }
+    if (request.method === 'POST' && /^\/api\/data-insight-runs\/[A-Za-z0-9-]{8,100}\/retry$/.test(pathname)) {
+      return await handleInsightRuns(pathname, request, response);
+    }
     const dataInsightGenerateRoute = pathname.match(/^\/api\/data-insights\/([A-Za-z0-9-]{8,100})\/generate$/);
     if (request.method === 'POST' && dataInsightGenerateRoute) {
       const body = await readJson(request);
       return await handleSecondaryInsight(request, response, { ...body, insightId: dataInsightGenerateRoute[1] });
     }
     if (request.method === 'GET' && (pathname === '/api/data-insights' || pathname.startsWith('/api/data-insights/'))) {
-      return handleDataInsights(pathname, requestUrl, response);
+      return handleDataInsights(pathname, requestUrl, request, response);
     }
     if (request.method === 'GET' && pathname.startsWith('/api/views/')) {
       return await handleView(pathname.slice('/api/views/'.length), response);

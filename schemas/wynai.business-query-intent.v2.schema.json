@@ -188,7 +188,7 @@
     },
     "dimensions": {
       "type": "array",
-      "maxItems": 2,
+      "maxItems": 8,
       "items": {
         "type": "object",
         "required": [

@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wynai.local/schemas/wynai.evidence-pack.v1.schema.json",
+  "title": "WynAI Evidence Pack v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "resultSets", "policy"],
+  "properties": {
+    "schema": { "const": "wynai.evidence-pack/v1" },
+    "title": { "type": ["string", "null"] },
+    "source": {}, "datasets": { "type": "array" }, "scope": {}, "quality": {}, "evidence": { "type": "array" },
+    "resultSets": { "type": "array", "maxItems": 8, "items": { "type": "object", "required": ["id", "statistics", "samples"], "properties": { "id": { "type": "string" }, "scope": {}, "quality": {}, "statistics": { "type": "object" }, "samples": { "type": "array", "maxItems": 7 } } } },
+    "policy": { "type": "object", "required": ["rawRowsToLlm", "sampleStrategy"], "properties": { "rawRowsToLlm": { "const": false }, "sampleStrategy": { "type": "string" }, "maxSamplesPerResultSet": { "type": "integer" } } }
+  }
+}

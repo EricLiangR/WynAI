@@ -17,6 +17,7 @@
       "properties": {
         "category": { "$ref": "#/$defs/fieldEncoding" },
         "seriesDimension": { "anyOf": [{ "$ref": "#/$defs/fieldEncoding" }, { "type": "null" }] },
+        "facetDimension": { "anyOf": [{ "$ref": "#/$defs/fieldEncoding" }, { "type": "null" }] },
         "measures": {
           "type": "array",
           "minItems": 1,

@@ -4,6 +4,8 @@
 
 Wyn 负责治理后的数据集、语义和查询执行；上层应用负责假设规划、查询需求建模、执行路由、统一结果集、确定性计算、ECharts 图表、证据追踪、LLM 文本生成、运行持久化和正式报告导出。
 
+2026-08-27 智能问数增强：并列地区等同字段多值条件使用受控 `in` 筛选；混合量纲在存在系列维度时支持双轴柱线组合图；三维结果支持分面多面板；高基数分类支持 ECharts dataZoom；用户显式图表类型优先于自动推荐。本期不包含自然语言配色主题。详见 `SMART_QUERY_VISUALIZATION_SEMANTIC_ENHANCEMENT_REQUIREMENTS_DESIGN_AND_UAT_2026-08-27.md`。
+
 ## 启动
 
 需要 Node.js 18 或更高版本：
@@ -79,7 +81,7 @@ LLM_ENABLE_THINKING=false
 - `GET /api/analysis-agent/v2/runs/:id/report?format=html|markdown|json`：导出 V2 正式报告。
 - `GET /api/smart-query/skills`：读取已审核的结构化 Skill 目录和版本。
 - `POST /api/smart-query/conversations`：创建单数据集或受控多数据集会话。
-- `POST /api/smart-query/conversations/:id/messages`：发送多轮自然语言问题，返回 `AIInteractionResponse v1` 和 `InsightDocument v1`。
+- `POST /api/smart-query/conversations/:id/messages`：发送多轮自然语言问题，返回 `AIInteractionResponse v1` 和 `InsightDocument v1`；成功且有结构化结果时同时返回标准数据洞察 `insightId`。
 - 会话主体应由受信网关写入 `X-Wyn-User-Id`、`X-Wyn-Organization-Id` 请求头；请求体中的同名字段不参与身份解析。
 - `GET /api/smart-query/skills/audit`、`GET /api/smart-query/audit`：读取 Skill 变更和问数请求审计。
 - Skill 写操作需要配置 `WYN_AI_SKILL_ADMIN_TOKEN`，并在请求头传 `X-Wyn-Skill-Admin-Token`。

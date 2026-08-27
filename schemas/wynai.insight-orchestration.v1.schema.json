@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wynai.local/schemas/wynai.insight-orchestration.v1.schema.json",
+  "title": "WynAI Insight Orchestration v1",
+  "type": "object",
+  "required": ["schema", "planner", "critic", "narrative", "evidence"],
+  "properties": { "schema": { "const": "wynai.insight-orchestration/v1" }, "planner": { "type": "object" }, "critic": { "type": "object" }, "narrative": { "type": "object" }, "evidence": { "type": "array" }, "markdown": { "type": "string" }, "model": { "type": ["string", "null"] } },
+  "additionalProperties": false
+}

@@ -4,6 +4,8 @@ import { readFile } from 'node:fs/promises';
 import { normalizeInsightInput, InsightInputError } from '../lib/data-insights/insight-input.mjs';
 import { DataInsightStore } from '../lib/data-insights/insight-store.mjs';
 import { adaptWynQueryResult, WynQueryInsightAdapter } from '../lib/data-insights/wyn-query-adapter.mjs';
+import { adaptIndependentQueryResult, IndependentQueryInsightAdapter } from '../lib/data-insights/independent-query-adapter.mjs';
+import { buildInsightDocumentExport } from '../insight-document-export.mjs';
 
 function input(overrides = {}) {
   return { schema: 'wynai.insight-input/v1', title: '区域销售额', resultSets: [{ id: 'regional-sales', schema: [{ name: '区域', type: 'string', role: 'dimension' }, { name: '销售额', type: 'number', role: 'measure' }], rows: [{ 区域: '华东', 销售额: 100 }, { 区域: '华南', 销售额: 80 }] }], ...overrides };
@@ -52,4 +54,82 @@ test('Wyn 适配器只把私有聚合结构转换后注册标准输入', () => {
   adapter.capture(record.viewId, { aggregationResult: record.aggregationResult, topic: record.topic, datasetId: record.datasetId });
   assert.equal(registered.length, 1);
   assert.equal(registered[0].source.sourceId, record.viewId);
+});
+
+test('独立问数适配器把本轮标准结果和上下文注册为 InsightInput v1', () => {
+  const adapted = adaptIndependentQueryResult({
+    conversationId: 'conversation-12345678',
+    turnId: 'turn-12345678',
+    traceId: 'trace-12345678',
+    question: '2025 年各区域销售额',
+    conversation: { datasets: [{ id: 'dataset-sales', name: '销售数据', revision: 3 }], insightDocumentId: 'doc-12345678' },
+    response: {
+      status: 'ok',
+      analysisMethod: { id: 'controlled-semantic-parser' },
+      document: { scope: { accuracy: 'exact', isSample: false, isTruncated: false }, evidence: [{ id: 'ev-1', value: 120 }] },
+      resultSets: [{
+        id: 'rs-sales',
+        requestId: 'private-query-id',
+        schema: [{ name: 'region', type: 'string', role: 'dimension', sourceField: '区域' }, { name: 'revenue', type: 'number', role: 'measure', displayName: '销售额', aggregation: 'sum' }],
+        rows: [{ region: '华东', revenue: 120 }],
+        statistics: { nullCounts: { region: 0, revenue: 0 }, minimums: { revenue: 120 }, maximums: { revenue: 120 } },
+        quality: { isSample: false, isTruncated: false, isEstimated: false, warnings: [] },
+      }],
+    },
+  });
+  assert.equal(adapted.schema, 'wynai.insight-input/v1');
+  assert.equal(adapted.source.type, 'independent-query');
+  assert.equal(adapted.source.sourceId, 'conversation-12345678:turn-12345678');
+  assert.equal(adapted.context.question, '2025 年各区域销售额');
+  assert.deepEqual(adapted.resultSets[0].schema[1], { name: '销售额', type: 'number', role: 'measure', displayName: '销售额' });
+  assert.deepEqual(adapted.resultSets[0].rows, [{ 区域: '华东', 销售额: 120 }]);
+  assert.deepEqual(adapted.resultSets[0].statistics.nullCounts, { 区域: 0, 销售额: 0 });
+  assert.doesNotThrow(() => normalizeInsightInput(adapted));
+});
+
+test('独立问数适配器不为澄清或空结果注册数据洞察，并按本轮幂等', () => {
+  assert.equal(adaptIndependentQueryResult({ conversationId: 'conversation-12345678', turnId: 'turn-1', response: { status: 'needs_clarification', resultSets: [] } }), null);
+  const store = new DataInsightStore({ idFactory: () => 'ins-independent-1' });
+  const adapter = new IndependentQueryInsightAdapter({ register: value => store.register(value).record });
+  const turn = {
+    conversationId: 'conversation-12345678', turnId: 'turn-2', question: '总销售额是多少？',
+    conversation: { dataset: { id: 'dataset-sales' } },
+    response: { status: 'ok', document: { title: '总销售额', scope: { accuracy: 'exact' } }, resultSets: [{ id: 'rs-total', schema: [{ name: '销售额', type: 'number', role: 'measure' }], rows: [{ 销售额: 100 }] }] },
+  };
+  const first = adapter.registerTurn(turn);
+  const second = adapter.registerTurn(turn);
+  assert.equal(first.insightId, second.insightId);
+  assert.equal(store.list().length, 1);
+});
+
+test('独立问数回答只在有 insightId 时呈现数据洞察入口', async () => {
+  const app = await readFile(new URL('../public/app.js', import.meta.url), 'utf8');
+  assert.match(app, /data-action="open-smart-insight"/);
+  assert.match(app, /payload\.response\?\.dataInsight/);
+  assert.match(app, /openInsightById\(insightButton\.dataset\.insightId\)/);
+});
+
+test('数据洞察预览依据 InsightInput Schema 保持问数展示格式', async () => {
+  const app = await readFile(new URL('../public/app.js', import.meta.url), 'utf8');
+  assert.match(app, /const schemaMap = new Map\(\(primaryResultSet\.schema \|\| \[\]\)\.map/);
+  assert.match(app, /field\.grain === 'year'/);
+  assert.match(app, /field\.format === 'percentage'/);
+  assert.match(app, /compactValue\(row\[column\], schemaMap\.get\(column\), timeZone\)/);
+});
+
+test('InsightDocument 支持版本比较、归档恢复和统一导出', async () => {
+  const store = new DataInsightStore({ idFactory: () => 'ins-version-1' });
+  const created = store.register(input({ source: { type: 'test', sourceId: 'versioned' } }));
+  await store.saveDocument(created.record.insightId, { schema: 'wynai.insight-document/v1', documentType: 'business-insight', title: 'v1', scope: { datasetId: null, datasets: [], filters: [], timeRange: null, accuracy: 'exact', isSample: false, isTruncated: false }, blocks: [{ id: 'summary', type: 'text', content: 'one' }], evidence: [], nextQuestions: [] });
+  await store.saveDocument(created.record.insightId, { schema: 'wynai.insight-document/v1', documentType: 'business-insight', title: 'v2', scope: { datasetId: null, datasets: [], filters: [], timeRange: null, accuracy: 'exact', isSample: false, isTruncated: false }, blocks: [{ id: 'summary', type: 'text', content: 'two' }, { id: 'risk', type: 'warning', message: 'check' }], evidence: [], nextQuestions: [] });
+  const comparison = store.compareVersions(created.record.insightId, 1, 2);
+  assert.deepEqual(comparison.addedBlockIds, ['risk']);
+  assert.deepEqual(comparison.changedBlockIds, ['summary']);
+  await store.archive(created.record.insightId);
+  assert.equal(store.list().length, 0);
+  await store.restore(created.record.insightId);
+  assert.equal(store.list().length, 1);
+  const exported = buildInsightDocumentExport(store.get(created.record.insightId).document, 'markdown', { runId: 'run-1' });
+  assert.match(exported.body, /# v2/);
+  assert.equal(exported.filename, 'v2.md');
 });

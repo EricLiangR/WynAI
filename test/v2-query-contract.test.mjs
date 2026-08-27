@@ -73,8 +73,8 @@ test('Canonical 仅允许业务标识在 verify 模式下受控定位', () => {
   }), /不允许.*直接作为分组维度/);
 });
 
-test('Canonical 聚合与验证查询在执行前限制为适配器支持的两维', () => {
-  assert.throws(() => normalizeCanonicalQueryRequest(metadata, {
+test('Canonical 聚合与验证查询支持适配器允许的多维分组', () => {
+  const request = normalizeCanonicalQueryRequest(metadata, {
     id: 'qry-three-dimensions', mode: 'verify', dataset: { id: metadata.id, revision: metadata.revision },
     select: [
       { field: '订购日期', alias: 'period', grain: 'month' },
@@ -82,7 +82,8 @@ test('Canonical 聚合与验证查询在执行前限制为适配器支持的两�
       { field: '类别名称', alias: 'category' },
     ],
     measures: [{ aggregation: 'countRows', alias: 'records' }],
-  }), /最多 2 个/);
+  });
+  assert.equal(request.select.length, 3);
 });
 
 test('Canonical 聚合结果筛选在服务端聚合后按指标别名执行', () => {
@@ -95,7 +96,7 @@ test('Canonical 聚合结果筛选在服务端聚合后按指标别名执行', (
   });
   const adapter = new ControlledWaxAdapter();
   const executionPlan = adapter.compile(request, { metadata });
-  assert.equal(executionPlan.rowLimit, 5000);
+  assert.equal(executionPlan.rowLimit, 20000);
   const result = normalizeCanonicalResultSet({
     request, executionPlan, metadata,
     rawResult: { rows: [{ group1: 'A', revenue: 300 }, { group1: 'B', revenue: 100 }, { group1: 'C', revenue: 50 }], truncated: false },
@@ -191,7 +192,7 @@ test('时间粒度在结果截断前归并，月度查询不会退化为前若�
   });
   const adapter = new ControlledWaxAdapter();
   const executionPlan = adapter.compile(request, { metadata });
-  assert.equal(executionPlan.rowLimit, 5000);
+  assert.equal(executionPlan.rowLimit, 20000);
   const rawRows = [];
   for (let month = 0; month < 4; month += 1) {
     for (let day = 1; day <= 20; day += 1) rawRows.push({ group1: new Date(Date.UTC(2026, month, day)).toISOString(), records: 1 });

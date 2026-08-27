@@ -1,5 +1,67 @@
 # 新智能问数开发、测试与 UAT 汇总
 
+## 2026-08-27 用户可见结果行数口径修复
+
+针对同比查询将内部基期行数误显示为“总数据”、使用户误以为结果未完整返回的问题，完成统计协议和前端提示修复。
+
+| 项目 | 结果 |
+| --- | --- |
+| 后端统计 | QueryProgram 后处理完成后重算用户可见 `totalRowCount/returnedRowCount`；内部基期范围单独记录为 `internalCalculationRowCount/internalReturnedRowCount` |
+| 完整性判断 | 仅以明确的 `isTruncated/limitReached` 判断是否截断，不再用“内部总数大于展示行数”推断 |
+| 用户界面 | 正常完整结果不显示任何数据行数提示，仅保留分页控件。真正截断时显示简洁的不完整提示 |
+| 自动化测试 | 专项 27/27、全量回归 212/212、`npm run check` 均通过 |
+| 真实 Wyn UAT | 原问题返回用户可见 647/647 行，内部计算 1,183 行，`isTruncated=false`；页面不显示数据行数提示，分页为第 1/7 页；截图见 `test/uat-artifacts/result-row-scope-2026-08-27/complete-result-no-row-mismatch.png` |
+| 缺陷 | `ROW-SCOPE-001` 已关闭：同比内部基期与用户可见结果统计口径混用 |
+
+## 2026-08-27 系统性派生指标关系与多轮澄清修复
+
+### 目标与范围
+
+针对“销售额、利润和同比增长率”无法正确识别、确认后重复澄清、用户无法通过“全部/三个都算”完成选择等问题，完成共享语义平台和会话状态机修复。范围包括：并列/分别/全部派生关系识别；稳定待决槽位；结构化 IntentPatch 应用；自由文本候选解析；原 unresolved 槽位清理；无进展循环保护；前端结构化选项兼容。
+
+### 开发结果
+
+| 能力 | 实现结果 |
+| --- | --- |
+| 首轮派生关系 | 支持“销售额和同比增长率、利润”“销售额、利润和订单数都做同比”等关系，多个指标分别生成 `*_yoy`/`*_mom`；泛化且对象不明时仍澄清 |
+| 待决槽位 | 生成 `derived-binding:yoy:*`/`derived-binding:mom:*` 稳定槽位并保留候选概念 |
+| 澄清提交 | 按钮和自由文本均解析为概念集合，直接应用到 pending intent，重编译 Canonical 查询，不再把原问题和确认文本简单拼接重解析 |
+| 状态收敛 | 已解析派生指标替换未解析占位，约束账本同步更新；相同 unresolved signature 无进展达到阈值后给出受控提示，避免无限重复澄清 |
+| 前端协议 | `clarificationSelection` 支持 slotId/concepts/mode；旧字符串选项保持兼容 |
+
+### 自动化测试与缺陷
+
+- `test/advanced-smart-query.test.mjs` 新增并通过：并列指标关系、分别/全部表达、自由文本“三个都算”、pending 清理。
+- 该专项测试：19/19 通过。
+- 全量回归：209/209 通过。
+- `npm run check`：通过。
+
+### UAT 计划与当前结果
+
+服务端真实 Wyn 和浏览器截图验收已在服务重启后执行，验收用例为：
+
+| 用例 | 预期 |
+| --- | --- |
+| 多指标泛化同比 | 首轮出现一次明确对象澄清，不执行错误查询 |
+| 点击单个派生指标 | 一次确认后返回回答和对应派生列，pending 清空 |
+| 点击“全部” | 一次确认后返回所有候选派生列，pending 清空 |
+| 自由文本“三个都算” | 一次确认后收敛，不重复提问 |
+| 自由文本“只算销售额和利润” | 仅生成对应派生列 |
+| 重复无效确认 | 触发无进展提示，不出现无限相同卡片 |
+
+截图和真实 Wyn trace 已追加到 `test/uat-artifacts/derived-clarification-2026-08-27/`：首轮澄清、全部选择、自由文本确认、防循环各 1 张。
+
+### 真实 Wyn / 浏览器 UAT 结果
+
+| 用例 | 结果 | 证据 |
+| --- | --- | --- |
+| 多指标泛化同比首轮澄清 | 通过：只出现一次澄清，指标和时间进入右侧待决上下文，不执行错误查询 | `01-pending-context.png` |
+| 点击“销售额和利润都做同比增长率” | 通过：2 轮后返回精确结果、销售额/利润/同比列、组合图，pending 清空 | `02-all-selection.png` |
+| 自由文本“销售额和利润都算” | 通过：2 轮后返回结果，未重复澄清 | `03-free-text.png` |
+| 无进展重复确认 | 通过：第 3 轮显示“当前确认没有改变待解决的业务口径”，停止相同澄清循环 | `04-no-progress-guard.png` |
+
+真实接口验证：首轮 `needs_clarification`；结构化确认后 `ok`，`intentPatch.operations[0].op=resolve`，`pendingContext=null`，派生别名为 `revenue_yoy`、`profit_yoy`。服务运行端口为 `8787`。
+
 > 本文件随每个阶段、测试批次和 Bug 修复持续更新。
 
 > 最近一次回归与用户验收批次：2026-08-25（Asia/Shanghai）。完成通用公式派生指标、sales-baseline@1.3.0 毛利率与客单价口径、聚合后受控计算、内部依赖隐藏、派生排名和 LLM 公式治理。全量自动化 176/176；公式专项 12/12；既有真实 Wyn API UAT 7/7、客单价增量 UAT 1/1；浏览器截图 3/3；控制台错误/警告 0。FDM-001 至 FDM-006 已关闭；受限账号、非索引数据集和其他行业公式指标审批仍按外部依赖推进。
@@ -67,6 +129,18 @@
 | 2026-08-24 | 复合多轮继承 | 筛选追问继承全部复合/派生指标；指标切换重绑派生指标；年/月/季粒度与范围独立继承 | 50 组复杂客户场景，共 101 轮真实 Wyn 查询 | 通过：50/50；首轮问题全部修复后整批重跑 | B-027、B-028 已关闭 |
 | 2026-08-24 | 高级桌面/移动 UAT | 从独立问数入口执行同比、环比、组内 TopN、累计、澄清、复合指标与三轮追问；逐场景截图 | 桌面 1440x1000 50/50；移动 390x844 10/10；60 张证据交叉核验 | 通过：控制台/横向溢出/输入遮挡均为 0；60 个唯一哈希 | 无开放缺陷 |
 | 2026-08-25 | Phase 3-V 可视化协议与决策 | 新增 `wynai.visualization-spec/v1`、JSON Schema、InsightDocument chart 绑定和 `activeVisualization` 会话状态；放开单维单指标限制；支持分类/系列/数值编码和 7 种图表 | `test/visualization-spec.test.mjs`；全量 `npm test`；`npm run check` | 通过：142/142，语法检查通过；协议拒绝任意图表类型和不受控 Payload | B-029、B-030、B-032、B-033 已关闭 |
+
+## 2026-08-27 智能问数语义与可视化增强
+
+本期完成已确认的全部功能增强，明确排除用户驱动配色主题：
+
+| 日期 | 范围 | 实现 | 验证 |
+|---|---|---|---|
+| 2026-08-27 | 多值业务筛选 | “华东和华南”解析为同一字段 `in` 条件；结果覆盖校验逐值检查 | 真实 API 返回 5 年 × 2 地区共 10 行，语义校验通过 |
+| 2026-08-27 | 智能可视化决策 | 分类/系列/分面角色、混合量纲双轴、量级风险、用户图表偏好优先级、自动 dataZoom | 专项测试 23/23，全量测试 217/217 |
+| 2026-08-27 | 前端展示 | 组合图带系列时保留各指标柱/线和左右轴；三维结果使用协调面板；横向条形支持纵向 dataZoom | 默认端口桌面与移动端截图 |
+
+详见 `SMART_QUERY_VISUALIZATION_SEMANTIC_ENHANCEMENT_REQUIREMENTS_DESIGN_AND_UAT_2026-08-27.md`。
 | 2026-08-25 | Phase 3-V ECharts 与真实页面 UAT | ECharts 渲染折线、柱形、条形、饼/环、组合、多系列和堆叠；允许类型即时切换；高基数 TopN/表格降级；移动响应式 | 指定销售数据集、管理员 Token、`http://127.0.0.1:8787`；真实页面 11 例、11 张截图及 SHA-256 清单；390x844 Canvas/溢出检查；控制台检查 | 通过：UAT 11/11，Canvas 非空；移动 root/body scrollWidth=390；控制台 error/warn 0 | B-031 已关闭；无开放缺陷 |
 | 2026-08-25 | Phase 3-P 根因与性能修复 | 移除“复杂度 >= 3 强制调用 LLM”；增加完整意图覆盖校验快路径、INTENT_LLM_TIMEOUT_MS=10000、连续 2 次失败/60 秒熔断、取消信号传播和规划诊断审计 | 专项测试 3 类；npm test；npm run check；git diff --check | 通过：145/145；静态检查和空白检查通过 | B-034、B-035、B-036 已关闭 |
 | 2026-08-25 | Phase 3-P 真实 Wyn 与浏览器 UAT | 指定销售数据集执行“过去五年，每年的销售收入和同比增长率”，再追问“只看华东”；核对年份、同比、组合图、详情、表格、上下文和多轮继承 | 服务 8787；真实 API；浏览器 1280x720；3 张截图；请求审计 | 通过：首轮 API 379ms/审计 353ms/规划 7ms/LLM 0 次；浏览器首轮 318ms；追问 270ms/规划 1ms；结果 5 行且语义正确 | 无新缺陷 |
@@ -296,3 +370,73 @@
 详细报告：`SMART_QUERY_FORMULA_DERIVED_METRICS_REQUIREMENTS_DESIGN_AND_UAT_2026-08-25.md`
 
 证据目录：`test/uat-artifacts/formula-derived-metrics-2026-08-25/`
+
+## 2026-08-26 复杂时间语义、多维与多指标增强
+
+| 日期 | 阶段 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|---|
+| 2026-08-26 | Phase 3-T 语义内核 | temporal-semantics Skill；年月/年和月/月份/每个月统一 month；局部平均聚合；泛化同比对象澄清 | 新增专项 5/5；全量 npm test 190/190；npm run check | 通过 | B-046、B-048、B-049 已关闭 |
+| 2026-08-26 | Phase 3-T 多维查询 | 分组上限 8；四维一次 WAX `SUMMARIZECOLUMNS`；结果表格优先 | WAX 编译测试；真实 CSE-001 四维多指标 | 通过 | B-047、B-050 已关闭 |
+| 2026-08-26 | Phase 3-T 真实 Wyn UAT | 10 组复杂时间、同比、公式、多轮、表格/图表场景 | `test/uat-artifacts/complex-enhancement-2026-08-26/api-uat-results.json` | 10/10 | 无开放功能缺陷 |
+| 2026-08-26 | Phase 3-T 浏览器 UAT | 独立问数真实入口、四维表格、时间折线图、多轮季度切换 | 1280×720；3 张截图；console error/warn=0 | 通过 | E-007、E-008 已关闭 |
+
+完整需求/设计/UAT：`SMART_QUERY_COMPLEX_MULTI_DIMENSION_TIME_SEMANTICS_REQUIREMENTS_DESIGN_AND_UAT_2026-08-26.md`。截图证据：`test/uat-artifacts/complex-enhancement-2026-08-26/uat-01-four-dimension-answer.png`、`uat-02-month-semantic-line.png`、`uat-03-multiturn-quarter.png`。
+
+## 2026-08-27 结果容量与表格交互增强
+
+| 日期 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|
+| 2026-08-27 | 服务端、Canonical 协议、WAX/NONE 适配器和数据洞察输入上限统一由 5,000 提升到 20,000；三维以上复杂分组使用 20,000 默认结果上限；达到上限时执行受控总行数统计 | `npm run check`；`npm test`；真实 Wyn 复杂五维问题 | 自动化 196/196；真实问题返回 2,577 行，`totalRowCount=2,577`、`returnedRowCount=2,577`、未截断 | 无 |
+| 2026-08-27 | 独立问数表格移除固定 30 行截断，默认每页 100 行，增加范围提示、分页、复制当前页和复制全部返回数据 | 前端交互回归和真实浏览器 UAT：第一页、第二页、当前页复制、全部复制 | 通过；第一页 1-100、第二页 101-200；当前页复制 100 行、全部复制 2,577 行，均含表头 | UI-ROW-001 已关闭 |
+| 2026-08-27 | 大结果图表策略增强，结果超过 500 行时只保留表格，避免图表仅展示部分数据造成误导 | VisualizationSpec 回归测试；真实五维问题浏览器 UAT | 通过；2,577 行结果图表数为 0、表格数为 1 | 无 |
+
+### 真实浏览器 UAT 证据
+
+- 服务：`http://127.0.0.1:8787`；数据集：`2b445034-38fe-4350-9cab-b7684c28b5f8`；视口 1280×720。
+- 复杂问题页面截图：`test/uat-artifacts/row-limit-pagination-2026-08-27/uat-01-first-page-2577-rows.png`（共 2,577 行，当前 1-100）。
+- 第二页截图：`test/uat-artifacts/row-limit-pagination-2026-08-27/uat-02-second-page-101-200.png`（第 2/26 页，当前 101-200）。
+- 复制反馈截图：`test/uat-artifacts/row-limit-pagination-2026-08-27/uat-03-copy-feedback.png`（按钮显示“已复制”）。
+- 结构化证据：`test/uat-artifacts/row-limit-pagination-2026-08-27/latest.json`；复制内容实测为 TSV，当前页 100 行、全部返回 2,577 行。
+
+### 缺陷闭环
+
+| 编号 | 严重度 | 问题 | 修复/结论 | 状态 |
+|---|---|---|---|---|
+| UI-ROW-001 | P2 | 嵌入式浏览器中 Clipboard API 存在但调用失败时直接提示复制失败，未使用兼容复制。 | 增加 Clipboard API 异常回退到 `document.execCommand('copy')`，并新增回归断言；浏览器复验当前页和全部复制通过。 | 已关闭 |
+
+详细需求与设计已追加到 `SMART_QUERY_COMPLEX_MULTI_DIMENSION_TIME_SEMANTICS_REQUIREMENTS_DESIGN_AND_UAT_2026-08-26.md`。
+## 数据洞察系统性增强（2026-08-27）
+
+- 阶段 0 基线：`npm run check` 通过，`npm test` 195/195 通过。
+- 阶段 1 已完成：新增 `InsightRunStore`、`wynai.insight-run/v1`，接入 interpret 自动运行、explore 创建、列表/详情/重试接口和持久化恢复。
+- 阶段 1 UAT：真实 API 注册标准输入并生成 interpret 运行；桌面空状态/有结果状态和 390x844 移动页面截图已保存。
+- 当前进入阶段 2：服务端受控分析工具与 Evidence Pack。
+- 阶段 2 已完成：`Evidence Pack v1` 对全量结果计算统计、分布、频次、质量和受控样本，LLM 请求禁止携带原始明细；`npm test` 196/196 通过，真实多数据集/Word API UAT 通过。
+- 阶段 3 已完成：真实 DashScope（合成非敏感数据）Planner/Critic/Narrator 3/3 成功，InsightDocument 与证据校验通过，审计写入 stageAudit、Prompt hash、模型和 `rawRowsToLlm=false`。
+- 阶段 4 已完成：三领域 Skill 诊断配置和版本引用通过 UAT 5/5；实验室 Wyn 聚合端 502 作为执行端数据约束留痕，无伪成功降级。
+- 阶段 5 已完成：interpret/explore 共用 InsightRunStore，证据不足可创建 parentRunId 关联 Explore，统一页面和 HTML/Markdown/JSON 导出通过 API/浏览器 UAT。
+- 阶段 6 已完成：运行/文档/审计持久化、受信主体权限、配额/并发/重试、脱敏、版本比较、归档恢复/软删除和审计闭环通过 UAT；详情越权与运行越权均返回 403。
+- 412 行多维月度专项修复：Evidence Pack 基于全量结果生成时间、维度、时间+维度及大区/省份/城市层级组合聚合；Narrator 数字校验新增日期年份/月、万亿单位和同证据集合受控比例识别，并在首次校验失败后严格修复重试一次。原“Narrator 使用了证据中不存在的数字：2023”已关闭。
+- 412 行真实外部 LLM UAT：使用合成非敏感数据，Insight `ins-abe090f6-0811-4e45-b847-02a30af9263b`，Planner/Critic/Narrator 全部完成，54 条 Evidence、4 个 InsightDocument block；桌面和 390x844 移动页面均无错误及横向溢出。外发审计保持 `rawRowsToLlm=false`，未发送用户真实业务数据。
+- 最终门禁：`npm run check`、`npm run check:insight` 通过，`npm test` 当前最终 209/209；桌面与严格 390x844 移动截图通过且无横向溢出。详细证据见 `DATA_INSIGHT_PHASE3_UAT_REPORT_2026-08-27.md` 至 `DATA_INSIGHT_PHASE6_UAT_REPORT_2026-08-27.md`。
+
+## 2026-08-27 智能问数名称与可视化展示策略优化
+
+| 日期 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|
+| 2026-08-27 | 前端用户可见名称由“独立问数”统一调整为“智能问数”，内部 `smart-query` 路由和协议保持不变 | `test/report-export.test.mjs`、前端静态断言；浏览器入口检查 | 通过 | 无 |
+| 2026-08-27 | 可视化策略收敛为最多 2 个可见维度、最多 3 个指标；超过任一阈值只展示表格并保留原因/告警 | VisualizationSpec 三维、三指标、四指标回归；真实页面复杂问题 | 自动化 212/212；真实页面图表数 0、表格数 1 | 无 |
+| 2026-08-27 | 表格工具栏和分页固定，表体使用 320px 固定高度滚动容器；默认分页 100 行和复制能力保留 | 浏览器 DOM/CSS 检查：`clientHeight=303`、`scrollHeight=3434`、`overflow=auto`；截图验收 | 通过 | 无 |
+| 2026-08-27 | 修复“商品类型、商品名称”并列时产品维度被泛化子串过滤的问题，最长语义匹配优先显式字段 | 新增 `商品类别与商品名称并列出现时保留两个产品层级维度` 回归；真实 Wyn 问题复验 | 通过，返回类别名称、商品名称、订购日期三维，647 行/7 页 | SEM-UI-001 已关闭 |
+
+### 本轮浏览器 UAT 证据
+
+- 服务：`http://127.0.0.1:8787`；数据集：`2b445034-38fe-4350-9cab-b7684c28b5f8`；真实问题：`统计最近两年，每个月、商品类型、商品名称的销售额、利润、产品销量`。
+- 截图：`test/uat-artifacts/smart-query-ui-2026-08-27/three-dimensions-table-only.png`。
+- 验收观察：入口和标题均显示“智能问数”；结果包含类别名称、商品名称、订购日期三个维度；未出现图表或图表切换按钮；表格显示“共 647 行 · 当前显示 1-100”，分页为 `第 1 / 7 页`；表体出现垂直/水平滚动条，分页和追问操作保持可见。
+
+### 缺陷闭环
+
+| 编号 | 严重度 | 问题 | 修复/结论 | 状态 |
+|---|---|---|---|---|
+| SEM-UI-001 | P1 | “商品类型、商品名称”并列时，产品维度匹配先命中“商品类型”中的泛化“商品”子串并被过滤，造成三维问题退化为二维并错误出图 | 语义帧匹配改为选择最长命中；泛化“商品/产品”仅在无显式名称时去重；增加回归测试并真实 Wyn 复验 | 已关闭 |

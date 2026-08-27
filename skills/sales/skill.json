@@ -155,5 +155,40 @@
         "地区"
       ]
     }
+  ],
+  "diagnostics": [
+    {
+      "id": "revenue-decline",
+      "name": "销售额下降诊断",
+      "triggers": [
+        "下降",
+        "下滑",
+        "减少"
+      ],
+      "requiredEvidence": [
+        "revenue-trend",
+        "region-contribution",
+        "customer-concentration"
+      ],
+      "riskRules": [
+        {
+          "id": "margin-compression",
+          "when": "利润率下降且销售额未同步下降",
+          "severity": "warning",
+          "action": "检查折扣、成本和产品组合"
+        }
+      ],
+      "playbook": [
+        "确认时间范围和同比/环比口径",
+        "定位区域、客户和产品贡献",
+        "回查异常对象明细并指定责任人"
+      ]
+    }
+  ],
+  "assumptions": [
+    "销售额与利润均按已审批 Skill 口径聚合"
+  ],
+  "evaluationRefs": [
+    "sales-golden-diagnostics-v1"
   ]
 }

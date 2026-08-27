@@ -241,7 +241,9 @@ DataInsightRecord
   input: InsightInput v1
 ```
 
-列表摘要、行列数和完整度由标准 `resultSets` 计算，不保存来源私有字段。当前阶段使用最多 30 条的进程内存储，服务重启后不恢复。
+列表摘要、行列数和完整度由标准 `resultSets` 计算，不保存来源私有字段。InsightRun、InsightDocument 和审计记录使用 JSON 持久化仓库，服务重启后可恢复；列表默认过滤软归档/软删除记录，详情、版本、导出和审计均按受信用户/组织身份过滤。
+
+阶段 5/6 补充：正式生成必须走外部 LLM Planner/Critic/Narrator；服务端先构建 Evidence Pack，审计记录 Prompt hash、模型、Skill 版本、工具调用、阶段耗时和 `rawRowsToLlm=false`。配额、并发、重试、软归档/恢复/删除和敏感字段脱敏属于统一治理边界。
 
 ### 9.4 幂等策略
 
@@ -276,3 +278,12 @@ DataInsightRecord
 ### 9.7 安全与开放性
 
 本期公共接收接口不强制请求体包含用户、组织、来源或可信等级，也不实现新的认证产品。服务仍受现有部署边界保护。未来加入 API Key、OAuth2、MCP 或多租户时，在认证层形成主体与可信上下文，`InsightInput v1` 的数据语义无需随调用位置改变。
+# 阶段 1 补充：InsightRun 运行关联
+
+标准输入注册后必须返回 `insightId` 与 `runId`。`runId` 对应 `wynai.insight-run/v1`，默认以 `interpret` 模式进入 `queued`，后续通过状态机记录规划、执行、完成/失败、重试和生成版本；输入本身仍保持幂等，运行记录与输入记录分离。
+
+
+# 阶段 1 补充：InsightRun 运行关联`n`n标准输入注册后必须返回 `insightId` 与 `runId`。`runId` 对应 `wynai.insight-run/v1`，默认以 `interpret` 模式进入 `queued`，后续通过状态机记录规划、执行、完成/失败、重试和生成版本；输入本身仍保持幂等，运行记录与输入记录分离。
+
+
+阶段 4/5/6 补充：运行对象记录 Skill refs、诊断证据要求和 parentRunId；数据洞察与 AI 数据分析共用 InsightRun，运行接口按受信用户/组织身份过滤。
