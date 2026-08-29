@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wynai.local/schemas/wynai.result-presentation-plan.v1.schema.json",
+  "title": "WynAI ResultPresentationPlan v1",
+  "type": "object",
+  "required": ["schema", "version", "mode", "priority", "dimensions", "metrics", "table", "decision"],
+  "properties": {
+    "schema": { "const": "wynai.result-presentation-plan/v1" },
+    "version": { "const": 1 },
+    "mode": { "enum": ["chart-and-table", "table-only", "table-first-with-chart"] },
+    "priority": { "enum": ["chart", "table"] },
+    "dimensions": { "type": "array", "items": { "type": "object", "required": ["field", "role"], "properties": { "field": { "type": "string" }, "role": { "enum": ["category", "series", "facet", "grouping"] }, "cardinality": { "type": "integer", "minimum": 0 }, "visible": { "type": "boolean" } } } },
+    "metrics": { "type": "array", "items": { "type": "object", "required": ["field", "label"], "properties": { "field": { "type": "string" }, "label": { "type": "string" }, "derived": { "type": "boolean" }, "percentage": { "type": "boolean" } } } },
+    "table": { "type": "object", "required": ["columns", "pageSize", "preserveAllReturnedRows"], "properties": { "columns": { "type": "array", "items": { "type": "string" } }, "pageSize": { "const": 100 }, "preserveAllReturnedRows": { "type": "boolean" } } },
+    "chart": { "type": ["object", "null"] },
+    "decision": { "type": "object", "required": ["source", "reason", "warnings"], "properties": { "source": { "enum": ["automatic", "user"] }, "reason": { "type": "string" }, "warnings": { "type": "array", "items": { "type": "string" } } } },
+    "queryProjection": { "type": "object" }
+  },
+  "additionalProperties": true
+}

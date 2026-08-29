@@ -423,6 +423,13 @@ test('模型新增用户未要求的可见维度时回退到已校验计划且�
   assert.equal(calls, 2);
 });
 
+test('多指标未明确同比对象时必须澄清，不静默绑定最后一个指标', () => {
+  const plan = planBusinessQuestion({ metadata, question: '2023至2025年销售额、利润和同比增长率', now });
+  assert.equal(plan.status, 'needs_clarification');
+  assert.match(plan.clarification, /同比增长率/);
+  assert.deepEqual(plan.intent.derivedMetrics, []);
+});
+
 test('派生关系语义支持并列指标和分别/全部表达', () => {
   const first = planBusinessQuestion({ metadata, question: '2023至2025年销售额和同比增长率、利润、订单数量', now });
   assert.equal(first.status, 'supported');

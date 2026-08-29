@@ -123,11 +123,13 @@ npm audit
 ## 当前边界
 
 - 单次分析只使用一个数据集。
-- 单个聚合或明细查询最多返回 5,000 行；增长来源查询会自动限制为两个比较期间，避免全历史 TopN 截断。
+- 单个聚合或明细查询最多返回 20,000 行；增长来源查询会自动限制为两个比较期间，避免全历史 TopN 截断。
 - 正式 PDF 通过独立 HTML 的打印功能生成。
 - 本地 JSON 仓库适合原型与单实例部署；生产多实例需要数据库、权限映射、审计日志和密钥托管。
 - 真实 LLM UAT 已按授权把字段元数据、语义描述、受控聚合摘要和报告上下文发送到阿里云 DashScope；不发送完整明细、`WYN_TOKEN` 或 `LLM_API_KEY`。后续使用其他客户数据时仍须单独确认数据外发授权与脱敏策略。
 - 新智能问数的统一协议、会话和 Skill 设计记录见 [NEW_SMART_QUERY_DEVELOPMENT_PLAN.md](./NEW_SMART_QUERY_DEVELOPMENT_PLAN.md)；阶段开发、测试、UAT 和 Bug 台账见 [DEVELOPMENT_PROGRESS_REPORT.md](./DEVELOPMENT_PROGRESS_REPORT.md)。
+- 数据洞察平台稳健性增强需求、设计和 UAT 见 [DATA_INSIGHT_PLATFORM_ROBUSTNESS_REQUIREMENTS_DESIGN_UAT_2026-08-28.md](./DATA_INSIGHT_PLATFORM_ROBUSTNESS_REQUIREMENTS_DESIGN_UAT_2026-08-28.md)。
+- 数据洞察平台稳健性增强已完成 ROB-01~ROB-09：`npm test` 233/233、`npm run check` 和 `npm run check:insight` 通过；固定服务地址为 `http://127.0.0.1:8787/`。真实高维结果支持 InsightDocument 正常生成和明确的确定性 degraded 降级，UAT 证据见 `test/uat-artifacts/data-insight-robustness-2026-08-28/`。
 ## Windows 发布包
 
 项目可以构建为包含 Node.js、生产依赖和 WinSW 的 Windows x64 ZIP。目标服务器不需要安装 Node.js，也不需要执行 `npm install`。

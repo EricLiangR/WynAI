@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { JsonRunStore } from '../lib/run-store.mjs';
@@ -31,6 +31,20 @@ test('运行仓库原子保存、自动裁剪并可在重新初始化后恢复',
     assert.deepEqual(restored.list().map(item => item.id), ['run-00000003', 'run-00000002']);
     assert.equal(restored.get('run-00000002').analysis.dataset.name, '销售数据');
     assert.throws(() => restored.get('../secret'), /无效的分析运行 ID/);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('并发保存同一记录不会复用临时文件或留下临时文件', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'wynai-concurrent-runs-'));
+  try {
+    const store = new JsonRunStore(directory, { maxItems: 10 });
+    await store.init();
+    await Promise.all(Array.from({ length: 24 }, (_, index) => store.save({ ...run('run-concurrent1', index), payload: { index } })));
+    const persisted = JSON.parse(await readFile(join(directory, 'run-concurrent1.json'), 'utf8'));
+    assert.ok(Number.isInteger(persisted.payload.index));
+    assert.deepEqual((await readdir(directory)).filter(name => name.endsWith('.tmp')), []);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

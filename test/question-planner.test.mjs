@@ -92,3 +92,21 @@ test('二维结果完整编码为分类和系列并同时保留明细表格', ()
   assert.equal(chart.visualization.encoding.seriesDimension.field, 'province');
   assert.equal(document.blocks.some(block => block.type === 'table'), true);
 });
+
+
+test('排名回答明确展示排序指标及聚合口径', () => {
+  const plan = planBusinessQuestion({ metadata, question: '去年销售排名前五的商品种类' });
+  const document = composeQuestionDocument({
+    metadata,
+    question: '去年销售排名前五的商品种类',
+    plan,
+    resultSet: {
+      id: 'rs-ranking-label',
+      rows: [{ category: 'A', revenue: 100 }],
+      schema: [{ name: 'category', role: 'dimension' }, { name: 'revenue', role: 'measure', type: 'number' }],
+      quality: { isTruncated: false, limitReached: false },
+    },
+  });
+  const summary = document.blocks.find(block => block.id === 'answer-summary')?.content || '';
+  assert.match(summary, /按订单金额（求和）从高到低排序，取 5 项/);
+});

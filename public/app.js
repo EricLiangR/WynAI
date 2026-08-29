@@ -119,6 +119,8 @@ const state = {
   smartAbortController: null,
   smartCharts: [],
   smartTables: new Map(),
+  smartMaximizedResult: null,
+  smartResultBackdrop: null,
   insightsReturnSection: 'chat',
   reportTemplates: [],
   reportTemplate: null,
@@ -259,7 +261,9 @@ function markdown(text) {
 }
 
 function switchSection(section) {
+  const previousSection = state.currentSection;
   const requestedSection = section;
+  if (previousSection === 'smart-query' && requestedSection !== 'smart-query') closeSmartResultMaximize({ animate: false });
   state.currentSection = requestedSection;
   const isChat = section === 'chat';
   const isInsights = section === 'insights';
@@ -470,9 +474,10 @@ function renderPersistedInsightDocument(documentValue, versions = []) {
   elements.secondaryOutput.hidden = false;
   document.querySelector('#output-model').textContent = `InsightDocument v${versions.length || 1}`;
   const blocks = Array.isArray(documentValue.blocks) ? documentValue.blocks : [];
+  const warningMarkup = blocks.filter(block => block.type === 'warning').map(block => `<div class="insight-degraded-notice"><strong>${escapeHtml(block.title || '洞察状态')}</strong><br>${escapeHtml(block.message || block.content || '')}</div>`).join('');
   elements.findingGrid.innerHTML = blocks.filter(block => ['ai-narrative', 'text'].includes(block.type)).map(block => `
     <div class="finding-card violet"><small>${escapeHtml(block.title || '业务洞察')}</small><strong>${escapeHtml(block.content || '')}</strong><span>证据：${escapeHtml((block.evidenceIds || []).join('、') || '待补充')}</span></div>`).join('');
-  elements.outputContent.innerHTML = blocks.filter(block => block.type === 'ai-narrative').map(block => `<section class="insight-document-section"><h5>${escapeHtml(block.title || '洞察')}</h5><p>${markdown(block.content || '')}</p></section>`).join('') || '<div class="insight-loading">暂无已保存的业务洞察</div>';
+  elements.outputContent.innerHTML = warningMarkup + (blocks.filter(block => block.type === 'ai-narrative').map(block => `<section class="insight-document-section"><h5>${escapeHtml(block.title || '洞察')}</h5><p>${markdown(block.content || '')}</p></section>`).join('') || '<div class="insight-loading">暂无已保存的业务洞察</div>');
   elements.insightVersionBar.hidden = versions.length < 2;
   elements.insightVersionBar.innerHTML = versions.length > 1 ? `<span>版本 ${versions.map(item => `v${item.version}`).join('、')}</span><button type="button" data-insight-explore="${escapeHtml(state.activeResult?.insightId || '')}">证据不足时发起 Explore</button>` : '';
 }
@@ -554,7 +559,15 @@ async function generateSecondaryInsight() {
       body: JSON.stringify({ prompt: elements.secondaryPrompt.value.trim() }),
     });
     const data = await response.json();
-    if (!response.ok) throw new Error(data.message || '二次洞察失败');
+    if (!response.ok || data.status === 'failed' || data.status === 'needs_review') {
+      state.activeResult = { ...(state.activeResult || {}), document: null };
+      elements.insightExport.disabled = true;
+      const failure = data.error || {};
+      const error = new Error(failure.message || data.message || '二次洞察未完成');
+      error.code = failure.code || data.code || 'INSIGHT_GENERATION_FAILED';
+      error.retryable = data.retryable !== false;
+      throw error;
+    }
     state.activeResult = { ...(state.activeResult || {}), document: data.document || state.activeResult?.document || null, versions: data.document ? [...(state.activeResult?.versions || []), { version: ((state.activeResult?.versions || []).at(-1)?.version || 0) + 1, document: data.document }] : (state.activeResult?.versions || []) };
     elements.insightExport.disabled = !data.document;
     document.querySelector('#output-model').textContent = data.model || 'AI 洞察引擎';
@@ -565,7 +578,7 @@ async function generateSecondaryInsight() {
     if (data.exploreRun) elements.outputContent.insertAdjacentHTML('beforeend', `<div class="insight-followup-note">证据不足，已关联 Explore 运行 ${escapeHtml(data.exploreRun.id)}，状态：${escapeHtml(statusLabel(data.exploreRun.status))}</div>`);
     if (data.document) renderPersistedInsightDocument(data.document, state.activeResult.versions);
   } catch (error) {
-    elements.outputContent.innerHTML = `<div class="error-box"><strong>暂未完成二次洞察</strong><br>${escapeHtml(error.message)}</div>`;
+    elements.outputContent.innerHTML = `<div class="error-box"><strong>本次智能洞察未完成</strong><br>${escapeHtml(error.message)}${error.code ? `<br><small>错误码：${escapeHtml(error.code)}</small>` : ''}${error.retryable ? '<br><button type="button" data-retry-insight="true">重新生成</button>' : ''}</div>`;
   } finally {
     elements.generateInsight.disabled = false;
     elements.generateInsight.querySelector('span').textContent = '开始洞察';
@@ -793,17 +806,20 @@ function renderSemanticMetadata(metadata) {
 function renderChatSemanticMetadata(metadata) {
   const status = document.querySelector('#chat-semantic-status');
   if (!status) return;
-  status.textContent = '已加载';
+  status.innerHTML = '<span class="semantic-pulse"></span><span>语义定义已加载</span>';
+  document.querySelector('#chat-semantic-field-count').textContent = `${metadata.fieldCount || 0} 字段`;
   document.querySelector('#chat-semantic-description').textContent = metadata.description || '未配置业务描述';
   document.querySelector('#chat-semantic-measures').textContent = shortFieldList(metadata.roles?.measure);
   document.querySelector('#chat-semantic-dimensions').textContent = shortFieldList([...(metadata.roles?.dimension || []), ...(metadata.roles?.geography || [])]);
   document.querySelector('#chat-semantic-times').textContent = shortFieldList(metadata.roles?.time);
+  document.querySelector('#chat-semantic-described').textContent = String(metadata.assistant?.describedFieldCount || 0);
 }
 
 async function loadChatMetadata(datasetId) {
   const status = document.querySelector('#chat-semantic-status');
   if (!datasetId || !status) return;
-  status.textContent = '读取中';
+  status.classList.remove('error');
+  status.innerHTML = '<span class="semantic-pulse"></span><span>正在读取语义定义</span>';
   try {
     const response = await fetch(`/api/datasets/${encodeURIComponent(datasetId)}/metadata`);
     const metadata = await response.json();
@@ -811,7 +827,8 @@ async function loadChatMetadata(datasetId) {
     if (elements.dataset.value !== datasetId) return;
     renderChatSemanticMetadata(metadata);
   } catch {
-    status.textContent = '读取失败';
+    status.classList.add('error');
+    status.innerHTML = '<span class="semantic-pulse"></span><span>语义定义读取失败</span>';
   }
 }
 
@@ -1239,19 +1256,52 @@ function renderSmartAnalysisDetails(queryRequests = [], scope = {}) {
   const metrics = [...new Set(requests.flatMap(request => (request.measures || []).map(measure => `${measure.field || '指标'}（${smartAggregationLabel(measure.aggregation)}）`)))];
   const dimensions = [...new Set(requests.flatMap(request => (request.select || []).map(select => `${select.field || '维度'}${select.grain ? `（按${({ year: '年', quarter: '季度', month: '月', week: '周', day: '日' })[select.grain] || select.grain}）` : ''}`)))];
   const filters = [...new Set((requests.length ? requests.flatMap(request => request.filters || []) : (scope.filters || [])).map(smartFilterLabel))];
-  const ranking = requests.flatMap(request => (request.orderBy || []).map(item => { const field = [...(request.measures || []), ...(request.select || [])].find(candidate => candidate.alias === item.field)?.field || item.field || '结果'; return `${field}${item.direction === 'asc' ? '升序' : '降序'}`; }));
+  const ranking = requests.flatMap(request => (request.orderBy || []).map(item => {
+    const candidate = [...(request.measures || []), ...(request.select || [])].find(value => value.alias === item.field);
+    const field = candidate?.field || item.field || '结果';
+    const basis = candidate?.aggregation ? `${field}（${smartAggregationLabel(candidate.aggregation)}）` : field;
+    return `按${basis}${item.direction === 'asc' ? '升序' : '降序'}`;
+  }));
   const rows = [
     ['指标', metrics.join('、') || '未指定'],
     ['维度', dimensions.join('、') || '未分组'],
     ['筛选', filters.join('；') || '全部数据'],
     ['排序', [...new Set(ranking)].join('；') || '未排序'],
   ];
-  return `<section class="smart-analysis-details" aria-label="详情"><div class="smart-analysis-details-head"><strong>详情</strong></div><dl>${rows.map(([label, value]) => `<div class="smart-analysis-detail-item"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl></section>`;
+  return `<section class="smart-analysis-details" aria-label="本轮查询条件"><dl>${rows.map(([label, value]) => `<div class="smart-analysis-detail-item"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl></section>`;
 }
 
 const SMART_CHART_TYPE_LABELS = {
   line: '折线图', column: '柱形图', bar: '条形图', pie: '饼图', donut: '环形图', combo: '组合图', 'stacked-column': '堆叠图',
 };
+
+const SMART_ICON_PATHS = {
+  copy: '<rect x="9" y="9" width="11" height="11" rx="2"/><path d="M15 9V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v7a2 2 0 0 0 2 2h3"/>',
+  thumbUp: '<path d="M7 10v12"/><path d="M15 5.88 14 10h5.83a2 2 0 0 1 1.92 2.56l-2.33 8A2 2 0 0 1 17.5 22H4a2 2 0 0 1-2-2v-8a2 2 0 0 1 2-2h2.76a2 2 0 0 0 1.79-1.11L12 2h0a3.13 3.13 0 0 1 3 3.88Z"/>',
+  imageDownload: '<rect x="3" y="4" width="14" height="13" rx="2"/><path d="m3 14 4-4 3 3 2-2 5 5M13 8h.01M20 11v9m-3-3 3 3 3-3"/>',
+  fileDownload: '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6m-8 3v6m-3-3 3 3 3-3"/>',
+  maximize: '<path d="M8 3H3v5m13-5h5v5M8 21H3v-5m18 0v5h-5"/>',
+  minimize: '<path d="M8 3v5H3m13-5v5h5M8 21v-5H3m18 0h-5v5"/>',
+  line: '<path d="M3 17 8 12l4 3 8-9"/><path d="M16 6h4v4"/>',
+  column: '<path d="M4 20V10h4v10m4 0V4h4v16m4 0v-7h3"/>',
+  bar: '<path d="M4 5h12v3H4zm0 6h17v3H4zm0 6h8v3H4z"/>',
+  pie: '<path d="M11 3a9 9 0 1 0 9 9h-9Z"/><path d="M14 3.5A8 8 0 0 1 20.5 10H14Z"/>',
+  donut: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/>',
+  combo: '<path d="M4 20v-7h4v7m4 0V9h4v11"/><path d="m3 9 5-4 4 3 8-5"/>',
+  'stacked-column': '<path d="M5 20V4h5v16m4 0V7h5v13M5 12h5m4 2h5"/>',
+};
+
+function smartIcon(name) {
+  return `<svg viewBox="0 0 24 24" aria-hidden="true">${SMART_ICON_PATHS[name] || SMART_ICON_PATHS.copy}</svg>`;
+}
+
+function smartChartTypeIcon(type) {
+  return smartIcon(type === 'stacked-column' ? 'stacked-column' : type);
+}
+
+function isCredibilityWarning(message) {
+  return /(截断|超过.*(?:行|上限)|限制|未识别|无法识别|未能识别|缺失|不完整|部分结果|口径|样本|估算|失败|异常)/.test(String(message || ''));
+}
 
 function disposeSmartCharts() {
   for (const entry of state.smartCharts) {
@@ -1361,12 +1411,45 @@ function smartChartOption(spec, result, selectedType = spec.type) {
     ? new Intl.NumberFormat('zh-CN', { style: 'percent', maximumFractionDigits: 2 }).format(Number(value) || 0)
     : new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(Number(value) || 0);
   if (type === 'pie' || type === 'donut') {
+    const pieData = data.series[0]?.data || [];
+    const pieTotal = pieData.reduce((sum, item) => {
+      const value = Number(item?.value);
+      return Number.isFinite(value) && value > 0 ? sum + value : sum;
+    }, 0);
+    const formatPieValue = value => Number.isFinite(Number(value))
+      ? new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(Number(value))
+      : String(value ?? '—');
     return {
       animationDuration: 450,
       color: palette,
-      tooltip: { trigger: 'item', valueFormatter: valueFormatter(spec.encoding.measures[0]?.format) },
-      legend: { type: 'scroll', orient: 'vertical', right: 16, top: 'middle', textStyle: { color: '#657178', fontSize: 11 } },
-      series: [{ name: data.series[0]?.name, type: 'pie', radius: type === 'donut' ? ['42%', '68%'] : '68%', center: ['40%', '52%'], avoidLabelOverlap: true, minShowLabelAngle: 4, label: { color: '#59676e', fontSize: 11, formatter: '{b}\n{d}%' }, data: data.series[0]?.data || [] }],
+      tooltip: { trigger: 'item', formatter: params => {
+        const value = Number(params.value);
+        const percent = Number(params.percent);
+        const formatted = Number.isFinite(value) ? new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(value) : String(params.value ?? '—');
+        return `${params.name}<br/>${escapeHtml(spec.encoding.measures[0]?.label || '数值')}：${formatted}<br/>占比：${Number.isFinite(percent) ? percent.toFixed(2) : '—'}%`;
+      } },      legend: {
+        type: 'scroll',
+        orient: 'vertical',
+        right: 16,
+        top: 'middle',
+        itemGap: 8,
+        textStyle: {
+          color: '#657178',
+          fontSize: 11,
+          rich: {
+            legendName: { width: 64, align: 'left', color: '#657178', fontSize: 11 },
+            legendValue: { width: 92, align: 'left', color: '#657178', fontSize: 11 },
+            legendPercent: { width: 58, align: 'left', color: '#657178', fontSize: 11 },
+          },
+        },
+        formatter: name => {
+          const item = pieData.find(entry => String(entry?.name) === String(name));
+          const value = Number(item?.value);
+          const percent = pieTotal > 0 && Number.isFinite(value) && value > 0 ? (value / pieTotal) * 100 : 0;
+          return `{legendName|${name}}{legendValue|${formatPieValue(value)}}{legendPercent|${percent.toFixed(2)}%}`;
+        },
+      },
+      series: [{ name: data.series[0]?.name, type: 'pie', radius: type === 'donut' ? ['42%', '68%'] : '68%', center: ['40%', '52%'], avoidLabelOverlap: true, minShowLabelAngle: 4, label: { color: '#59676e', fontSize: 11, formatter: '{b}\n{d}%' }, data: pieData }],
     };
   }
   const horizontal = type === 'bar';
@@ -1454,13 +1537,19 @@ function hydrateSmartCharts(root, document, resultSets = []) {
       chart.clear();
       chart.setOption(smartChartOption(spec, result, type), true);
       container.setAttribute('aria-label', `${block.title || '分析图表'}，${SMART_CHART_TYPE_LABELS[type] || type}`);
-      root.querySelectorAll(`[data-smart-chart-block="${CSS.escape(block.id)}"]`).forEach(button => button.classList.toggle('active', button.dataset.smartChartType === type));
+      root.querySelectorAll(`[data-smart-chart-block="${CSS.escape(block.id)}"]`).forEach(button => {
+        const active = button.dataset.smartChartType === type;
+        button.classList.toggle('active', active);
+        button.setAttribute('aria-pressed', String(active));
+      });
+      const entry = state.smartCharts.find(item => item.chart === chart);
+      if (entry) entry.selectedType = type;
       requestAnimationFrame(() => chart.resize());
     };
     root.querySelectorAll(`[data-smart-chart-block="${CSS.escape(block.id)}"]`).forEach(button => button.addEventListener('click', () => render(button.dataset.smartChartType)));
     const observer = globalThis.ResizeObserver ? new ResizeObserver(() => chart.resize()) : null;
     observer?.observe(container);
-    state.smartCharts.push({ chart, observer });
+    state.smartCharts.push({ chart, observer, blockId: block.id, container, selectedType: spec.type });
     render(spec.type);
   }
 }
@@ -1493,7 +1582,7 @@ function renderSmartTableMarkup(tableKey) {
   const pageLabel = `${start + 1}-${Math.min(start + pageRows.length, rows.length)}`;
   const previousDisabled = entry.page <= 0 ? ' disabled' : '';
   const nextDisabled = entry.page >= pageCount - 1 ? ' disabled' : '';
-  return `<div class="smart-query-table-wrap" data-smart-table="${escapeHtml(tableKey)}"><div class="smart-table-toolbar"><span class="smart-table-range">${escapeHtml(range.label)}${rows.length ? ` · 当前显示 ${pageLabel}` : ''}</span><div class="smart-table-actions"><button type="button" data-smart-table-copy="${escapeHtml(tableKey)}" data-smart-table-copy-mode="page" title="复制当前页数据"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="1"/><path d="M5 16V5a1 1 0 0 1 1-1h11"/></svg>复制当前页</button><button type="button" data-smart-table-copy="${escapeHtml(tableKey)}" data-smart-table-copy-mode="all" title="复制全部返回数据"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="8" y="8" width="11" height="11" rx="1"/><path d="M5 16V5a1 1 0 0 1 1-1h11M12 12h4m-2-2v4"/></svg>复制全部</button></div></div>${warning}<div class="smart-table-scroll"><table class="smart-query-table"><thead><tr>${columns.map(column => `<th>${escapeHtml(entry.columnLabels[column] || column)}</th>`).join('')}</tr></thead><tbody>${pageRows.map(row => `<tr>${cell(row)}</tr>`).join('')}</tbody></table></div>${pageCount > 1 ? `<div class="smart-table-pagination"><button type="button" data-smart-table-page="${escapeHtml(tableKey)}" data-smart-table-page-delta="-1" aria-label="上一页"${previousDisabled}>上一页</button><span>第 ${entry.page + 1} / ${pageCount} 页</span><button type="button" data-smart-table-page="${escapeHtml(tableKey)}" data-smart-table-page-delta="1" aria-label="下一页"${nextDisabled}>下一页</button></div>` : ''}</div>`;
+  return `<div class="smart-query-table-wrap" data-smart-table="${escapeHtml(tableKey)}">${warning}<div class="smart-table-scroll"><table class="smart-query-table"><thead><tr>${columns.map(column => `<th>${escapeHtml(entry.columnLabels[column] || column)}</th>`).join('')}</tr></thead><tbody>${pageRows.map(row => `<tr>${cell(row)}</tr>`).join('')}</tbody></table></div>${pageCount > 1 ? `<div class="smart-table-pagination"><button type="button" data-smart-table-page="${escapeHtml(tableKey)}" data-smart-table-page-delta="-1" aria-label="上一页"${previousDisabled}>上一页</button><span>第 ${entry.page + 1} / ${pageCount} 页 · 共 ${rows.length.toLocaleString('zh-CN')} 行</span><button type="button" data-smart-table-page="${escapeHtml(tableKey)}" data-smart-table-page-delta="1" aria-label="下一页"${nextDisabled}>下一页</button></div>` : ''}</div>`;
 }
 
 function smartTableCopyText(entry, mode) {
@@ -1516,28 +1605,172 @@ function copyTextWithLegacyApi(text) {
   if (!copied) throw new Error('浏览器未授予剪贴板权限');
 }
 
+async function writeSmartClipboard(text) {
+  if (navigator.clipboard?.writeText) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // Embedded browsers can expose Clipboard API without granting permission.
+    }
+  }
+  copyTextWithLegacyApi(text);
+}
+
+function showSmartActionSuccess(button, label = '已完成') {
+  const originalLabel = button.getAttribute('aria-label') || button.title || '';
+  button.classList.add('success');
+  button.setAttribute('aria-label', label);
+  button.title = label;
+  window.setTimeout(() => {
+    button.classList.remove('success');
+    button.setAttribute('aria-label', originalLabel);
+    button.title = originalLabel;
+  }, 1200);
+}
+
 async function copySmartTable(tableKey, mode, button) {
   const entry = state.smartTables.get(tableKey);
   if (!entry) return;
   const text = smartTableCopyText(entry, mode);
   try {
-    let copied = false;
-    if (navigator.clipboard?.writeText) {
-      try {
-        await navigator.clipboard.writeText(text);
-        copied = true;
-      } catch {
-        // Clipboard API can exist but still be unavailable in embedded browsers.
-      }
-    }
-    if (!copied) copyTextWithLegacyApi(text);
-    const original = button.innerHTML;
-    button.textContent = '已复制';
-    window.setTimeout(() => { button.innerHTML = original; }, 1200);
+    await writeSmartClipboard(text);
+    showSmartActionSuccess(button, '全部数据已复制');
   } catch (error) {
     elements.smartStatus.textContent = `复制失败：${error.message}`;
   }
 }
+
+async function copySmartAnswer(text, button, successLabel = '回答已复制') {
+  try {
+    await writeSmartClipboard(text);
+    showSmartActionSuccess(button, successLabel);
+  } catch (error) {
+    elements.smartStatus.textContent = `复制失败：${error.message}`;
+  }
+}
+
+function csvSafeCell(value) {
+  let text = String(value ?? '').replace(/[\r\n]+/g, ' ');
+  if (/^[=+@]/.test(text) || /^-[^\d.]/.test(text)) text = `'${text}`;
+  return /[",\r\n]/.test(text) ? `"${text.replace(/"/g, '""')}"` : text;
+}
+
+function smartTableCsvText(entry) {
+  const rows = entry.result?.rows || [];
+  const columns = entry.columns || [];
+  const lines = [columns.map(column => entry.columnLabels[column] || column), ...rows.map(row => columns.map(column => entry.formatCell(row, column)))];
+  return `\ufeff${lines.map(row => row.map(csvSafeCell).join(',')).join('\r\n')}`;
+}
+
+function smartDownloadName(title, extension) {
+  const base = String(title || '智能问数结果').replace(/[\\/:*?"<>|]+/g, '-').replace(/\s+/g, ' ').trim().slice(0, 80) || '智能问数结果';
+  return `${base}.${extension}`;
+}
+
+function triggerSmartDownload(href, filename, revoke = false) {
+  const link = document.createElement('a');
+  link.href = href;
+  link.download = filename;
+  document.body.append(link);
+  link.click();
+  link.remove();
+  if (revoke) window.setTimeout(() => URL.revokeObjectURL(href), 0);
+}
+
+function downloadSmartTable(tableKey, title, button) {
+  const entry = state.smartTables.get(tableKey);
+  if (!entry) return;
+  const url = URL.createObjectURL(new Blob([smartTableCsvText(entry)], { type: 'text/csv;charset=utf-8' }));
+  triggerSmartDownload(url, smartDownloadName(title, 'csv'), true);
+  showSmartActionSuccess(button, 'CSV 已下载');
+}
+
+function downloadSmartChart(blockId, title, button) {
+  const entry = state.smartCharts.find(item => item.blockId === blockId && item.container?.isConnected);
+  if (!entry) return;
+  const dataUrl = entry.chart.getDataURL({ type: 'png', pixelRatio: 2, backgroundColor: '#fff' });
+  triggerSmartDownload(dataUrl, smartDownloadName(title, 'png'));
+  showSmartActionSuccess(button, 'PNG 已下载');
+}
+
+function resizeSmartChartsIn(container) {
+  window.requestAnimationFrame(() => {
+    state.smartCharts.filter(entry => container?.contains(entry.container)).forEach(entry => entry.chart.resize());
+  });
+}
+
+function finalizeSmartResultMaximize(panel) {
+  if (!panel) return;
+  panel.classList.remove('is-maximized', 'is-closing');
+  panel.removeAttribute('role');
+  panel.removeAttribute('aria-modal');
+  const button = panel.querySelector('[data-smart-result-maximize]');
+  if (button) {
+    button.innerHTML = smartIcon('maximize');
+    button.setAttribute('aria-label', '最大化图表和表格');
+    button.title = '最大化图表和表格';
+  }
+  state.smartResultBackdrop?.remove();
+  state.smartResultBackdrop = null;
+  state.smartMaximizedResult = null;
+  document.body.classList.remove('smart-result-modal-open');
+  panel.classList.remove('is-table-only-maximized');
+  resizeSmartChartsIn(panel);
+}
+
+function closeSmartResultMaximize({ animate = true } = {}) {
+  const panel = state.smartMaximizedResult;
+  if (!panel) return;
+  const shouldAnimate = animate && !window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  if (!shouldAnimate) {
+    finalizeSmartResultMaximize(panel);
+    return;
+  }
+  panel.classList.add('is-closing');
+  state.smartResultBackdrop?.classList.add('is-closing');
+  let finished = false;
+  const finish = () => {
+    if (finished) return;
+    finished = true;
+    finalizeSmartResultMaximize(panel);
+  };
+  panel.addEventListener('animationend', event => {
+    if (event.animationName === 'smart-result-close') finish();
+  }, { once: true });
+  window.setTimeout(finish, 260);
+}
+
+function toggleSmartResultMaximize(panel) {
+  if (!panel) return;
+  if (state.smartMaximizedResult === panel) {
+    closeSmartResultMaximize();
+    return;
+  }
+  closeSmartResultMaximize({ animate: false });
+  const backdrop = document.createElement('button');
+  backdrop.type = 'button';
+  backdrop.className = 'smart-result-backdrop';
+  backdrop.setAttribute('aria-label', '关闭最大化结果');
+  backdrop.addEventListener('click', closeSmartResultMaximize);
+  document.body.append(backdrop);
+  state.smartResultBackdrop = backdrop;
+  state.smartMaximizedResult = panel;
+  panel.classList.add('is-maximized');
+  panel.classList.toggle('is-table-only-maximized', !panel.querySelector('.smart-echart'));
+  panel.setAttribute('role', 'dialog');
+  panel.setAttribute('aria-modal', 'true');
+  const button = panel.querySelector('[data-smart-result-maximize]');
+  if (button) {
+    button.innerHTML = smartIcon('minimize');
+    button.setAttribute('aria-label', '退出最大化');
+    button.title = '退出最大化';
+  }
+  document.body.classList.add('smart-result-modal-open');
+  resizeSmartChartsIn(panel);
+  button?.focus();
+}
+
 function renderSmartDocument(document, resultSets = [], runtimeStatus = null, queryRequests = [], feedbackContext = null, dataInsight = null) {
   if (!document) return '';
   const blocks = Array.isArray(document.blocks) ? document.blocks : [];
@@ -1562,20 +1795,20 @@ function renderSmartDocument(document, resultSets = [], runtimeStatus = null, qu
   };
   const renderChart = block => {
     const result = resultMap.get(block.dataRef);
-    if (!result?.rows?.length) return `<p>暂无可绘制的聚合数据 · 结果集 ${escapeHtml(block.dataRef || '—')}</p>`;
+    if (!result?.rows?.length) return { html: `<p>暂无可绘制的聚合数据 · 结果集 ${escapeHtml(block.dataRef || '—')}</p>`, controls: '', blockId: null };
     const spec = block.visualization || legacySmartVisualization(block, result);
-    if (!spec) return `<p>当前结果形状不适合绘图，已保留查询明细。</p>`;
+    if (!spec) return { html: '', controls: '', blockId: null };
     const allowedTypes = [...new Set([spec.type, ...(spec.decision?.allowedTypes || [])])];
-    const controls = allowedTypes.length > 1 ? `<div class="smart-chart-type-switch" role="group" aria-label="切换图表类型">${allowedTypes.map(type => `<button type="button" class="${type === spec.type ? 'active' : ''}" data-smart-chart-block="${escapeHtml(block.id)}" data-smart-chart-type="${escapeHtml(type)}" title="切换为${escapeHtml(SMART_CHART_TYPE_LABELS[type] || type)}">${escapeHtml(SMART_CHART_TYPE_LABELS[type] || type)}</button>`).join('')}</div>` : '';
-    const decision = spec.decision?.reason ? `<p class="smart-chart-decision">${escapeHtml(spec.decision.reason)}</p>` : '';
-    const warnings = spec.decision?.warnings?.length ? `<p class="smart-chart-warning">${escapeHtml(spec.decision.warnings.join('；'))}</p>` : '';
-    return `${controls}<div class="smart-echart" data-smart-chart-id="${escapeHtml(block.id)}" role="img" aria-label="${escapeHtml(block.title || '分析图表')}"></div>${decision}${warnings}`;
+    const controls = allowedTypes.length > 1 ? `<div class="smart-chart-type-switch" role="group" aria-label="切换图表类型">${allowedTypes.map(type => `<button type="button" class="${type === spec.type ? 'active' : ''}" data-smart-chart-block="${escapeHtml(block.id)}" data-smart-chart-type="${escapeHtml(type)}" aria-label="${escapeHtml(SMART_CHART_TYPE_LABELS[type] || type)}" aria-pressed="${type === spec.type}" title="${escapeHtml(SMART_CHART_TYPE_LABELS[type] || type)}">${smartChartTypeIcon(type)}</button>`).join('')}</div>` : '';
+    const credibilityWarnings = (spec.decision?.warnings || []).filter(isCredibilityWarning);
+    const warnings = credibilityWarnings.length ? `<p class="smart-chart-warning">${escapeHtml(credibilityWarnings.join('；'))}</p>` : '';
+    return { html: `<div class="smart-echart" data-smart-chart-id="${escapeHtml(block.id)}" role="img" aria-label="${escapeHtml(block.title || '分析图表')}"></div>${warnings}`, controls, blockId: block.id };
   };
   const renderTable = block => {
     const result = resultMap.get(block.dataRef);
     const rows = result?.rows || [];
     const columns = (block.columns || result?.schema?.map(column => column.name) || Object.keys(rows[0] || {})).slice(0, 12);
-    if (!rows.length || !columns.length) return `<p>暂无表格数据 · 结果集 ${escapeHtml(block.dataRef || '—')}</p>`;
+    if (!rows.length || !columns.length) return { html: `<p>暂无表格数据 · 结果集 ${escapeHtml(block.dataRef || '—')}</p>`, tableKey: null };
     const schemaMap = new Map((result?.schema || []).map(column => [column.name, column]));
     const cellValue = (row, column) => {
       const value = row[column];
@@ -1588,7 +1821,7 @@ function renderSmartDocument(document, resultSets = [], runtimeStatus = null, qu
     };
     const tableKey = `${block.id}-${result.id}`;
     state.smartTables.set(tableKey, { block, result, columns, page: 0, formatCell: cellValue, columnLabels: Object.fromEntries(columns.map(column => [column, schemaMap.get(column)?.displayName || schemaMap.get(column)?.sourceField || column])) });
-    return renderSmartTableMarkup(tableKey);
+    return { html: renderSmartTableMarkup(tableKey), tableKey };
   };
   const datasets = document.scope?.datasets || (document.scope?.datasetId ? [document.scope.datasetId] : []);
   const accuracy = document.scope?.accuracy === 'exact' ? '精确结果' : document.scope?.accuracy === 'sample' ? '样本结果' : '范围待确认';
@@ -1598,38 +1831,63 @@ function renderSmartDocument(document, resultSets = [], runtimeStatus = null, qu
   const insightAction = dataInsight?.insightId
     ? `<button class="smart-insight-action" type="button" data-action="open-smart-insight" data-insight-id="${escapeHtml(dataInsight.insightId)}" title="使用当前回答的结构化结果进入数据洞察"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2"/></svg><span>数据洞察</span></button>`
     : '';
-  const answerHead = title => `<div class="smart-answer-head"><h4>${escapeHtml(title)}</h4>${insightAction}</div>`;
   const renderBlock = block => {
     const title = escapeHtml(block.title || block.id || '分析块');
     if (block.type === 'kpi') return `<article class="smart-query-block"><h4>${title}</h4><strong class="value">${escapeHtml(block.value ?? '—')}</strong></article>`;
     if (block.type === 'warning') return `<article class="smart-query-block warning wide"><h4>${title}</h4><p>${escapeHtml(block.message || block.content || '')}</p></article>`;
-    if (block.type === 'chart') return `<article class="smart-query-block wide"><h4>${title}</h4>${renderChart(block)}</article>`;
-    if (block.type === 'table') return `<article class="smart-query-block wide"><h4>${title}</h4>${renderTable(block)}</article>`;
     return `<article class="smart-query-block wide"><h4>${title}</h4><p>${escapeHtml(block.content || block.message || '')}</p></article>`;
   };
-  const answerHtml = answerBlock
-    ? `<article class="smart-query-block wide smart-query-answer">${answerHead(answerBlock.title || '回答')}<p>${escapeHtml(answerBlock.content || answerBlock.message || '')}</p>${analysisDetails}</article>`
-    : `<article class="smart-query-block wide smart-query-answer">${answerHead('回答')}<p>已完成本次分析。</p>${analysisDetails}</article>`;
-  const blockHtml = `${answerHtml}${blocks.filter(block => block !== answerBlock).map(renderBlock).join('')}`;
+  const answerText = answerBlock?.content || answerBlock?.message || '已完成本次分析。';
+  const answerHtml = `<article class="smart-query-block wide smart-query-answer"><div class="smart-answer-summary-row"><p>${escapeHtml(answerText)}</p><div class="smart-answer-actions"><button class="smart-answer-copy" type="button" data-smart-copy-answer="${escapeHtml(answerText)}" aria-label="复制回答" title="复制回答，作为继续追问的基础">${smartIcon('copy')}</button></div></div>${analysisDetails}</article>`;
+  const visualGroups = [];
+  const visualGroupMap = new Map();
+  for (const block of blocks.filter(item => item.type === 'chart' || item.type === 'table')) {
+    const key = block.dataRef || block.id;
+    if (!visualGroupMap.has(key)) {
+      const group = { key, charts: [], tables: [] };
+      visualGroupMap.set(key, group);
+      visualGroups.push(group);
+    }
+    visualGroupMap.get(key)[block.type === 'chart' ? 'charts' : 'tables'].push(block);
+  }
+  const resultHtml = visualGroups.map(group => {
+    const chartParts = group.charts.map(renderChart);
+    const tableParts = group.tables.map(renderTable);
+    const title = group.charts[0]?.title || group.tables[0]?.title || '查询结果';
+    const chartControls = chartParts.map(part => part.controls).filter(Boolean).join('');
+    const insightToolbar = insightAction;
+    const chartDownloads = chartParts.filter(part => part.blockId).map(part => `<button class="smart-result-action" type="button" data-smart-chart-download="${escapeHtml(part.blockId)}" data-smart-download-title="${escapeHtml(title)}" aria-label="下载图表图片" title="下载图表为 PNG">${smartIcon('imageDownload')}</button>`).join('');
+    const tableActions = tableParts.filter(part => part.tableKey).map(part => `<button class="smart-result-action" type="button" data-smart-table-copy="${escapeHtml(part.tableKey)}" data-smart-table-copy-mode="all" aria-label="复制全部数据" title="复制全部数据">${smartIcon('copy')}</button><button class="smart-result-action" type="button" data-smart-table-download="${escapeHtml(part.tableKey)}" data-smart-download-title="${escapeHtml(title)}" aria-label="下载全部数据" title="下载全部数据为 CSV（Excel 可直接打开）">${smartIcon('fileDownload')}</button>`).join('');
+    const chartSection = chartParts.map(part => part.html).filter(Boolean).join('');
+    const tableSection = tableParts.map(part => part.html).filter(Boolean).join('');
+    const chartDivider = chartDownloads && tableActions ? '<span class="smart-toolbar-divider" aria-hidden="true"></span>' : '';
+    const chartGroupBeforeDivider = insightToolbar && chartControls ? '<span class="smart-toolbar-divider" aria-hidden="true"></span>' : '';
+    const chartGroupAfterDivider = chartControls && (chartDownloads || tableActions) ? '<span class="smart-toolbar-divider" aria-hidden="true"></span>' : '';
+    const maximizeDivider = insightToolbar || chartControls || chartDownloads || tableActions ? '<span class="smart-toolbar-divider" aria-hidden="true"></span>' : '';
+    return `<article class="smart-query-result wide" data-smart-result="${escapeHtml(group.key)}"><header class="smart-result-header"><h4>${escapeHtml(title)}</h4><div class="smart-result-toolbar">${insightToolbar}${chartGroupBeforeDivider}${chartControls}${chartGroupAfterDivider}${chartDownloads}${chartDivider}${tableActions}${maximizeDivider}<button class="smart-result-action" type="button" data-smart-result-maximize aria-label="最大化图表和表格" title="最大化图表和表格">${smartIcon('maximize')}</button></div></header><div class="smart-result-body">${chartSection}${tableSection}</div></article>`;
+  }).join('');
+  const standaloneHtml = blocks.filter(block => block !== answerBlock && block.type !== 'chart' && block.type !== 'table').map(renderBlock).join('');
+  const blockHtml = `${answerHtml}${standaloneHtml}${resultHtml}`;
   const status = runtimeStatus?.message ? `<p class="smart-runtime-note ${runtimeStatus.level === 'warning' ? 'warning' : ''}"><i></i>${escapeHtml(runtimeStatus.message)}</p>` : '';
   const suggestions = (document.followUpActions || []).map(action => `<button type="button" title="${escapeHtml(action.label)}" data-smart-followup="${escapeHtml(action.question)}">${escapeHtml(action.label)}</button>`).join('');
   const feedback = feedbackContext?.turnId
-    ? `<div class="smart-answer-feedback" data-smart-feedback-turn="${escapeHtml(feedbackContext.turnId)}" data-smart-feedback-trace="${escapeHtml(feedbackContext.traceId || '')}"><div class="smart-feedback-actions"><span>这次回答是否有帮助？</span><button type="button" data-smart-feedback="correct">有帮助</button><button type="button" data-smart-feedback="wrong_understanding">理解有误</button><button type="button" data-smart-feedback="wrong_metric">口径有误</button></div><form class="smart-feedback-correction" hidden><label for="smart-feedback-correction-${escapeHtml(feedbackContext.turnId)}">请补充纠正信息</label><textarea id="smart-feedback-correction-${escapeHtml(feedbackContext.turnId)}" rows="2" maxlength="1000"></textarea><div><button type="submit" data-smart-feedback-submit>提交反馈</button><button type="button" data-smart-feedback-cancel>取消</button></div></form></div>`
+    ? `<div class="smart-answer-feedback" data-smart-feedback-turn="${escapeHtml(feedbackContext.turnId)}" data-smart-feedback-trace="${escapeHtml(feedbackContext.traceId || '')}"><div class="smart-feedback-actions"><span>这次回答是否有帮助？</span><button type="button" class="smart-feedback-positive" data-smart-feedback="correct"><span class="smart-feedback-icon">${smartIcon('thumbUp')}</span><span>有帮助</span></button><button type="button" class="smart-feedback-negative" data-smart-feedback="wrong_answer"><span class="smart-feedback-icon smart-feedback-dislike">${smartIcon('thumbUp')}</span><span>回答有问题</span></button></div><div class="smart-feedback-dialog" data-smart-feedback-dialog hidden><div class="smart-feedback-dialog-backdrop" data-smart-feedback-dialog-close></div><form class="smart-feedback-correction"><div class="smart-feedback-dialog-head"><strong>帮助我们改进回答</strong><button type="button" class="smart-feedback-dialog-close" data-smart-feedback-cancel aria-label="关闭反馈对话框" title="关闭">×</button></div><fieldset><legend>哪里不对？可多选</legend><label><input type="checkbox" name="smart-feedback-reason" value="not_answered">没有回答我的问题</label><label><input type="checkbox" name="smart-feedback-reason" value="wrong_metric">指标或维度不对</label><label><input type="checkbox" name="smart-feedback-reason" value="wrong_time_filter">时间范围或筛选条件不对</label><label><input type="checkbox" name="smart-feedback-reason" value="wrong_sort">排序或排名不对</label><label><input type="checkbox" name="smart-feedback-reason" value="wrong_calculation">计算方式或汇总结果不对</label><label><input type="checkbox" name="smart-feedback-reason" value="incomplete_data">数据不完整或与预期不符</label><label><input type="checkbox" name="smart-feedback-reason" value="wrong_format">单位或格式不对</label><label><input type="checkbox" name="smart-feedback-reason" value="unclear_display">图表或表格展示不清楚</label><label><input type="checkbox" name="smart-feedback-reason" value="other">其他</label></fieldset><label class="smart-feedback-comment-label" for="smart-feedback-comment-${escapeHtml(feedbackContext.turnId)}">补充说明（可选）</label><textarea id="smart-feedback-comment-${escapeHtml(feedbackContext.turnId)}" name="smart-feedback-comment" rows="4" maxlength="1000" placeholder="请补充说明，帮助我们改进回答"></textarea><div class="smart-feedback-dialog-actions"><button type="submit" data-smart-feedback-submit>提交反馈</button><button type="button" data-smart-feedback-cancel>取消</button></div></form></div></div>`
     : '';
   return `<article class="smart-message smart-message-assistant"><div class="smart-assistant-avatar">问</div><div class="smart-assistant-response"><div class="smart-query-blocks">${blockHtml}</div>${suggestions ? `<div class="smart-followups">${suggestions}</div>` : ''}${status}${feedback}</div></article>`;
 }
 
 
-async function sendSmartFeedback(container, category, correction = '') {
+async function sendSmartFeedback(container, category, correction = '', reasons = [], comment = '') {
   container.querySelectorAll('button, textarea').forEach(item => { item.disabled = true; });
   try {
     const response = await fetch(`/api/smart-query/conversations/${encodeURIComponent(state.smartConversationId)}/feedback`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ category, correction, turnId: container.dataset.smartFeedbackTurn, traceId: container.dataset.smartFeedbackTrace }),
+      body: JSON.stringify({ category: category === 'wrong_answer' ? 'wrong_understanding' : category, reasons, comment, correction, turnId: container.dataset.smartFeedbackTurn, traceId: container.dataset.smartFeedbackTrace }),
     });
     const payload = await response.json();
     if (!response.ok) throw new Error(payload.message || '反馈提交失败');
+    document.body.classList.remove('smart-feedback-modal-open');
     container.innerHTML = '<span>感谢反馈，已进入待审核学习队列</span>';
     container.classList.add('submitted');
   } catch (error) {
@@ -1638,18 +1896,53 @@ async function sendSmartFeedback(container, category, correction = '') {
   }
 }
 
+function openSmartFeedbackDialog(button) {
+  const container = button.closest('[data-smart-feedback-turn]');
+  const dialog = container?.querySelector('[data-smart-feedback-dialog]');
+  if (!dialog) return;
+  if (dialog._smartFeedbackCloseTimer) {
+    window.clearTimeout(dialog._smartFeedbackCloseTimer);
+    dialog._smartFeedbackCloseTimer = null;
+  }
+  dialog.classList.remove('is-closing');
+  dialog.hidden = false;
+  dialog.classList.add('is-open');
+  document.body.classList.add('smart-feedback-modal-open');
+  dialog.querySelector('input[name="smart-feedback-reason"]')?.focus();
+}
+
+function closeSmartFeedbackDialog(button) {
+  const dialog = button.closest('[data-smart-feedback-dialog]') || document.querySelector('.smart-feedback-dialog.is-open');
+  if (!dialog) return;
+  if (dialog.hidden || dialog.classList.contains('is-closing')) return;
+  const panel = dialog.querySelector('.smart-feedback-correction');
+  const reducedMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+  const finish = () => {
+    if (dialog._smartFeedbackCloseTimer) {
+      window.clearTimeout(dialog._smartFeedbackCloseTimer);
+      dialog._smartFeedbackCloseTimer = null;
+    }
+    dialog.hidden = true;
+    dialog.classList.remove('is-open', 'is-closing');
+    document.body.classList.remove('smart-feedback-modal-open');
+  };
+  if (!panel || reducedMotion) {
+    finish();
+    return;
+  }
+  dialog.classList.add('is-closing');
+  panel.addEventListener('animationend', event => {
+    if (event.animationName === 'smart-result-close') finish();
+  }, { once: true });
+  dialog._smartFeedbackCloseTimer = window.setTimeout(finish, 260);
+}
+
 function submitSmartFeedback(button) {
   const container = button.closest('[data-smart-feedback-turn]');
   if (!container || !state.smartConversationId || button.disabled) return;
   const category = button.dataset.smartFeedback;
   if (category === 'correct') return sendSmartFeedback(container, category);
-  const form = container.querySelector('.smart-feedback-correction');
-  const textarea = form?.querySelector('textarea');
-  if (!form || !textarea) return;
-  container.dataset.smartFeedbackCategory = category;
-  form.querySelector('label').textContent = category === 'wrong_metric' ? '请说明正确的指标口径' : '请说明系统理解错在哪里';
-  form.hidden = false;
-  textarea.focus();
+  if (category === 'wrong_answer') openSmartFeedbackDialog(button);
 }
 
 function smartWelcomeMarkup() {
@@ -1657,6 +1950,7 @@ function smartWelcomeMarkup() {
 }
 
 function resetSmartConversation() {
+  closeSmartResultMaximize({ animate: false });
   state.smartTables.clear();
   disposeSmartCharts();
   state.smartConversationId = null;
@@ -1717,7 +2011,7 @@ async function askSmartQuery() {
         : '正在提交问题';
   elements.smartStatus.textContent = waitingLabel(0);
   elements.smartMessages.querySelector('.smart-chat-welcome')?.remove();
-  elements.smartMessages.insertAdjacentHTML('beforeend', `<article class="smart-message smart-message-user"><div>${escapeHtml(question)}</div></article><article class="smart-message smart-message-assistant smart-message-loading" id="smart-message-loading"><div class="smart-assistant-avatar">问</div><div class="smart-loading-body"><div><span></span><span></span><span></span></div><p data-smart-loading-phase>${waitingLabel(0)} · 0 秒</p></div></article>`);
+  elements.smartMessages.insertAdjacentHTML('beforeend', `<article class="smart-message smart-message-user"><button class="smart-question-copy" type="button" data-smart-copy-question="${escapeHtml(question)}" aria-label="复制问题" title="复制问题">${smartIcon('copy')}</button><div>${escapeHtml(question)}</div></article><article class="smart-message smart-message-assistant smart-message-loading" id="smart-message-loading"><div class="smart-assistant-avatar">问</div><div class="smart-loading-body"><div><span></span><span></span><span></span></div><p data-smart-loading-phase>${waitingLabel(0)} · 0 秒</p></div></article>`);
   const loadingTimer = window.setInterval(() => {
     const elapsed = Math.floor((Date.now() - startedAt) / 1000);
     const phase = waitingLabel(elapsed);
@@ -1913,6 +2207,31 @@ elements.smartQuestion.addEventListener('keydown', event => {
   if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); askSmartQuery(); }
 });
 elements.smartMessages.addEventListener('click', event => {
+  const questionCopy = event.target.closest('[data-smart-copy-question]');
+  if (questionCopy) {
+    copySmartAnswer(questionCopy.dataset.smartCopyQuestion || '', questionCopy, '问题已复制');
+    return;
+  }
+  const answerCopy = event.target.closest('[data-smart-copy-answer]');
+  if (answerCopy) {
+    copySmartAnswer(answerCopy.dataset.smartCopyAnswer || '', answerCopy);
+    return;
+  }
+  const chartDownload = event.target.closest('[data-smart-chart-download]');
+  if (chartDownload) {
+    downloadSmartChart(chartDownload.dataset.smartChartDownload, chartDownload.dataset.smartDownloadTitle, chartDownload);
+    return;
+  }
+  const tableDownload = event.target.closest('[data-smart-table-download]');
+  if (tableDownload) {
+    downloadSmartTable(tableDownload.dataset.smartTableDownload, tableDownload.dataset.smartDownloadTitle, tableDownload);
+    return;
+  }
+  const maximize = event.target.closest('[data-smart-result-maximize]');
+  if (maximize) {
+    toggleSmartResultMaximize(maximize.closest('[data-smart-result]'));
+    return;
+  }
   const tablePage = event.target.closest('[data-smart-table-page]');
   if (tablePage) {
     const tableKey = tablePage.dataset.smartTablePage;
@@ -1936,10 +2255,12 @@ elements.smartMessages.addEventListener('click', event => {
   }
   const feedbackCancel = event.target.closest('[data-smart-feedback-cancel]');
   if (feedbackCancel) {
-    const container = feedbackCancel.closest('[data-smart-feedback-turn]');
-    const form = feedbackCancel.closest('.smart-feedback-correction');
-    if (form) form.hidden = true;
-    if (container) delete container.dataset.smartFeedbackCategory;
+    closeSmartFeedbackDialog(feedbackCancel);
+    return;
+  }
+  const feedbackDialogClose = event.target.closest('[data-smart-feedback-dialog-close]');
+  if (feedbackDialogClose) {
+    closeSmartFeedbackDialog(feedbackDialogClose);
     return;
   }
   const feedback = event.target.closest('[data-smart-feedback]');
@@ -1967,9 +2288,16 @@ elements.smartMessages.addEventListener('submit', event => {
   if (!form) return;
   event.preventDefault();
   const container = form.closest('[data-smart-feedback-turn]');
-  const category = container?.dataset.smartFeedbackCategory;
-  if (!container || !category) return;
-  sendSmartFeedback(container, category, form.querySelector('textarea')?.value.trim() || '');
+  if (!container) return;
+  const reasons = [...form.querySelectorAll('input[name="smart-feedback-reason"]:checked')].map(input => input.value);
+  const comment = form.querySelector('textarea[name="smart-feedback-comment"]')?.value.trim() || '';
+  sendSmartFeedback(container, 'wrong_answer', comment, reasons, comment);
+});
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape') {
+    const dialog = document.querySelector('.smart-feedback-dialog.is-open');
+    if (dialog) closeSmartFeedbackDialog(dialog);
+  }
 });
 elements.reportUpload.addEventListener('click', uploadReportTemplate);
 elements.reportTemplateSelect.addEventListener('change', () => selectReportTemplate(elements.reportTemplateSelect.value).catch(error => { elements.reportStatus.textContent = error.message; }));
@@ -2037,6 +2365,9 @@ document.querySelector('#analysis-presets').addEventListener('click', event => {
   elements.secondaryPrompt.value = preset.dataset.preset;
   elements.secondaryPrompt.focus();
 });
+document.addEventListener('keydown', event => {
+  if (event.key === 'Escape' && state.smartMaximizedResult) closeSmartResultMaximize();
+});
 elements.insightVersionBar.addEventListener('click', async event => {
   const button = event.target.closest('[data-insight-explore]');
   if (!button || !state.activeResult) return;
@@ -2054,6 +2385,10 @@ elements.insightVersionBar.addEventListener('click', async event => {
     button.textContent = '证据不足时发起 Explore';
     elements.outputContent.insertAdjacentHTML('beforeend', `<div class="error-box">${escapeHtml(error.message)}</div>`);
   }
+});
+elements.outputContent.addEventListener('click', event => {
+  const button = event.target.closest('[data-retry-insight]');
+  if (button) generateSecondaryInsight();
 });
 document.querySelector('#toggle-raw-data').addEventListener('click', event => {
   const raw = document.querySelector('#raw-data');

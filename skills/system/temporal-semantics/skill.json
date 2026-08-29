@@ -1,7 +1,7 @@
 {
   "schema": "wynai.skill/v1",
   "id": "temporal-semantics",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "name": "平台时间语义",
   "scope": "system",
   "triggers": [],
@@ -33,6 +33,9 @@
         "逐年",
         "年度",
         "各年",
+        "历年",
+        "按年度",
+        "按年份",
         "年趋势",
         "按年"
       ],
@@ -50,6 +53,32 @@
         "季趋势"
       ],
       "ambiguity": "财务季度需要额外日历口径，不能默认替换自然季度"
+    }
+  ],
+  "relativeTemporalSemantics": [
+    {
+      "id": "previous-complete-year",
+      "meaning": "相对于当前业务年度的上一完整自然年；同比计算自动额外查询其前一年作为隐藏基期。",
+      "unit": "year",
+      "offset": -1,
+      "expressions": ["去年", "上一年", "上年", "上年度", "上一年度", "上个年度"],
+      "ambiguity": "若业务使用非自然财年，必须由数据集或组织级 Skill 覆盖业务日历，不能静默按自然年替换。"
+    },
+    {
+      "id": "current-business-year",
+      "meaning": "相对于当前业务年度的当前自然年。",
+      "unit": "year",
+      "offset": 0,
+      "expressions": ["今年", "本年", "本年度", "当年", "当年度"],
+      "ambiguity": "当前年度可能未完结；累计、同期和完整年度应由用户表达或业务日历规则明确。"
+    },
+    {
+      "id": "two-years-ago",
+      "meaning": "相对于当前业务年度的前两年。",
+      "unit": "year",
+      "offset": -2,
+      "expressions": ["前年", "前一年", "前一年度"],
+      "ambiguity": "“前一年”在存在前文时间范围时可能指前一轮，应由会话上下文优先消歧。"
     }
   ],
   "metrics": [],

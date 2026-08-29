@@ -50,6 +50,7 @@ test('概览查询只允许白名单聚合并拒绝字段注入', () => {
     ],
   });
   assert.match(result.wax, /^EVALUATE ROW\(/);
+  assert.match(result.countWax, /^EVALUATE ROW\("total_rows",1\)$/);
   assert.match(result.wax, /COUNTROWS\('销售''经营数据'\)/);
   assert.throws(() => compileWaxQuery(metadata, {
     measures: [{ alias: 'total', operation: 'sum', field: '订单金额]); EVALUATE ROW("x",1)' }],

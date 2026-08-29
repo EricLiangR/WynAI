@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wynai.local/schemas/wynai.insight-generation-result.v1.schema.json",
+  "title": "WynAI Insight Generation Result v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema", "status", "provider", "warnings", "diagnostics"],
+  "properties": {
+    "schema": { "const": "wynai.insight-generation-result/v1" },
+    "status": { "enum": ["completed", "degraded", "failed"] },
+    "provider": { "enum": ["llm-orchestrated", "deterministic-fallback"] },
+    "warnings": { "type": "array", "items": { "type": "string" } },
+    "diagnostics": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "additionalProperties": true,
+          "properties": {
+            "stage": { "type": ["string", "null"] },
+            "reasonCode": { "type": ["string", "null"] },
+            "message": { "type": ["string", "null"] },
+            "rejectedClaims": { "type": "array" }
+          }
+        }
+      ]
+    },
+    "document": { "type": ["object", "null"] },
+    "orchestration": { "type": ["object", "null"] },
+    "model": { "type": ["string", "null"] }
+  }
+}

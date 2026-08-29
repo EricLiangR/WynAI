@@ -9,6 +9,9 @@
     "schema": { "const": "wynai.evidence-pack/v1" },
     "title": { "type": ["string", "null"] },
     "source": {}, "datasets": { "type": "array" }, "scope": {}, "quality": {}, "evidence": { "type": "array" },
+    "budget": { "type": "object", "required": ["maxTokens", "estimatedTokens", "withinBudget"], "properties": { "maxTokens": { "type": "integer", "minimum": 1 }, "estimatedTokens": { "type": "integer", "minimum": 0 }, "withinBudget": { "type": "boolean" } }, "additionalProperties": false },
+    "complexity": { "type": "object", "properties": { "level": { "enum": ["scalar", "compact", "high-cardinality"] }, "rowCount": { "type": "integer", "minimum": 0 }, "dimensionCount": { "type": "integer", "minimum": 0 }, "groupingCount": { "type": "integer", "minimum": 0 } }, "additionalProperties": false },
+    "coverage": { "type": "object", "properties": { "sourceRows": { "type": "integer", "minimum": 0 }, "representedGroups": { "type": "integer", "minimum": 0 }, "omittedGroups": { "type": "integer", "minimum": 0 }, "reason": { "type": ["string", "null"] } }, "additionalProperties": false },
     "resultSets": { "type": "array", "maxItems": 8, "items": { "type": "object", "required": ["id", "statistics", "samples"], "properties": { "id": { "type": "string" }, "scope": {}, "quality": {}, "statistics": { "type": "object" }, "samples": { "type": "array", "maxItems": 7 } } } },
     "policy": { "type": "object", "required": ["rawRowsToLlm", "sampleStrategy"], "properties": { "rawRowsToLlm": { "const": false }, "sampleStrategy": { "type": "string" }, "maxSamplesPerResultSet": { "type": "integer" } } }
   }

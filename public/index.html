@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Wyn AI 问数 API 集成演示" />
     <title>Atlas AI · 智能数据助手</title>
-    <link rel="stylesheet" href="/styles.css?v=26" />
+    <link rel="stylesheet" href="/styles.css?v=27" />
   </head>
   <body>
     <div class="app-shell">
@@ -98,6 +98,9 @@
             </div>
 
             <div class="composer-wrap">
+              <button class="chat-new-conversation" id="clear-chat" type="button">
+                <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>新建会话</span>
+              </button>
               <div class="composer">
                 <textarea id="question-input" rows="1" placeholder="向数据提问，例如：近 6 个月销售额趋势如何？" aria-label="输入问题"></textarea>
                 <div class="composer-footer">
@@ -117,40 +120,28 @@
           </div>
 
           <aside class="insight-panel">
-            <div class="panel-header"><span>分析上下文</span><div class="panel-header-status"><div class="connection-pill" id="connection-pill" title="检查 Wyn 服务连接状态"><span class="status-dot"></span><span id="connection-text">正在连接 Wyn</span></div><span class="panel-tag">实时</span></div></div>
-            <div class="panel-section dataset-panel-section">
-              <div class="section-title"><span>分析数据集</span></div>
+            <div class="panel-header smart-context-header"><span>分析上下文</span><span class="connection-pill panel-connection-pill" id="connection-pill" title="检查 Wyn 服务连接状态"><span class="status-dot"></span><span id="connection-text">正在连接</span></span></div>
+            <div class="panel-section chat-dataset-panel">
+              <div class="control-section-head"><span>选择数据</span></div>
               <div class="dataset-control dataset-panel-control">
                 <span class="control-icon"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></span>
                 <select id="dataset-select" aria-label="选择问数数据集" disabled><option value="">加载中…</option></select>
               </div>
               <small class="dataset-panel-hint">切换数据集将开始新的对话</small>
             </div>
-            <div class="panel-section panel-session-actions">
-              <button class="panel-new-conversation" id="clear-chat" type="button">
-                <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg><span>新建对话</span>
-              </button>
-            </div>
-            <div class="panel-section chat-semantic-summary">
-              <div class="section-title"><span>语义概览</span><span class="tiny-check" id="chat-semantic-status">读取中</span></div>
-              <dl class="connection-list semantic-summary-list">
+            <div class="panel-section chat-semantic-catalog">
+              <div class="control-section-head"><span>语义目录</span><span id="chat-semantic-field-count">0 字段</span></div>
+              <dl>
                 <div><dt>业务描述</dt><dd id="chat-semantic-description">等待加载</dd></div>
                 <div><dt>指标</dt><dd id="chat-semantic-measures">—</dd></div>
                 <div><dt>维度</dt><dd id="chat-semantic-dimensions">—</dd></div>
                 <div><dt>时间</dt><dd id="chat-semantic-times">—</dd></div>
+                <div><dt>已描述字段</dt><dd id="chat-semantic-described">0</dd></div>
               </dl>
-            </div>
-            <div class="panel-section analysis-flow-section">
-              <div class="section-title"><span>分析流程</span></div>
-              <div class="analysis-flow" id="analysis-flow">
-                <div class="flow-item active"><span class="flow-index">01</span><div><strong>理解业务问题</strong><small>识别指标、维度与筛选条件</small></div></div>
-                <div class="flow-line"></div>
-                <div class="flow-item"><span class="flow-index">02</span><div><strong>执行数据查询</strong><small>由 Wyn 生成并运行分析查询</small></div></div>
-                <div class="flow-line"></div>
-                <div class="flow-item"><span class="flow-index">03</span><div><strong>生成统计图表</strong><small>呈现指标、趋势与分类统计</small></div></div>
+              <div class="chat-semantic-status" id="chat-semantic-status">
+                <span class="semantic-pulse"></span><span>正在读取语义定义</span>
               </div>
             </div>
-
           </aside>
         </section>
 
@@ -539,6 +530,6 @@
       </article>
     </template>
     <script src="/vendor/echarts.min.js"></script>
-    <script src="/app.js?v=27" type="module"></script>
+    <script src="/app.js?v=28" type="module"></script>
   </body>
 </html>

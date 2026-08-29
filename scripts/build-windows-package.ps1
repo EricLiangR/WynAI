@@ -1,5 +1,5 @@
 param(
-    [string]$Version = '1.0.4',
+    [string]$Version = '1.0.5',
     [string]$NodeRuntimeZip = '',
     [switch]$SkipTests,
     [switch]$SkipSmokeTest
@@ -78,7 +78,7 @@ Copy-Item -Path (Join-Path $PackageTemplate '*') -Destination $StageDir -Recurse
 
 $AppDir = Join-Path $StageDir 'app'
 New-Item -ItemType Directory -Path $AppDir -Force | Out-Null
-foreach ($file in @('server.mjs', 'package.json', 'package-lock.json')) {
+foreach ($file in @('server.mjs', 'llm-gateway.mjs', 'insight-document-export.mjs', 'business-fact-engine.mjs', 'insight-diagnostic-store.mjs', 'package.json', 'package-lock.json')) {
     Copy-Item -LiteralPath (Join-Path $ProjectRoot $file) -Destination $AppDir -Force
 }
 foreach ($directory in @('lib', 'public', 'skills')) {

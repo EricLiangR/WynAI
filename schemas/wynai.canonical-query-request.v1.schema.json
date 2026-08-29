@@ -20,6 +20,7 @@
     "comparison": {},
     "orderBy": { "type": "array", "maxItems": 3 },
     "limit": { "type": "integer", "minimum": 1, "maximum": 20000 },
+    "limitSource": { "enum": ["user-ranking", "user-limit", "default", "internal-calculation"] },
     "expectedResult": { "type": "object" },
     "sensitivity": { "type": "string" },
     "lineage": { "anyOf": [{ "type": "object" }, { "type": "null" }] }

@@ -287,3 +287,13 @@ DataInsightRecord
 
 
 阶段 4/5/6 补充：运行对象记录 Skill refs、诊断证据要求和 parentRunId；数据洞察与 AI 数据分析共用 InsightRun，运行接口按受信用户/组织身份过滤。
+
+### 9.8 平台稳健性增强（2026-08-28）
+
+标准输入契约保持不变。数据洞察内部对高维结果执行复杂度评估、Evidence Pack 预算和查询相关证据选择；LLM 生成结果支持 `completed/degraded/failed` 状态。证据校验失败只隔离无法验证的结论，确定性基础洞察可作为明确标记的降级结果返回。详见 `DATA_INSIGHT_PLATFORM_ROBUSTNESS_REQUIREMENTS_DESIGN_UAT_2026-08-28.md`。
+
+### 9.9 平台化扩展要求（2026-08-28）
+
+`InsightInput v1` 的语义和最小字段保持不变。数据洞察内部新增 Skill/Facts 质量层：标准输入规范化后先解析适用 Skill、生成 Business Fact Pack 和确定性业务事实，再进入 LLM 编排或领域化降级。调用方不需要感知内部使用的 Skill、Fact Pack 或 LLM 供应商，但运行审计必须记录这些信息。
+
+阶段 A 仅实现销售领域事实能力和 Skill 绑定；独立问数适配器、MCP 和外部 API 产品化仍不纳入本阶段。平台与模块验收分别按 `PLATFORM_AND_MODULE_UAT_GOVERNANCE.md` 执行。

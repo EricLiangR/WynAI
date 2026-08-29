@@ -247,3 +247,54 @@
 412 行专项证据目录：`C:/Users/zenoszeng/.codex/visualizations/2026/08/26/01a03e7d-fda4-7b71-9efa-02ff464e2d79/phase6-repro-v2/`。真实外部 LLM 重测使用合成非敏感数据，未发送用户真实业务明细；生产策略仍为服务端全量受控聚合、LLM 消费 Evidence Pack。
 
 证据目录：`C:/Users/zenoszeng/.codex/visualizations/2026/08/26/01a03e7d-fda4-7b71-9efa-02ff464e2d79/phase6-final/`。
+
+## 13. 下一阶段平台化目标与执行基线（2026-08-28）
+
+本阶段将数据洞察从“LLM 调用成功才有价值”调整为“确定性业务事实保证下限，LLM 提升分析深度”。`InsightInput v1` 保持不变，Wyn 问数、独立问数及未来来源均通过各自适配器调用统一标准边界。
+
+### 13.1 六项建设目标
+
+1. 强制绑定 Skill，记录 Skill 名称、版本、指标口径、分析方法和适用的降级模板。
+2. 建设 Business Fact Pack v1，作为 LLM 唯一事实输入，包含范围、粒度、指标、聚合、派生指标、趋势、排名、异常、覆盖率和质量告警。
+3. 建设确定性业务事实引擎，首批覆盖销售趋势、贡献、集中度、异常和客单价等口径。
+4. 建设统一 LLM Gateway v1，治理连接、首字节、总请求超时、重试、备用模型、限流、熔断和审计。
+5. 重构 LLM 路由，支持标准路径、深度路径和确定性降级路径，默认优先标准路径。
+6. 完善 `completed/partial/degraded/failed` 状态、错误码、审计和前端可见提示。
+
+### 13.2 LLM 时限基线
+
+固定时限是平台判定标准，供应商明确错误时提前结束：连接建立 3 秒、首字节 8 秒、单阶段 25 秒、同步链路 75 秒、异步任务 90 秒；Fact Engine P95 目标为 2 秒以内。网络抖动/429/5xx 最多重试一次，输入/权限/上下文错误不重试，JSON 错误最多修复一次，证据不足直接进入 partial/degraded。
+
+### 13.3 阶段 A：业务下限可靠（当前启动阶段）
+
+交付范围：Skill 强绑定和版本审计、Business Fact Pack v1 的业务字段和证据元数据、销售领域确定性事实计算、领域化降级报告和质量完整度门禁；保持 `rawRowsToLlm=false`、`InsightInput v1` 和 8787 端口不变。
+
+平台验收：P1，关键链路 P2；超时/降级场景执行 P3。模块验收：M2，销售关键场景执行 M3。
+
+阶段 A 通过条件：LLM 不可用时仍可输出可核验的销售事实和明确降级状态；LLM 可用时所有业务数字均可追溯到 Fact Pack；Skill、运行、审计和报告记录一致；自动化测试、真实 8787 API 和桌面/390x844 UAT 证据齐全。
+
+### 13.4 后续里程碑
+
+- 阶段 B：LLM Gateway 与超时可靠性；平台 P1/P2，模块 M2。
+- 阶段 C：异步运行与可观测性；平台 P2/P3，模块 M2/M3。
+- 阶段 D：实验室、零售等领域扩展；平台 P1/P2，模块 M1/M2。
+- 阶段 E：发布前平台回归；平台 P4，相关模块 M4。
+
+平台级和模块级 UAT 的定义、动作、证据和变更影响规则见 `PLATFORM_AND_MODULE_UAT_GOVERNANCE.md`。
+
+### 13.5 阶段 B：统一 LLM Gateway（2026-08-28）
+
+阶段 B 已完成并通过门禁。新增根目录 `llm-gateway.mjs`，主/备用 Provider、分阶段时限、有限重试、熔断、进程内缓存、统一错误码、metrics、snapshot 和审计均已接入。Planner、Critic、Narrator、意图解析及严格分析报告全部通过 Gateway；`InsightInput v1`、`rawRowsToLlm=false` 和 8787 端口保持不变。详细需求/设计见 `DATA_INSIGHT_STAGE_B_LLM_GATEWAY_REQUIREMENTS_DESIGN.md`，UAT 报告见 `DATA_INSIGHT_STAGE_B_UAT_REPORT_2026-08-28.md`。
+
+阶段 B 验收级别：平台 P1 + 关键链路 P2；超时、备用、熔断和降级执行关键 P3；模块 M2。首期 `npm run check`、`npm run check:insight`、`npm test` 239/239 和 Gateway 专项 6/6 通过；真实 8787 API、桌面/390x844 浏览器证据、控制台与横向溢出检查通过。
+
+2026-08-28 平台优化 1-4 已进一步完成：连接、响应头和总请求采用独立错误语义，删除统一 8 秒响应等待阈值；Planner/Critic/Narrator/报告/探索/意图/探针按 operation 配置时限；`LLM_CONNECT_TIMEOUT` 只保留给底层明确连接超时，响应头等待使用 `LLM_RESPONSE_HEADER_TIMEOUT`；同一 Provider 重试加入指数退避、随机抖动和取消传播。当前没有第二 Provider，不影响上述策略生效，也不会把同 Provider 重试计为 fallback。原生 fetch 不暴露连接完成事件，连接阶段依赖底层错误码分类，这是明确的运行时边界，不再用响应头计时器伪装。
+
+## 12. 平台稳健性增强（2026-08-28）
+
+前述阶段完成了统一输入、Evidence Pack、LLM 编排和治理闭环，但真实高维结果仍暴露出“单条 Narrator 数字校验失败导致整体不可用”的平台缺陷。本轮新增目标：Evidence Pack 预算化与查询相关证据选择、Narrator 分层校验与逐项隔离、`completed/degraded/failed` 生成状态、确定性降级、错误码细分、阶段审计和高维 UAT。
+
+详细需求、设计、实施范围和验收标准见 `DATA_INSIGHT_PLATFORM_ROBUSTNESS_REQUIREMENTS_DESIGN_UAT_2026-08-28.md`。本轮不修改 `InsightInput v1`，不开放原始明细外发，服务继续固定使用 8787 端口。
+## Complete diagnostic replay (2026-08-28)
+
+Each InsightInput now receives an append-only backend diagnostic record keyed by `insightId`. The record captures normalized input, run lifecycle, evidence/business facts, every Planner/Critic/Narrator stage, each LLM Gateway provider attempt, final document, and terminal outcome. Query with `GET /api/data-insights/{insightId}/diagnostics`; this phase has no UI export. See `DATA_INSIGHT_COMPLETE_DIAGNOSTIC_LOG_REQUIREMENTS_DESIGN.md` for the contract and operational risks of retaining real data.

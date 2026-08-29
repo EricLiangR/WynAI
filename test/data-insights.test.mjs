@@ -81,7 +81,7 @@ test('独立问数适配器把本轮标准结果和上下文注册为 InsightInp
   assert.equal(adapted.source.type, 'independent-query');
   assert.equal(adapted.source.sourceId, 'conversation-12345678:turn-12345678');
   assert.equal(adapted.context.question, '2025 年各区域销售额');
-  assert.deepEqual(adapted.resultSets[0].schema[1], { name: '销售额', type: 'number', role: 'measure', displayName: '销售额' });
+  assert.deepEqual(adapted.resultSets[0].schema[1], { name: '销售额', type: 'number', role: 'measure', displayName: '销售额', aggregation: 'sum' });
   assert.deepEqual(adapted.resultSets[0].rows, [{ 区域: '华东', 销售额: 120 }]);
   assert.deepEqual(adapted.resultSets[0].statistics.nullCounts, { 区域: 0, 销售额: 0 });
   assert.doesNotThrow(() => normalizeInsightInput(adapted));
@@ -115,6 +115,31 @@ test('数据洞察预览依据 InsightInput Schema 保持问数展示格式', as
   assert.match(app, /field\.grain === 'year'/);
   assert.match(app, /field\.format === 'percentage'/);
   assert.match(app, /compactValue\(row\[column\], schemaMap\.get\(column\), timeZone\)/);
+});
+
+test('数据洞察前端对失败结果不展示确定性基础洞察', async () => {
+  const app = await readFile(new URL('../public/app.js', import.meta.url), 'utf8');
+  assert.match(app, /data\.status === 'failed'/);
+  assert.doesNotMatch(app, /已返回基础洞察/);
+});
+
+test('失败重试清空当前洞察但保留历史版本', async () => {
+  const store = new DataInsightStore({ idFactory: () => 'ins-retry-clear-1' });
+  const created = store.register(input({ source: { type: 'test', sourceId: 'retry-clear' } }));
+  await store.saveDocument(created.record.insightId, { schema: 'wynai.insight-document/v1', documentType: 'business-insight', title: '旧结果', scope: { datasetId: null, datasets: [], filters: [], timeRange: null, accuracy: 'exact', isSample: false, isTruncated: false }, blocks: [{ id: 'summary', type: 'text', content: '旧结果' }], evidence: [], nextQuestions: [] });
+  const cleared = await store.clearDocument(created.record.insightId);
+  assert.equal(cleared.document, null);
+  assert.equal(cleared.versions.length, 1);
+  assert.equal(cleared.versions[0].document.blocks[0].content, '旧结果');
+});
+
+test('历史确定性降级文档不作为当前结果暴露', async () => {
+  const store = new DataInsightStore({ idFactory: () => 'ins-historical-fallback-1' });
+  const created = store.register(input({ source: { type: 'test', sourceId: 'historical-fallback' } }));
+  await store.saveDocument(created.record.insightId, { schema: 'wynai.insight-document/v1', documentType: 'business-insight', title: '旧基础洞察', scope: { datasetId: null, datasets: [], filters: [], timeRange: null, accuracy: 'exact', isSample: false, isTruncated: false }, blocks: [{ id: 'deterministic-warning', title: '基础洞察模式', type: 'warning', message: '历史结果' }], evidence: [], nextQuestions: [] });
+  const detail = store.get(created.record.insightId);
+  assert.equal(detail.document, null);
+  assert.equal(detail.versions.length, 1);
 });
 
 test('InsightDocument 支持版本比较、归档恢复和统一导出', async () => {

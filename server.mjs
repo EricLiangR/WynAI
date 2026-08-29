@@ -1,7 +1,8 @@
 import http from 'node:http';
 import { randomUUID } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
+import { mkdir, readFile, rm, writeFile } from 'node:fs/promises';
 import { extname, isAbsolute, join, normalize, resolve } from 'node:path';
+import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { analyzeDataset, normalizeDatasetMetadata } from './lib/analysis-core.mjs';
 import { applyLocalFilters, buildAnalysisQueryBundle, compileFilteredDetailQuery } from './lib/wax-query.mjs';
@@ -10,8 +11,9 @@ import { buildReportExport } from './lib/report-export.mjs';
 import { buildInsightDocumentExport } from './insight-document-export.mjs';
 import { runAutonomousAnalysis } from './lib/harness/orchestrator.mjs';
 import { createExplorationLlm } from './lib/llm/exploration-agent.mjs';
+import { createLlmGateway, serializeError } from './llm-gateway.mjs';
 import { normalizeCanonicalFilters } from './lib/planning/query-request-schema.mjs';
-import { parseLlmJson, prepareStructuredReport, structuredReportMarkdown, validateStructuredReport } from './lib/report/structured-report.mjs';
+import { prepareStructuredReport, structuredReportMarkdown, validateStructuredReport } from './lib/report/structured-report.mjs';
 import { normalizeInsightDocument } from './lib/protocol/interaction-contract.mjs';
 import { composeInsightDocument } from './lib/report/insight-document.mjs';
 import { SmartQueryConversationStore } from './lib/conversation/session.mjs';
@@ -33,6 +35,8 @@ import { InsightRunStore } from './lib/data-insights/insight-run-store.mjs';
 import { buildEvidencePack } from './lib/data-insights/evidence-pack.mjs';
 import { runInsightLlmOrchestration } from './lib/data-insights/llm-orchestrator.mjs';
 import { InsightGovernanceService, redactInsightInput } from './lib/data-insights/insight-governance.mjs';
+import { buildBusinessFactPack } from './business-fact-engine.mjs';
+import { InsightDiagnosticLookupError, InsightDiagnosticStore } from './insight-diagnostic-store.mjs';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 const publicDir = join(rootDir, 'public');
@@ -92,27 +96,115 @@ const config = {
   llmBaseUrl: (process.env.LLM_BASE_URL || '').replace(/\/$/, ''),
   llmApiKey: process.env.LLM_API_KEY || '',
   llmModel: process.env.LLM_MODEL || '',
-  llmTimeoutMs: Math.max(10_000, Number(process.env.LLM_TIMEOUT_MS) || 180_000),
+  llmBackupBaseUrl: (process.env.LLM_BACKUP_BASE_URL || '').replace(/\/$/, ''),
+  llmBackupApiKey: process.env.LLM_BACKUP_API_KEY || '',
+  llmBackupModel: process.env.LLM_BACKUP_MODEL || '',
+  llmTimeoutMs: Math.max(10_000, Number(process.env.LLM_TIMEOUT_MS) || 25_000),
   intentLlmTimeoutMs: Math.max(1_000, Number(process.env.INTENT_LLM_TIMEOUT_MS) || 10_000),
+  llmConnectTimeoutMs: Math.max(1_000, Number(process.env.LLM_CONNECT_TIMEOUT_MS) || 3_000),
+  llmResponseHeaderTimeoutMs: Math.max(1_000, Number(process.env.LLM_RESPONSE_HEADER_TIMEOUT_MS || process.env.LLM_FIRST_BYTE_TIMEOUT_MS) || 15_000),
+  llmPlannerTimeoutMs: Math.max(10_000, Number(process.env.LLM_INSIGHT_PLANNER_TIMEOUT_MS) || 45_000),
+  llmCriticTimeoutMs: Math.max(10_000, Number(process.env.LLM_INSIGHT_CRITIC_TIMEOUT_MS) || 35_000),
+  llmNarratorTimeoutMs: Math.max(10_000, Number(process.env.LLM_INSIGHT_NARRATOR_TIMEOUT_MS) || 45_000),
+  llmAgentReportTimeoutMs: Math.max(10_000, Number(process.env.LLM_AGENT_REPORT_TIMEOUT_MS) || 45_000),
+  llmRetryBaseDelayMs: Math.max(0, Number(process.env.LLM_RETRY_BASE_DELAY_MS) || 250),
+  llmRetryMaxDelayMs: Math.max(0, Number(process.env.LLM_RETRY_MAX_DELAY_MS) || 4_000),
+  llmRetryJitterMs: Math.max(0, Number(process.env.LLM_RETRY_JITTER_MS) || 150),
+  llmMaxAttempts: Math.max(1, Number(process.env.LLM_MAX_ATTEMPTS) || 2),
+  llmCircuitFailureThreshold: Math.max(1, Number(process.env.LLM_CIRCUIT_FAILURE_THRESHOLD) || 3),
+  llmCircuitCooldownMs: Math.max(1_000, Number(process.env.LLM_CIRCUIT_COOLDOWN_MS) || 30_000),
+  llmCacheTtlMs: Math.max(0, Number(process.env.LLM_CACHE_TTL_MS) || 30_000),
   llmEnableThinking: configuredBoolean(process.env.LLM_ENABLE_THINKING, /dashscope\.aliyuncs\.com/i.test(process.env.LLM_BASE_URL || '') ? false : null),
   skillAdminToken: process.env.WYN_AI_SKILL_ADMIN_TOKEN || '',
 };
+async function probeWritableDirectory(directory) {
+  await mkdir(directory, { recursive: true });
+  const probe = join(directory, `.wynai-write-probe-${process.pid}-${randomUUID()}.tmp`);
+  try {
+    await writeFile(probe, 'ok', { encoding: 'utf8', flag: 'wx' });
+  } finally {
+    await rm(probe, { force: true }).catch(() => null);
+  }
+}
+
+async function resolveWritableDataDirectory(preferred, fallback) {
+  try {
+    await probeWritableDirectory(preferred);
+    return { path: preferred, fallback: false, preferredError: null };
+  } catch (preferredError) {
+    try {
+      await probeWritableDirectory(fallback);
+    } catch (fallbackError) {
+      throw new Error(`运行数据目录不可写：首选目录 ${preferred}（${preferredError.code || preferredError.message}），备用目录 ${fallback}（${fallbackError.code || fallbackError.message}）`);
+    }
+    console.warn(`Runtime data directory is not writable; using fallback: ${fallback} (preferred: ${preferredError.code || preferredError.message})`);
+    return { path: fallback, fallback: true, preferredError };
+  }
+}
 const llmEndpointHost = (() => {
-  try { return new URL(config.llmBaseUrl).host; } catch { return null; }
+  try { return new URL(config.llmBaseUrl || config.llmBackupBaseUrl).host; } catch { return null; }
 })();
-const explorationLlm = createExplorationLlm({
-  baseUrl: config.llmBaseUrl,
-  apiKey: config.llmApiKey,
-  model: config.llmModel,
+const llmProviders = [
+  { id: 'primary', baseUrl: config.llmBaseUrl, apiKey: config.llmApiKey, model: config.llmModel },
+  { id: 'backup', baseUrl: config.llmBackupBaseUrl, apiKey: config.llmBackupApiKey, model: config.llmBackupModel },
+];
+const explorationGateway = createLlmGateway({
+  providers: llmProviders,
   timeoutMs: config.llmTimeoutMs,
+  connectTimeoutMs: config.llmConnectTimeoutMs,
+  responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs,
+  operationPolicies: {
+    exploration: { requestTimeoutMs: config.llmTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs },
+    'agent-report': { requestTimeoutMs: config.llmAgentReportTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs },
+    'insight-planner': { requestTimeoutMs: config.llmPlannerTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs },
+    'insight-critic': { requestTimeoutMs: config.llmCriticTimeoutMs, responseHeaderTimeoutMs: Math.min(config.llmResponseHeaderTimeoutMs, 12_000) },
+    'insight-narrator': { requestTimeoutMs: config.llmNarratorTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs },
+    probe: { requestTimeoutMs: Math.min(config.llmTimeoutMs, 10_000), responseHeaderTimeoutMs: Math.min(config.llmResponseHeaderTimeoutMs, 5_000) },
+  },
+  retryBaseDelayMs: config.llmRetryBaseDelayMs,
+  retryMaxDelayMs: config.llmRetryMaxDelayMs,
+  retryJitterMs: config.llmRetryJitterMs,
+  maxAttempts: config.llmMaxAttempts,
+  circuitFailureThreshold: config.llmCircuitFailureThreshold,
+  circuitCooldownMs: config.llmCircuitCooldownMs,
+  cacheTtlMs: config.llmCacheTtlMs,
   enableThinking: config.llmEnableThinking,
 });
+const intentGateway = createLlmGateway({
+  providers: llmProviders,
+  timeoutMs: config.intentLlmTimeoutMs,
+  connectTimeoutMs: config.llmConnectTimeoutMs,
+  responseHeaderTimeoutMs: Math.min(config.llmResponseHeaderTimeoutMs, 8_000),
+  operationPolicies: {
+    intent: { requestTimeoutMs: config.intentLlmTimeoutMs, responseHeaderTimeoutMs: Math.min(config.llmResponseHeaderTimeoutMs, 8_000) },
+    probe: { requestTimeoutMs: Math.min(config.intentLlmTimeoutMs, 10_000), responseHeaderTimeoutMs: Math.min(config.llmResponseHeaderTimeoutMs, 5_000) },
+  },
+  retryBaseDelayMs: config.llmRetryBaseDelayMs,
+  retryMaxDelayMs: config.llmRetryMaxDelayMs,
+  retryJitterMs: config.llmRetryJitterMs,
+  maxAttempts: config.llmMaxAttempts,
+  circuitFailureThreshold: config.llmCircuitFailureThreshold,
+  circuitCooldownMs: config.llmCircuitCooldownMs,
+  cacheTtlMs: config.llmCacheTtlMs,
+  enableThinking: config.llmEnableThinking,
+});
+const effectiveLlmBaseUrl = config.llmBaseUrl || config.llmBackupBaseUrl;
+const effectiveLlmModel = config.llmModel || config.llmBackupModel;
+const explorationLlm = createExplorationLlm({
+  baseUrl: effectiveLlmBaseUrl,
+  apiKey: config.llmApiKey || config.llmBackupApiKey,
+  model: effectiveLlmModel,
+  timeoutMs: config.llmTimeoutMs,
+  enableThinking: config.llmEnableThinking,
+  transport: explorationGateway.transport,
+});
 const intentLlm = createExplorationLlm({
-  baseUrl: config.llmBaseUrl,
-  apiKey: config.llmApiKey,
-  model: config.llmModel,
+  baseUrl: effectiveLlmBaseUrl,
+  apiKey: config.llmApiKey || config.llmBackupApiKey,
+  model: effectiveLlmModel,
   timeoutMs: config.intentLlmTimeoutMs,
   enableThinking: config.llmEnableThinking,
+  transport: intentGateway.transport,
 });
 config.viewProxyPort = validPort(
   'WYN_VIEW_PROXY_PORT',
@@ -122,7 +214,9 @@ if (config.viewProxyPort === config.port) {
   throw new Error('PORT and WYN_VIEW_PROXY_PORT must be different');
 }
 
-const dataDir = resolveRuntimePath(process.env.WYN_AI_DATA_DIR, join(rootDir, 'data'));
+const configuredDataDir = resolveRuntimePath(process.env.WYN_AI_DATA_DIR, join(rootDir, 'data'));
+const runtimeData = await resolveWritableDataDirectory(configuredDataDir, join(tmpdir(), `WynAI-runtime-data-${config.port}`));
+const dataDir = runtimeData.path;
 const dataInsightStore = new DataInsightStore({ maxItems: 30, persistence: new JsonRunStore(join(dataDir, 'data-insights'), { maxItems: 30 }) });
 await dataInsightStore.init();
 const insightGovernance = new InsightGovernanceService({
@@ -134,11 +228,19 @@ const insightGovernance = new InsightGovernanceService({
 await insightGovernance.init();
 const viewDefinitions = new Map();
 const wynQueryInsightAdapter = new WynQueryInsightAdapter({
-  register: input => dataInsightStore.register(input).record,
+  register: input => {
+    const result = dataInsightStore.register(input);
+    void recordInsightDiagnostic(result.record.insightId, 'input.accepted', { input: result.record.input, created: result.created, adapter: 'wyn-query' }, { actor: result.record.actor, organizationId: result.record.organizationId, source: result.record.input.source || null });
+    return result.record;
+  },
   maxItems: 30,
 });
 const independentQueryInsightAdapter = new IndependentQueryInsightAdapter({
-  register: input => dataInsightStore.register(input).record,
+  register: input => {
+    const result = dataInsightStore.register(input);
+    void recordInsightDiagnostic(result.record.insightId, 'input.accepted', { input: result.record.input, created: result.created, adapter: 'independent-query' }, { actor: result.record.actor, organizationId: result.record.organizationId, source: result.record.input.source || null });
+    return result.record;
+  },
 });
 const agentRuns = new Map();
 const datasetMetadataCache = new Map();
@@ -146,9 +248,11 @@ let datasetDocumentCache = { expiresAt: 0, items: [] };
 const MAX_AGENT_RUNS = 100;
 const MAX_DATASET_ROWS = 20000;
 const MAX_QUERY_ROWS = 20000;
-const insightRunPersistence = new JsonRunStore(resolveRuntimePath(process.env.WYN_AI_INSIGHT_RUN_DIR, join(rootDir, 'insight-runs')), { maxItems: 200 });
+const insightRunPersistence = new JsonRunStore(resolveRuntimePath(process.env.WYN_AI_INSIGHT_RUN_DIR, join(dataDir, 'insight-runs')), { maxItems: 200 });
 const insightRunStore = new InsightRunStore({ persistence: insightRunPersistence, maxItems: 200 });
 await insightRunStore.init();
+const insightDiagnosticStore = new InsightDiagnosticStore({ persistence: new JsonRunStore(resolveRuntimePath(process.env.WYN_AI_INSIGHT_DIAGNOSTIC_DIR, join(dataDir, 'insight-diagnostics')), { maxItems: 5000 }), maxItems: 5000 });
+await insightDiagnosticStore.init();
 const runStore = new JsonRunStore(join(dataDir, 'analysis-runs'), { maxItems: 100 });
 for (const run of (await runStore.init()).reverse()) agentRuns.set(run.id, run);
 const conversationStore = new JsonRunStore(join(dataDir, 'smart-query-conversations'), { maxItems: 100 });
@@ -160,6 +264,16 @@ const feedbackLearning = new FeedbackLearningService({
   maxItems: 5000,
 });
 await feedbackLearning.init();
+
+async function recordInsightDiagnostic(insightId, type, data = {}, context = {}) {
+  if (!insightId) return null;
+  try {
+    return await insightDiagnosticStore.append(insightId, type, data, context);
+  } catch (error) {
+    console.error('Insight diagnostic event failed', error.message);
+    return null;
+  }
+}
 
 const skillRegistry = await loadSkillsFromDirectory(join(rootDir, 'skills'));
 for (const skill of skillRegistry.list()) {
@@ -387,15 +501,29 @@ async function handleHealth(response) {
 
   try {
     const upstream = await wynFetch('/api/v2/chat/analysis/sessions', { method: 'GET', timeout: 8_000 });
+    const llmSnapshot = explorationGateway.snapshot();
+    const llmHealthStatus = !explorationGateway.enabled
+      ? 'not-configured'
+      : llmSnapshot.lastCall?.status === 'completed'
+        ? 'healthy'
+        : llmSnapshot.providers.some(provider => provider.open)
+          ? 'circuit-open'
+          : llmSnapshot.lastCall?.status === 'failed'
+            ? 'unhealthy'
+            : 'unknown';
     sendJson(response, upstream.ok ? 200 : 502, {
       connected: upstream.ok,
       server: config.wynBaseUrl,
       listenHost: config.host,
       viewProxyPort: config.viewProxyPort,
-      llmConfigured: Boolean(config.llmBaseUrl && config.llmModel),
-      llmModel: config.llmModel || 'Atlas 内置洞察引擎',
-      llmProvider: config.llmBaseUrl && config.llmModel ? 'project-env' : 'local-fallback',
+      llmConfigured: explorationGateway.enabled,
+      runtimeDataDir: dataDir,
+      runtimeDataFallback: runtimeData.fallback,
+      llmModel: effectiveLlmModel || 'Atlas 内置洞察引擎',
+      llmProvider: explorationGateway.enabled ? 'llm-gateway' : 'local-fallback',
       llmEndpointHost,
+      llmHealthStatus,
+      llmGateway: { version: 'wynai.llm-gateway/v1', exploration: llmSnapshot, intent: intentGateway.snapshot(), policy: { requestTimeoutMs: config.llmTimeoutMs, intentRequestTimeoutMs: config.intentLlmTimeoutMs, connectTimeoutMs: config.llmConnectTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs, operationTimeoutMs: { insightPlanner: config.llmPlannerTimeoutMs, insightCritic: config.llmCriticTimeoutMs, insightNarrator: config.llmNarratorTimeoutMs, agentReport: config.llmAgentReportTimeoutMs }, maxAttempts: config.llmMaxAttempts, retryBaseDelayMs: config.llmRetryBaseDelayMs, retryMaxDelayMs: config.llmRetryMaxDelayMs, retryJitterMs: config.llmRetryJitterMs } },
       intentLlmTimeoutMs: config.intentLlmTimeoutMs,
       status: upstream.status,
       message: upstream.ok ? 'Wyn 服务连接正常' : `Wyn 返回 ${upstream.status}`,
@@ -592,12 +720,7 @@ async function executeWaxBundle(datasetId, bundle) {
 }
 
 async function callAgentReportLlm(analysis, metadata) {
-  if (!config.llmBaseUrl || !config.llmModel) return null;
-  const url = /\/chat\/completions$/i.test(config.llmBaseUrl)
-    ? config.llmBaseUrl
-    : `${config.llmBaseUrl}/chat/completions`;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), config.llmTimeoutMs);
+  if (!explorationGateway.enabled) return null;
   const allowedEvidenceIds = analysis.evidence.map(item => item.id);
   const evidenceCatalog = analysis.evidence.map(item => ({
     id: item.id,
@@ -634,38 +757,21 @@ async function callAgentReportLlm(analysis, metadata) {
       }),
     },
   ];
-  try {
-    let lastError;
-    const validationErrors = [];
-    const outputPreviews = [];
-    for (let attempt = 0; attempt < 3; attempt += 1) {
-      const upstream = await fetch(url, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          ...(config.llmApiKey ? { Authorization: `Bearer ${config.llmApiKey}` } : {}),
-        },
-        body: JSON.stringify({
-          model: config.llmModel,
-          temperature: 0.1,
-          max_tokens: 4096,
-          ...(typeof config.llmEnableThinking === 'boolean' ? { enable_thinking: config.llmEnableThinking } : {}),
-          response_format: { type: 'json_object' },
-          messages,
-        }),
-        signal: controller.signal,
-      });
-      const payload = await upstream.json().catch(() => ({}));
-      if (!upstream.ok) throw new Error(payload.error?.message || payload.message || `大模型返回 ${upstream.status}`);
-      const content = payload.choices?.[0]?.message?.content || payload.output_text || '';
-      outputPreviews.push(String(content).slice(0, 4000));
+  let lastError;
+  const validationErrors = [];
+  const outputPreviews = [];
+  for (let attempt = 0; attempt < 3; attempt += 1) {
       try {
-        const structured = validateStructuredReport(prepareStructuredReport(parseLlmJson(content), analysis), analysis);
+        const report = await explorationGateway.completeJson(messages, { operation: 'agent-report', maxOutputTokens: 4096 });
+        const content = JSON.stringify(report);
+        outputPreviews.push(content.slice(0, 4000));
+        const structured = validateStructuredReport(prepareStructuredReport(report, analysis), analysis);
         return { structured, markdown: structuredReportMarkdown(structured), attempts: attempt + 1 };
       } catch (error) {
         lastError = error;
         validationErrors.push(error.message);
         if (attempt < 2) {
+          const content = outputPreviews.at(-1) || '{}';
           messages.push(
             { role: 'assistant', content },
             { role: 'user', content: `上次输出未通过校验：${error.message}。请重新输出完整 JSON。若错误包含“应关联”，删除 managementSummary 中该数字及相关数值区间；在 keyFindings 或 risks 中引用该数字时，一条只引用一个分组证据，并逐字保留错误中列出的全部实体、期间和布尔分组值；无法完整保留时删除该数字。每一项都必须包含 evidenceIds，且只能从以下列表逐字复制，至少选择一个：${allowedEvidenceIds.join('、')}。受限证据的最高或最低结论必须明确写“当前返回范围内”。请为 invalidDurationEvidence 中每个 evidenceId 单独输出一条数据质量项，原文包含“负值异常，已从正常效率排名和图表中排除，需核验”。正常效率排名条目不得引用这些 evidenceId；若排名由其他证据支持，只引用其他证据。actions 的 text 请移除所有目标、阈值和承诺；其中任何保留数字都必须逐字来自同一证据关联的洞察。` },
@@ -673,11 +779,35 @@ async function callAgentReportLlm(analysis, metadata) {
         }
       }
     }
-    const error = lastError || new Error('大模型报告校验失败');
-    error.diagnostics = { reportAttempts: outputPreviews.length, validationErrors, outputPreviews };
-    throw error;
-  } finally {
-    clearTimeout(timer);
+  const error = lastError || new Error('大模型报告校验失败');
+  error.diagnostics = { reportAttempts: outputPreviews.length, validationErrors, outputPreviews };
+  throw error;
+}
+
+async function handleLlmHealth(response) {
+  if (!explorationGateway.enabled) {
+    sendJson(response, 503, { ok: false, status: 'not-configured', code: 'INSIGHT_LLM_REQUIRED', gateway: explorationGateway.snapshot() });
+    return;
+  }
+  try {
+    const result = await explorationGateway.probe();
+    sendJson(response, 200, { ok: result.ok === true, status: result.ok === true ? 'healthy' : 'contract-failed', model: result.model, latencyMs: result.latencyMs, gateway: explorationGateway.snapshot() });
+  } catch (error) {
+    sendJson(response, 503, { ok: false, status: error.code === 'LLM_CIRCUIT_OPEN' ? 'circuit-open' : 'unhealthy', code: error.code || 'LLM_REQUEST_FAILED', message: error.message, error: serializeError(error), gateway: explorationGateway.snapshot() });
+  }
+}
+
+async function handleLlmDiagnostics(response) {
+  if (!explorationGateway.enabled) {
+    sendJson(response, 503, { ok: false, status: 'not-configured', code: 'INSIGHT_LLM_REQUIRED', providers: [] });
+    return;
+  }
+  try {
+    const providers = await explorationGateway.diagnose();
+    const ok = providers.some(item => item.network?.tcp?.ok);
+    sendJson(response, ok ? 200 : 503, { ok, status: ok ? 'network-reachable' : 'network-unreachable', providers });
+  } catch (error) {
+    sendJson(response, 503, { ok: false, status: 'diagnostic-failed', code: error.code || 'LLM_DIAGNOSTIC_FAILED', message: error.message, error: serializeError(error) });
   }
 }
 
@@ -814,7 +944,7 @@ async function handleCreateAgentRun(request, response) {
         durationMs: aggregateResults?.[item.id]?.durationMs ?? null,
       })),
       sqlAllowed: false,
-      llmModel: config.llmModel || null,
+      llmModel: effectiveLlmModel || null,
     };
     queryWarnings.forEach(message => appendReportWarning(analysis, message));
     try {
@@ -822,7 +952,7 @@ async function handleCreateAgentRun(request, response) {
       if (!aiReport?.markdown) throw new Error('严格分析未生成 AI 报告');
       analysis.report.aiNarrative = aiReport?.markdown || null;
       analysis.report.aiStructured = aiReport?.structured || null;
-      analysis.report.model = analysis.report.aiNarrative ? config.llmModel : 'Atlas 确定性分析引擎';
+      analysis.report.model = analysis.report.aiNarrative ? effectiveLlmModel : 'Atlas 确定性分析引擎';
     } catch (error) {
       analysis.report.aiNarrative = null;
       analysis.report.model = 'Atlas 确定性分析引擎';
@@ -892,7 +1022,7 @@ async function handleCreateV2AgentRun(request, response) {
       const aiReport = await callAgentReportLlm(analysis, metadata);
       analysis.report.aiNarrative = aiReport?.markdown || null;
       analysis.report.aiStructured = aiReport?.structured || null;
-      analysis.report.model = analysis.report.aiNarrative ? config.llmModel : 'Atlas V2.1 确定性降级引擎';
+      analysis.report.model = analysis.report.aiNarrative ? effectiveLlmModel : 'Atlas V2.1 确定性降级引擎';
     } catch (error) {
       if (strictMode) {
         error.status = 422;
@@ -983,6 +1113,23 @@ async function handleConversationMessage(request, response, conversationId) {
       if (!response.destroyed && !response.writableEnded) sendJson(response, 499, { message: '本轮智能问数已取消' });
       return;
     }
+    operationalEventLog.record({
+      traceId,
+      conversationId,
+      actor: identity.actor,
+      organizationId: identity.organizationId,
+      userId: identity.userId,
+      event: 'request.failed',
+      phase: 'transport',
+      outcome: 'failed',
+      durationMs: Date.now() - startedAt,
+      details: {
+        code: error?.code || null,
+        status: error?.status || 500,
+        message: error?.message || '智能问数请求失败',
+        attempts: error?.attempts || [],
+      },
+    });
     throw error;
   } finally {
     request.removeListener('aborted', abort);
@@ -1002,6 +1149,12 @@ async function handleConversationMessage(request, response, conversationId) {
         response: result.response,
       });
       if (insight) {
+        const detail = dataInsightStore.get(insight.insightId);
+        const existingInsightRuns = insightRunStore.list({ mode: 'interpret', insightId: insight.insightId });
+        const datasetIds = (detail?.input?.datasets || []).map(item => item.id);
+        const resolvedSkills = datasetIds.flatMap(datasetId => skillRegistry.resolve({ datasetId, question: detail?.input?.title || body.question }).map(skill => ({ id: skill.id, version: skill.version, diagnostics: skill.diagnostics || [] })));
+        const insightRun = existingInsightRuns[0] || await insightRunStore.create({ mode: 'interpret', insightId: insight.insightId, datasetIds, question: detail?.input?.title || body.question, actor: identity.actor, organizationId: identity.organizationId, skill: { refs: resolvedSkills.map(skill => `${skill.id}@${skill.version}`), diagnostics: resolvedSkills.flatMap(skill => skill.diagnostics) }, metadata: { source: detail?.input?.source || null, conversationId, turnId, traceId } });
+        await recordInsightDiagnostic(insight.insightId, 'run.created', { run: { id: insightRun.id, mode: insightRun.mode, status: insightRun.status, datasetIds: insightRun.datasetIds, question: insightRun.question, skill: insightRun.skill, metadata: insightRun.metadata, createdAt: insightRun.createdAt } }, { actor: identity.actor, organizationId: identity.organizationId, runId: insightRun.id, source: detail?.input?.source || null });
         result.response.dataInsight = {
           schema: 'wynai.data-insight-reference/v1',
           insightId: insight.insightId,
@@ -1212,12 +1365,15 @@ async function handleConversationFeedback(request, response, conversationId) {
   const messages = conversation.messages || [];
   const assistant = [...messages].reverse().find(message => message.role === 'assistant' && (!turnId || message.turnId === turnId)) || null;
   const user = [...messages].reverse().find(message => message.role === 'user' && (!turnId || message.turnId === turnId)) || null;
-  const result = await feedbackLearning.submit(body, {
+  const reasonLabels = { not_answered: '没有回答我的问题', wrong_metric: '指标或维度不对', wrong_time_filter: '时间范围或筛选条件不对', wrong_sort: '排序或排名不对', wrong_calculation: '计算方式或汇总结果不对', incomplete_data: '数据不完整或与预期不符', wrong_format: '单位或格式不对', unclear_display: '图表或表格展示不清楚', other: '其他' };
+  const reasonSummary = Array.isArray(body.reasons) ? body.reasons.map(reason => reasonLabels[reason] || '').filter(Boolean).join('、') : '';
+  const feedbackInput = { ...body, category: body.category === 'wrong_answer' ? (Array.isArray(body.reasons) && body.reasons.includes('wrong_calculation') ? 'wrong_metric' : 'wrong_understanding') : body.category, correction: [reasonSummary ? `反馈原因：${reasonSummary}` : '', body.comment || body.correction || ''].filter(Boolean).join('；') };
+  const result = await feedbackLearning.submit(feedbackInput, {
     conversationId, turnId: turnId || assistant?.turnId, traceId: body.traceId || assistant?.traceId, datasetId: conversation.dataset.id,
     organizationId: identity.organizationId, userId: identity.userId, question: user?.content || '', answer: assistant?.content || '',
     semanticSnapshot: { intent: conversation.activeBusinessIntent, queryRequest: conversation.activeQueryRequest, skillRefs: conversation.loadedSkillRefs || [] },
   });
-  operationalEventLog.record({ traceId: result.feedback.traceId || createTraceId(), conversationId, turnId: result.feedback.turnId, datasetId: conversation.dataset.id, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, event: 'feedback.received', phase: 'learning', outcome: result.feedback.category, details: { feedbackId: result.feedback.id, candidateId: result.candidate.id, comment: result.feedback.comment, correction: result.feedback.correction } });
+  operationalEventLog.record({ traceId: result.feedback.traceId || createTraceId(), conversationId, turnId: result.feedback.turnId, datasetId: conversation.dataset.id, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, event: 'feedback.received', phase: 'learning', outcome: result.feedback.category, details: { feedbackId: result.feedback.id, candidateId: result.candidate.id, reasons: result.feedback.reasons, comment: result.feedback.comment, correction: result.feedback.correction } });
   sendJson(response, 201, { schema: 'wynai.feedback-submission/v1', feedback: { id: result.feedback.id, category: result.feedback.category }, candidate: { id: result.candidate.id, kind: result.candidate.kind, status: result.candidate.status } });
 }
 
@@ -1350,7 +1506,7 @@ function handleDataInsights(pathname, requestUrl, request, response) {
   const insightId = pathname.slice('/api/data-insights/'.length);
   if (!insightId) {
     const items = dataInsightStore.list({ sourceType: requestUrl.searchParams.get('sourceType'), sourceId: requestUrl.searchParams.get('sourceId') });
-    sendJson(response, 200, { items, total: items.length, llmConfigured: Boolean(config.llmBaseUrl && config.llmModel), llmProvider: config.llmBaseUrl && config.llmModel ? 'project-env' : 'local-fallback', llmModel: config.llmModel || null, llmEndpointHost });
+    sendJson(response, 200, { items, total: items.length, llmConfigured: explorationGateway.enabled, llmProvider: explorationGateway.enabled ? 'llm-gateway' : 'local-fallback', llmModel: effectiveLlmModel || null, llmEndpointHost, llmGateway: explorationGateway.snapshot() });
     return;
   }
   const detail = dataInsightStore.get(insightId);
@@ -1379,8 +1535,12 @@ async function handleDataInsightInput(request, response) {
     const result = dataInsightStore.register(body, { idempotencyKey, actor: identity.actor, organizationId: identity.organizationId });
     const existingRuns = insightRunStore.list({ mode: 'interpret', insightId: result.record.insightId });
     const datasetIds = (result.record.input.datasets || []).map(item => item.id);
-    const resolvedSkills = datasetIds.flatMap(datasetId => skillRegistry.resolve({ datasetId, question: result.record.input.title }).map(skill => ({ id: skill.id, version: skill.version, diagnostics: skill.diagnostics || [] })));
+    const skillQuestion = [result.record.input.title, result.record.input.context?.question, result.record.input.context?.query?.name].filter(Boolean).join(' ');
+    const resolvedSkills = datasetIds.flatMap(datasetId => skillRegistry.resolve({ datasetId, question: skillQuestion }).map(skill => ({ id: skill.id, version: skill.version, diagnostics: skill.diagnostics || [] })));
     const run = existingRuns[0] || await insightRunStore.create({ mode: 'interpret', insightId: result.record.insightId, datasetIds, question: result.record.input.title, actor: identity.actor, organizationId: identity.organizationId, skill: { refs: resolvedSkills.map(skill => `${skill.id}@${skill.version}`), diagnostics: resolvedSkills.flatMap(skill => skill.diagnostics) }, metadata: { source: result.record.input.source || null } });
+    const diagnosticContext = { actor: identity.actor, organizationId: identity.organizationId, runId: run.id, source: result.record.input.source || null };
+    await recordInsightDiagnostic(result.record.insightId, 'input.accepted', { input: result.record.input, created: result.created, idempotencyKey: idempotencyKey || null }, diagnosticContext);
+    await recordInsightDiagnostic(result.record.insightId, 'run.created', { run: { id: run.id, mode: run.mode, status: run.status, datasetIds: run.datasetIds, question: run.question, skill: run.skill, metadata: run.metadata, createdAt: run.createdAt } }, diagnosticContext);
     sendJson(response, result.created ? 201 : 200, { schema: 'wynai.insight-input-ack/v1', insightId: result.record.insightId, runId: run.id, status: result.created ? 'accepted' : 'updated' });
   } catch (error) {
     if (error?.name === 'InsightInputError') return sendJson(response, error.status || 422, { code: error.code, path: error.path, message: error.message });
@@ -1390,22 +1550,34 @@ async function handleDataInsightInput(request, response) {
 
 async function executeExploreInsightRun(run) {
   if (!run || run.mode !== 'explore') throw new Error('仅 explore 运行支持自动执行');
-  if (!config.llmBaseUrl || !config.llmModel) {
+  if (!explorationGateway.enabled) {
     const error = new Error('Explore 运行必须配置外部 LLM');
     error.code = 'INSIGHT_LLM_REQUIRED';
     error.status = 503;
     throw error;
   }
+  const diagnosticInsightId = run.insightId || run.metadata?.sourceInsightId || null;
+  const diagnosticContext = { actor: run.actor, organizationId: run.organizationId, runId: run.id, source: run.metadata?.source || null };
   await insightRunStore.transition(run.id, 'planning');
+  await recordInsightDiagnostic(diagnosticInsightId, 'run.transition', { runId: run.id, mode: run.mode, status: 'planning' }, diagnosticContext);
   await insightRunStore.transition(run.id, 'running');
+  await recordInsightDiagnostic(diagnosticInsightId, 'run.transition', { runId: run.id, mode: run.mode, status: 'running' }, diagnosticContext);
   const datasetId = run.datasetIds[0];
   try {
     const metadata = await loadDatasetMetadata(datasetId);
     const skills = skillRegistry.resolve({ datasetId, question: run.question });
+    const inherited = run.metadata?.inheritedScope || {};
+    const inheritedRange = inherited.scope?.timeRange;
+    const inheritedFilters = Array.isArray(inherited.context?.filters) ? inherited.context.filters : [];
+    const timeField = metadata.fields?.find(field => field.role === 'time' || field.type === 'date' || field.type === 'datetime')?.name || null;
+    const rangeFilters = inheritedRange && timeField ? [
+      ...(inheritedRange.start ? [{ field: timeField, operator: 'gte', value: String(inheritedRange.start).length === 7 ? `${inheritedRange.start}-01` : inheritedRange.start, fieldType: 'time' }] : []),
+      ...(inheritedRange.end ? [{ field: timeField, operator: 'lt', value: String(inheritedRange.end).length === 7 ? `${inheritedRange.end}-01` : inheritedRange.end, fieldType: 'time' }] : []),
+    ] : [];
     const result = await runAutonomousAnalysis({
       metadata,
       focus: run.question,
-      constraints: run.metadata?.constraints || { filters: [] },
+      constraints: run.metadata?.constraints || { filters: [...inheritedFilters, ...rangeFilters] },
       executeDatasetQuery,
       analyzeDataset,
       explorationAgent: explorationLlm,
@@ -1416,20 +1588,22 @@ async function executeExploreInsightRun(run) {
     if (!report?.markdown) throw Object.assign(new Error('Explore 未生成 LLM 报告'), { code: 'INSIGHT_LLM_INVALID_OUTPUT', status: 502 });
     result.analysis.report.aiNarrative = report.markdown;
     result.analysis.report.aiStructured = report.structured;
-    result.analysis.report.model = config.llmModel;
+    result.analysis.report.model = explorationGateway.model;
     const document = composeInsightDocument({ result, question: run.question });
     const completed = await insightRunStore.complete(run.id, {
       plan: result.analysis.plan,
       toolCalls: result.queries.map(item => ({ id: item.request?.id, hypothesisId: item.request?.hypothesisId || null, status: item.status, mode: item.request?.mode || null, adapter: item.executionPlan?.adapter || null })),
       evidenceIds: result.analysis.evidence.map(item => item.id),
       document,
-      metadata: { ...(run.metadata || {}), analysis: result.analysis, resultSets: result.resultSets, audit: result.audit, provider: 'llm-orchestrated', model: config.llmModel },
+      metadata: { ...(run.metadata || {}), analysis: result.analysis, resultSets: result.resultSets, audit: result.audit, provider: 'llm-orchestrated', model: explorationGateway.model, gateway: explorationGateway.snapshot() },
     });
-    insightGovernance.record({ actor: run.actor, organizationId: run.organizationId, insightId: null, runId: run.id, action: 'insight.explore', status: 'completed', model: config.llmModel, prompt: run.question, toolCalls: completed.toolCalls, skillRefs: skills.map(skill => `${skill.id}@${skill.version}`), externalDataPolicy: { rawRowsToLlm: false } });
+    await recordInsightDiagnostic(diagnosticInsightId, 'explore.completed', { run: completed, analysis: result.analysis }, diagnosticContext);
+    insightGovernance.record({ actor: run.actor, organizationId: run.organizationId, insightId: null, runId: run.id, action: 'insight.explore', status: 'completed', model: explorationGateway.model, prompt: run.question, toolCalls: completed.toolCalls, skillRefs: skills.map(skill => `${skill.id}@${skill.version}`), externalDataPolicy: { rawRowsToLlm: false }, gateway: explorationGateway.snapshot() });
     return completed;
   } catch (error) {
     await insightRunStore.fail(run.id, error);
-    insightGovernance.record({ actor: run.actor, organizationId: run.organizationId, runId: run.id, action: 'insight.explore', status: 'failed', model: config.llmModel, prompt: run.question, errorCode: error.code || 'INSIGHT_EXPLORE_FAILED', externalDataPolicy: { rawRowsToLlm: false } });
+    await recordInsightDiagnostic(diagnosticInsightId, 'run.failed', { runId: run.id, error: { code: error.code || 'INSIGHT_EXPLORE_FAILED', message: error.message, stack: error.stack || null } }, diagnosticContext);
+    insightGovernance.record({ actor: run.actor, organizationId: run.organizationId, runId: run.id, action: 'insight.explore', status: 'failed', model: explorationGateway.model, prompt: run.question, errorCode: error.code || 'INSIGHT_EXPLORE_FAILED', externalDataPolicy: { rawRowsToLlm: false }, gateway: explorationGateway.snapshot() });
     throw error;
   }
 }
@@ -1489,7 +1663,7 @@ function formatNumber(value) {
   return new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(value);
 }
 
-function buildLocalInsight(record, prompt) {
+function buildLocalInsight(record, prompt, factPack = null) {
   const rows = normalizedRows(record);
   const summary = resultSummary(record);
   const numeric = numericInsights(rows, summary.columns);
@@ -1527,20 +1701,35 @@ function buildLocalInsight(record, prompt) {
   };
 }
 
-async function callConfiguredLlm(record, prompt) {
+async function callConfiguredLlm(record, prompt, diagnosticContext = {}) {
   const sensitiveFields = Array.isArray(record.input.context?.sensitiveFields) ? record.input.context.sensitiveFields : [];
   const redacted = redactInsightInput(record.input, sensitiveFields);
   const evidencePack = buildEvidencePack(redacted.input);
-  const resolvedSkills = (record.input.datasets || []).flatMap(dataset => skillRegistry.resolve({ datasetId: dataset.id, question: prompt || record.input.title }));
+  const resolvedSkills = resolveInsightSkillsForRecord(record, prompt);
+  const businessFacts = buildBusinessFactPack({ input: redacted.input, evidencePack, skills: resolvedSkills });
+  const enrichedEvidencePack = { ...evidencePack, businessFacts };
+  await recordInsightDiagnostic(record.insightId, 'evidence.pack.created', { evidencePack: enrichedEvidencePack, redactionPolicy: redacted.policy, skills: resolvedSkills }, diagnosticContext);
   const orchestration = await runInsightLlmOrchestration({
     llm: explorationLlm,
     prompt: prompt || record.input.title,
-    input: evidencePack,
-    skills: resolvedSkills.map(skill => ({ id: skill.id, version: skill.version, name: skill.name, diagnostics: skill.diagnostics || [], requiredEvidence: skill.requiredEvidence || [], riskRules: skill.riskRules || [], playbook: skill.playbook || [], assumptions: skill.assumptions || [] })),
+    input: enrichedEvidencePack,
+    skills: resolvedSkills.map(skill => ({ id: skill.id, version: skill.version, name: skill.name, diagnostics: skill.diagnostics || [], requiredEvidence: skill.requiredEvidence || [], requiredFacts: skill.requiredFacts || [], insightMethods: skill.insightMethods || [], fallbackNarrative: skill.fallbackNarrative || [], qualityThresholds: skill.qualityThresholds || {}, riskRules: skill.riskRules || [], playbook: skill.playbook || [], assumptions: skill.assumptions || [] })),
+    onStageEvent: event => recordInsightDiagnostic(record.insightId, `llm.stage.${event.stage}`, event, diagnosticContext),
+    onGatewayEvent: event => recordInsightDiagnostic(record.insightId, event.type || 'gateway.attempt', event, diagnosticContext),
   });
+  await recordInsightDiagnostic(record.insightId, 'orchestration.completed', { orchestration }, diagnosticContext);
+  if (orchestration.status !== 'completed' || orchestration.diagnostics?.rejectedClaims?.length) {
+    const error = new Error('LLM 洞察结果未通过完整证据校验，不生成降级洞察');
+    error.code = 'INSIGHT_CLAIM_VALIDATION_FAILED';
+    error.status = 422;
+    error.diagnostics = orchestration.diagnostics || null;
+    throw error;
+  }
   return {
     provider: 'llm-orchestrated',
-    model: orchestration.model || config.llmModel,
+    model: orchestration.model || effectiveLlmModel,
+    status: orchestration.status || 'completed',
+    diagnostics: orchestration.diagnostics || null,
     findings: orchestration.narrative.keyFindings,
     content: orchestration.markdown,
     structured: orchestration.narrative,
@@ -1550,9 +1739,57 @@ async function callConfiguredLlm(record, prompt) {
       critic: orchestration.critic,
       evidence: orchestration.evidence,
       stageAudit: orchestration.stageAudit || [],
-      externalDataPolicy: { ...redacted.policy, sampleStrategy: evidencePack.policy.sampleStrategy },
+      externalDataPolicy: { ...redacted.policy, sampleStrategy: evidencePack.policy.sampleStrategy, rawRowsToLlm: false },
+      businessFacts,
+      gateway: explorationGateway.snapshot(),
     },
   };
+}
+
+const INSIGHT_SKILL_PROFILES = Object.freeze({
+  'sales-baseline': {
+    requiredFacts: ['revenue-total', 'profit-total', 'data-quality'],
+    insightMethods: ['monthly-trend', 'dimension-contribution', 'concentration', 'anomaly', 'average-order-value'],
+    qualityThresholds: { completeness: 80, evidenceCoverage: 100 },
+    fallbackNarrative: [],
+  },
+});
+
+function resolveInsightSkillsForRecord(record, prompt = '') {
+  const datasetIds = (record?.input?.datasets || []).map(item => item.id).filter(Boolean);
+  const question = [record?.input?.title, record?.input?.context?.question, record?.input?.context?.query?.name, prompt].filter(Boolean).join(' ');
+  const resolved = datasetIds.flatMap(datasetId => skillRegistry.resolve({ datasetId, question }));
+  const scoped = resolved.length ? resolved : datasetIds.flatMap(datasetId => skillRegistry.list().filter(skill => skill.status === 'approved' && (skill.scope === 'system' || (skill.scope === 'dataset' && skill.datasetIds.includes(datasetId)))));
+  return scoped.map(skill => ({ ...skill, ...(INSIGHT_SKILL_PROFILES[skill.id] || {}) }));
+}
+
+function factPackNarrative(factPack) {
+  const lines = [];
+  for (const item of factPack?.facts || []) {
+    if (item.id.endsWith('-total')) lines.push(`- ${item.title}：${formatNumber(item.value?.value)}（${item.value?.aggregation || 'sum'}）`);
+    if (item.id === 'average-order-value') lines.push(`- ${item.title}：${formatNumber(item.value?.value)}（${item.value?.formula}）`);
+    if (item.id === 'concentration' && Number.isFinite(item.value?.share)) lines.push(`- ${item.title}：头部 ${item.value.topN} 项贡献约 ${formatNumber(item.value.share * 100)}%`);
+  }
+  for (const item of (factPack?.facts || []).filter(item => item.id.endsWith('-total') || item.id === 'average-order-value').slice(0, 4)) {
+    findings.push({ tone: 'green', label: item.title, value: formatNumber(item.value?.value), detail: `确定性计算：${item.method}。证据 ${item.evidenceIds.join('、') || '待补充'}。` });
+  }
+
+  for (const item of (factPack?.facts || []).filter(item => item.id.endsWith('-total') || item.id === 'average-order-value').slice(0, 4)) {
+    findings.push({ tone: 'green', label: item.title, value: formatNumber(item.value?.value), detail: `确定性计算：${item.method}。证据 ${item.evidenceIds.join('、') || '待补充'}。` });
+  }
+  if (factPack?.quality) lines.push(`- 数据质量：${factPack.quality.rowCount} 行，完整度 ${factPack.quality.completeness}%`);
+  return lines.length ? lines.join('\n') : '- 当前没有可核验的业务事实。';
+}
+
+function deterministicInsightDocument(record, prompt, reasonCode, reasonMessage) {
+  const error = new Error('数据洞察失败时禁止生成确定性降级结果');
+  error.code = reasonCode || 'INSIGHT_GENERATION_FAILED';
+  error.causeMessage = reasonMessage || null;
+  throw error;
+}
+
+function isRecoverableInsightError(error) {
+  return ['INSIGHT_LLM_REQUIRED', 'LLM_UPSTREAM_ERROR', 'LLM_TIMEOUT', 'LLM_CONNECT_TIMEOUT', 'LLM_RESPONSE_HEADER_TIMEOUT', 'LLM_RATE_LIMITED', 'LLM_EMPTY_RESPONSE', 'LLM_CIRCUIT_OPEN', 'LLM_CONTEXT_LIMIT', 'NARRATOR_SCHEMA_INVALID', 'INSIGHT_LLM_INVALID_OUTPUT', 'INSIGHT_CLAIM_VALIDATION_FAILED', 'EVIDENCE_INSUFFICIENT', 'NARRATOR_UNSUPPORTED_CLAIM'].includes(error?.code);
 }
 
 async function handleSecondaryInsight(request, response, providedBody = null) {
@@ -1572,10 +1809,18 @@ async function handleSecondaryInsight(request, response, providedBody = null) {
   } catch (error) {
     return sendJson(response, error.status || 429, { code: error.code, message: error.message, retryAfterMs: error.retryAfterMs || null, retryable: true });
   }
-  const run = insightRunStore.list({ mode: 'interpret', insightId }).at(0) || null;
+  let run = insightRunStore.list({ mode: 'interpret', insightId }).at(0) || null;
+  if (!run) {
+    const datasetIds = (record.input.datasets || []).map(item => item.id).filter(Boolean);
+    const skillQuestion = [record.input.title, record.input.context?.question, prompt].filter(Boolean).join(' ');
+    const resolvedSkills = datasetIds.flatMap(datasetId => skillRegistry.resolve({ datasetId, question: skillQuestion }).map(skill => ({ id: skill.id, version: skill.version, diagnostics: skill.diagnostics || [] })));
+    run = await insightRunStore.create({ mode: 'interpret', insightId, datasetIds, question: prompt || record.input.title, actor: identity.actor, organizationId: identity.organizationId, skill: { refs: resolvedSkills.map(skill => `${skill.id}@${skill.version}`), diagnostics: resolvedSkills.flatMap(skill => skill.diagnostics) }, metadata: { source: record.input.source || null, createdDuringGeneration: true } });
+    await recordInsightDiagnostic(insightId, 'run.created', { run: { id: run.id, mode: run.mode, status: run.status, datasetIds: run.datasetIds, question: run.question, skill: run.skill, metadata: run.metadata, createdAt: run.createdAt } }, { actor: identity.actor, organizationId: identity.organizationId, runId: run.id, source: record.input.source || null });
+  }
+  const diagnosticContext = { actor: identity.actor, organizationId: identity.organizationId, runId: run?.id || null, source: record.input.source || null };
   if (run && ['queued', 'completed', 'failed'].includes(run.status)) {
     try {
-      await insightRunStore.transition(run.id, 'planning', { metadata: { ...(run.metadata || {}), generationPrompt: prompt } });
+      await insightRunStore.transition(run.id, 'planning', { error: null, document: null, metadata: { ...(run.metadata || {}), generationPrompt: prompt } });
       await insightRunStore.transition(run.id, 'running');
     } catch (error) {
       return sendJson(response, 409, { code: 'INSIGHT_RUN_STATE_ERROR', message: error.message });
@@ -1583,17 +1828,33 @@ async function handleSecondaryInsight(request, response, providedBody = null) {
   }
 
   try {
-    if (!config.llmBaseUrl || !config.llmModel) {
+    // A retry must not expose the previous successful document while the new LLM run is pending.
+    await dataInsightStore.clearDocument(insightId);
+    await recordInsightDiagnostic(insightId, 'generation.started', { prompt, input: record.input, runId: run?.id || null, gateway: explorationGateway.snapshot() }, diagnosticContext);
+    if (!explorationGateway.enabled) {
       const error = new Error('正式数据洞察必须配置外部 LLM；固定统计仅作为数据准备诊断');
       error.code = 'INSIGHT_LLM_REQUIRED';
       error.status = 503;
       throw error;
     }
-    const result = await callConfiguredLlm(record, prompt);
+    const result = await callConfiguredLlm(record, prompt, diagnosticContext);
     const orchestration = result.orchestration || {};
+    const criticAssessments = Array.isArray(orchestration.critic?.assessments) ? orchestration.critic.assessments : [];
+    const hasSupportedAssessment = criticAssessments.some(item => item?.status === 'supported');
+    // Critic may mark individual hypotheses inconclusive while other hypotheses
+    // remain fully supported. Preserve the verified LLM narrative and expose
+    // the unresolved hypotheses as follow-ups; fail only when no hypothesis is
+    // supported at all, which would otherwise produce an empty/meaningless document.
+    if (orchestration.critic?.verdict === 'insufficient' && !hasSupportedAssessment) {
+      const error = new Error('Critic 判定当前证据不足，不生成正式洞察');
+      error.code = 'EVIDENCE_INSUFFICIENT';
+      error.status = 422;
+      throw error;
+    }
     const narrative = result.structured || {};
     const evidence = orchestration.evidence || [];
     const blocks = [
+      ...(result.status === 'completed' ? [] : []),
       { id: 'ai-narrative-summary', type: 'ai-narrative', title: '管理摘要', content: (narrative.managementSummary || []).map(item => item.text).join('\n'), evidenceIds: (narrative.managementSummary || []).flatMap(item => item.evidenceIds || []) },
       { id: 'ai-narrative-findings', type: 'ai-narrative', title: '关键发现', content: (narrative.keyFindings || []).map(item => item.text).join('\n'), evidenceIds: (narrative.keyFindings || []).flatMap(item => item.evidenceIds || []) },
       { id: 'ai-narrative-risks', type: 'ai-narrative', title: '风险判断', content: (narrative.risks || []).map(item => item.text).join('\n'), evidenceIds: (narrative.risks || []).flatMap(item => item.evidenceIds || []) },
@@ -1619,8 +1880,9 @@ async function handleSecondaryInsight(request, response, providedBody = null) {
         actor: identity.actor,
         organizationId: identity.organizationId,
         skill: run?.skill || null,
-        metadata: { reason: 'interpret-evidence-insufficient', sourceInsightId: insightId, followUps: narrative.followUps || [] },
+        metadata: { reason: 'interpret-evidence-insufficient', sourceInsightId: insightId, followUps: narrative.followUps || [], inheritedScope: { scope: record.input.scope || null, context: record.input.context || null, quality: record.input.quality || null } },
       });
+      await recordInsightDiagnostic(insightId, 'run.created', { run: exploreRun, mode: 'explore', parentRunId: run?.id || null }, { ...diagnosticContext, runId: exploreRun.id });
       try {
         exploreRun = await executeExploreInsightRun(exploreRun);
       } catch (error) {
@@ -1631,12 +1893,21 @@ async function handleSecondaryInsight(request, response, providedBody = null) {
       insightDocument.nextQuestions = [...new Set([...(insightDocument.nextQuestions || []), '请补充可访问的数据集标识，以便发起受控 Explore 分析。'])].slice(0, 8);
     }
     await dataInsightStore.saveDocument(insightId, insightDocument, { runId: run?.id || null, actor: identity.actor, organizationId: identity.organizationId });
-    if (run) await insightRunStore.complete(run.id, { document: insightDocument, metadata: { ...(run.metadata || {}), generatedAt: new Date().toISOString(), provider: result.provider, model: result.model, orchestrationSchema: orchestration.schema || null, exploreRunId: exploreRun?.id || null } });
-    insightGovernance.record({ actor: identity.actor, organizationId: identity.organizationId, insightId, runId: run?.id || null, action: 'insight.generate', status: 'completed', model: result.model, prompt, toolCalls: orchestration.planner?.toolRequests || [], stageAudit: orchestration.stageAudit || [], skillRefs: run?.skill?.refs || [], externalDataPolicy: orchestration.externalDataPolicy || { rawRowsToLlm: false } });
+    await recordInsightDiagnostic(insightId, 'result.document.saved', { document: insightDocument, result: { provider: result.provider, model: result.model, status: result.status, diagnostics: result.diagnostics || null }, exploreRunId: exploreRun?.id || null }, diagnosticContext);
+    if (run) await insightRunStore.complete(run.id, { error: null, document: insightDocument, metadata: { ...(run.metadata || {}), generatedAt: new Date().toISOString(), provider: result.provider, model: result.model, status: result.status, orchestrationSchema: orchestration.schema || null, exploreRunId: exploreRun?.id || null, gateway: orchestration.gateway || null } });
+    insightGovernance.record({ actor: identity.actor, organizationId: identity.organizationId, insightId, runId: run?.id || null, action: 'insight.generate', status: 'completed', model: result.model, prompt, toolCalls: orchestration.planner?.toolRequests || [], stageAudit: orchestration.stageAudit || [], skillRefs: run?.skill?.refs || [], externalDataPolicy: orchestration.externalDataPolicy || { rawRowsToLlm: false }, gateway: orchestration.gateway || explorationGateway.snapshot() });
+    await recordInsightDiagnostic(insightId, 'generation.finished', { status: 'completed', provider: result.provider, model: result.model, stageAudit: orchestration.stageAudit || [], gateway: orchestration.gateway || explorationGateway.snapshot() }, diagnosticContext);
     sendJson(response, 200, { ...result, document: insightDocument, insightId, exploreRun, generatedAt: new Date().toISOString() });
   } catch (error) {
+    if (isRecoverableInsightError(error)) {
+      if (run) await insightRunStore.fail(run.id, error);
+      insightGovernance.record({ actor: identity.actor, organizationId: identity.organizationId, insightId, runId: run?.id || null, action: 'insight.generate', status: 'failed', model: explorationGateway.model, prompt, skillRefs: run?.skill?.refs || [], externalDataPolicy: { rawRowsToLlm: false }, errorCode: error.code || 'INSIGHT_GENERATION_FAILED', gateway: explorationGateway.snapshot() });
+      await recordInsightDiagnostic(insightId, 'generation.finished', { status: 'failed', provider: 'llm-orchestrated', model: explorationGateway.model, error: { code: error.code || 'INSIGHT_GENERATION_FAILED', message: error.message }, diagnostics: error.diagnostics || null, gateway: explorationGateway.snapshot() }, diagnosticContext);
+      return sendJson(response, error.status || 502, { schema: 'wynai.insight-generation-result/v1', insightId, status: 'failed', retryable: !['EVIDENCE_INSUFFICIENT', 'INSIGHT_CLAIM_VALIDATION_FAILED'].includes(error.code), error: { code: error.code || 'INSIGHT_GENERATION_FAILED', message: error.message }, diagnostics: error.diagnostics || null, generatedAt: new Date().toISOString() });
+    }
     if (run) await insightRunStore.fail(run.id, error);
-    insightGovernance.record({ actor: identity.actor, organizationId: identity.organizationId, insightId, runId: run?.id || null, action: 'insight.generate', status: 'failed', model: config.llmModel, prompt, skillRefs: run?.skill?.refs || [], externalDataPolicy: { rawRowsToLlm: false }, errorCode: error.code || 'INSIGHT_LLM_FAILED' });
+    insightGovernance.record({ actor: identity.actor, organizationId: identity.organizationId, insightId, runId: run?.id || null, action: 'insight.generate', status: 'failed', model: explorationGateway.model, prompt, skillRefs: run?.skill?.refs || [], externalDataPolicy: { rawRowsToLlm: false }, errorCode: error.code || 'INSIGHT_LLM_FAILED', gateway: explorationGateway.snapshot() });
+    await recordInsightDiagnostic(insightId, 'generation.failed', { error: { code: error.code || 'INSIGHT_LLM_FAILED', message: error.message, stack: error.stack || null }, gateway: explorationGateway.snapshot() }, diagnosticContext);
     sendJson(response, error.status || 502, { code: error.code || 'INSIGHT_LLM_FAILED', message: `项目 LLM 二次洞察失败（${llmEndpointHost || '未配置端点'}）：${error.message}`, retryable: true });
   } finally {
     releaseGeneration?.();
@@ -1685,6 +1956,8 @@ const server = http.createServer(async (request, response) => {
       });
     }
     if (request.method === 'GET' && pathname === '/api/health') return await handleHealth(response);
+    if (request.method === 'GET' && pathname === '/api/llm/health') return await handleLlmHealth(response);
+    if (request.method === 'GET' && pathname === '/api/llm/diagnostics') return await handleLlmDiagnostics(response);
     if (request.method === 'GET' && pathname === '/api/datasets') return await handleDatasets(response);
     if (request.method === 'GET' && /^\/api\/datasets\/[a-zA-Z0-9-]+\/metadata$/.test(pathname)) {
       const datasetId = pathname.split('/')[3];
@@ -1807,6 +2080,35 @@ const server = http.createServer(async (request, response) => {
         const audit = insightGovernance.list({ actor: identity.actor, organizationId: identity.organizationId }).find(item => item.insightId === detail.insightId && item.status === 'completed') || {};
         return sendDownload(response, buildInsightDocumentExport(detail.document, requestUrl.searchParams.get('format') || 'html', audit));
       } catch (error) { return sendJson(response, error.status || 400, { code: 'INSIGHT_EXPORT_FAILED', message: error.message }); }
+    }
+    const insightDiagnosticsRoute = pathname.match(/^\/api\/data-insights\/([^/]+)\/diagnostics$/);
+    if (request.method === 'GET' && insightDiagnosticsRoute) {
+      try {
+        let diagnostic;
+        try {
+          diagnostic = insightDiagnosticStore.get(insightDiagnosticsRoute[1]);
+        } catch (lookupError) {
+          if (!(lookupError instanceof InsightDiagnosticLookupError) || lookupError.code !== 'INSIGHT_DIAGNOSTIC_NOT_FOUND') throw lookupError;
+          const requested = insightDiagnosticsRoute[1];
+          const matches = dataInsightStore.list().map(item => item.insightId).filter(id => id.startsWith(requested));
+          if (matches.length > 1) throw new InsightDiagnosticLookupError('INSIGHT_DIAGNOSTIC_PREFIX_AMBIGUOUS', 'Insight ID prefix matches multiple insights', matches);
+          if (matches.length !== 1) throw lookupError;
+          const legacyDetail = dataInsightStore.get(matches[0]);
+          const legacyRuns = insightRunStore.list({ insightId: matches[0] });
+          const legacyAudit = insightGovernance.list({ limit: 500 }).filter(item => item.insightId === matches[0]);
+          await recordInsightDiagnostic(matches[0], 'legacy.snapshot', { coverage: 'legacy-available-records', input: legacyDetail.input, document: legacyDetail.document, versions: legacyDetail.versions, runs: legacyRuns, audit: legacyAudit }, { actor: legacyDetail.actor, organizationId: legacyDetail.organizationId, source: legacyDetail.source || legacyDetail.input?.source || null });
+          diagnostic = insightDiagnosticStore.get(matches[0]);
+        }
+        const detail = dataInsightStore.get(diagnostic.insightId);
+        const identity = requestIdentity(request);
+        const actor = detail?.actor || diagnostic.actor;
+        const organizationId = detail?.organizationId || diagnostic.organizationId;
+        if (actor && actor !== 'anonymous' && actor !== identity.actor && (!organizationId || organizationId !== identity.organizationId)) return sendJson(response, 403, { code: 'DATA_INSIGHT_FORBIDDEN', message: '无权访问该数据洞察诊断日志' });
+        return sendJson(response, 200, { ...diagnostic, access: { scope: 'backend-diagnostic', redacted: false, uiExport: false } });
+      } catch (error) {
+        if (error instanceof InsightDiagnosticLookupError) return sendJson(response, error.status || 404, { code: error.code, message: error.message, matches: error.matches || [] });
+        throw error;
+      }
     }
     const insightGovernanceRoute = pathname.match(/^\/api\/data-insights\/([^/]+)\/(versions|archive|restore|delete)$/);
     if (request.method === 'GET' && insightGovernanceRoute?.[2] === 'versions') {
@@ -2133,7 +2435,7 @@ try {
 console.log(`Wyn AI started: http://${config.host}:${config.port}`);
 console.log(`Wyn view proxy started: http://${config.host}:${config.viewProxyPort}`);
 console.log(`Runtime config: ${envFile}`);
-console.log(`Runtime data: ${dataDir}`);
+console.log(`Runtime data: ${dataDir}${runtimeData.fallback ? ' (fallback)' : ''}`);
 
 let shuttingDown = false;
 async function shutdown(signal) {

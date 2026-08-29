@@ -118,11 +118,22 @@
             "enum": [
               "yoy",
               "mom",
+              "share-of-total",
               "formula"
             ]
           },
           "sourceAlias": {
             "type": "string"
+          },
+          "shareDimensionAlias": {
+            "type": "string"
+          },
+          "partitionBy": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "denominatorScope": {
+            "enum": ["filtered-result"]
           },
           "alias": {
             "type": "string"
@@ -329,6 +340,14 @@
         "null"
       ]
     },
+    "visualizationIntent": {
+      "type": ["object", "null"],
+      "properties": {
+        "type": { "enum": ["none", "line", "column", "bar", "pie", "donut", "combo", "stacked-column"] },
+        "source": { "type": "string" },
+        "explicit": { "type": "boolean" }
+      }
+    },
     "semanticFrame": {
       "type": "object",
       "required": [
@@ -369,6 +388,9 @@
         },
         "derivedMetrics": {
           "type": "array"
+        },
+        "visualizationIntent": {
+          "type": ["object", "null"]
         },
         "groupingQuantifiers": {
           "type": "array"

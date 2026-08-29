@@ -5,8 +5,10 @@ import { ControlledWaxAdapter } from '../lib/query/adapters/controlled-wax.mjs';
 import { DatasetNoneAdapter } from '../lib/query/adapters/dataset-none.mjs';
 import { QueryRouter } from '../lib/query/router.mjs';
 import { normalizeCanonicalResultSet } from '../lib/query/result-normalizer.mjs';
+import { applyQueryProgram } from '../lib/query/query-program.mjs';
 import { verifyEvidenceScope } from '../lib/evidence/claim-verifier.mjs';
 import { buildExplorationArtifacts } from '../lib/analytics/exploration-artifacts.mjs';
+import { buildBusinessQueryIntent, compileBusinessQueryIntent } from '../lib/semantics/business-query-intent.mjs';
 
 const metadata = {
   id: 'dataset-sales-v2',
@@ -281,4 +283,51 @@ test('证据范围校验拒绝用全局类别排名解释单月增长', () => {
   assert.equal(result.valid, false);
   assert.ok(result.reasons.some(reason => reason.includes('订购日期')));
   assert.ok(result.reasons.some(reason => reason.includes('2026-01')));
+});
+
+
+test('用户主动排名范围不被误报为系统截断，并保留底层范围证据', () => {
+  const request = normalizeCanonicalQueryRequest(metadata, {
+    id: 'qry-top-five-scope', mode: 'aggregate', dataset: { id: metadata.id, revision: metadata.revision },
+    select: [{ field: '类别名称', alias: 'category' }],
+    measures: [{ field: '订单金额', aggregation: 'sum', alias: 'revenue' }],
+    orderBy: [{ field: 'revenue', direction: 'desc' }], limit: 5, limitSource: 'user-ranking',
+  });
+  const result = normalizeCanonicalResultSet({
+    request, executionPlan: { id: 'exec-top-five', adapter: 'wyn-wax-controlled', rowLimit: 5 }, metadata,
+    rawResult: {
+      rows: [
+        { group1: 'A', revenue: 500 }, { group1: 'B', revenue: 400 }, { group1: 'C', revenue: 300 },
+        { group1: 'D', revenue: 200 }, { group1: 'E', revenue: 100 },
+      ], totalRows: 76, limitReached: true,
+    },
+  });
+  assert.equal(result.quality.userLimitApplied, true);
+  assert.equal(result.quality.limitSource, 'user-ranking');
+  assert.equal(result.quality.sourceLimitReached, true);
+  assert.equal(result.quality.isTruncated, false);
+  assert.equal(result.quality.limitReached, false);
+  assert.equal(result.quality.warnings.some(message => /达到结果上限|实际返回|截断/.test(message)), false);
+  assert.equal(result.statistics.totalRowCount, 76);
+});
+
+test('Bottom N 与前百分比均属于用户主动范围，百分比排名在查询程序中按组数计算', () => {
+  const bottom = buildBusinessQueryIntent({ metadata, question: '去年销售额排名后两的商品类别' });
+  assert.equal(bottom.ranking.direction, 'asc');
+  assert.equal(bottom.ranking.limit, 2);
+  assert.equal(compileBusinessQueryIntent(metadata, bottom).request.limitSource, 'user-ranking');
+  const percentage = buildBusinessQueryIntent({ metadata, question: '去年销售额排名前20%的商品类别' });
+  assert.equal(percentage.ranking.percentage, 20);
+  const compiled = compileBusinessQueryIntent(metadata, percentage);
+  assert.equal(compiled.request.limitSource, 'user-ranking');
+  const output = applyQueryProgram({
+    rows: [
+      { category: 'A', revenue: 500 }, { category: 'B', revenue: 400 }, { category: 'C', revenue: 300 },
+      { category: 'D', revenue: 200 }, { category: 'E', revenue: 100 },
+    ], schema: [{ name: 'category' }, { name: 'revenue', role: 'measure', type: 'number' }],
+    quality: { userLimitApplied: true, limitSource: 'user-ranking', isTruncated: false, limitReached: false },
+    statistics: { totalRowCount: 5 },
+  }, compiled.queryProgram);
+  assert.equal(output.rows.length, 1);
+  assert.equal(output.rows[0].category, 'A');
 });

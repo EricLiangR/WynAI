@@ -40,7 +40,15 @@
       "sourceField": { "type": "string", "maxLength": 200 },
       "format": { "type": "string", "maxLength": 80 },
       "unit": { "type": "string", "maxLength": 80 },
-      "grain": { "type": "string", "maxLength": 40 }
+      "grain": { "type": "string", "maxLength": 40 },
+      "metricId": { "type": "string", "maxLength": 100 },
+      "aggregation": { "enum": ["sum", "average", "min", "max", "count", "distinctCount", "none"] },
+      "semanticType": { "type": "string", "maxLength": 80 },
+      "additivity": { "enum": ["additive", "semi-additive", "non-additive", "derived", "none"] },
+      "derivedFrom": {},
+      "formula": { "type": "object", "additionalProperties": true },
+      "calculationScope": { "type": "object", "additionalProperties": true },
+      "isPreAggregated": { "type": "boolean" }
     } },
     "resultSet": { "type": "object", "additionalProperties": false, "required": ["id", "schema", "rows"], "properties": {
       "id": { "type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,99}$" },

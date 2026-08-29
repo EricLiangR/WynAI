@@ -1,5 +1,13 @@
 # 新智能问数开发、测试与 UAT 汇总
 
+## 2026-08-28 平台化阶段 A 启动：业务下限可靠
+
+| 日期 | 阶段 | 开发内容 | 验收级别 | 当前结果 |
+|---|---|---|---|---|
+| 2026-08-28 | Stage A | 新增 Business Fact Pack v1 确定性事实引擎；销售 Skill 事实画像接入数据洞察 LLM 与降级路径；输出 Skill refs、质量门禁、销售额/利润/订单数/客单价、时间趋势和贡献事实 | 平台 P1 + 关键 P2/P3；模块 M2 + 销售场景 M3 | 自动化回归 233/233；引擎单独验证通过；8787 API 与浏览器 UAT 待执行 |
+
+本阶段 UAT 复用 `PLATFORM_AND_MODULE_UAT_GOVERNANCE.md`，证据目录为 `test/uat-artifacts/data-insight-stage-a-2026-08-28/`。Skill 影响评估：运行时增加销售领域事实画像与绑定；由于嵌套 Skill 文件在当前工作区受 reparse-point 写入限制，本批未直接修改 `skills/sales/skill.json`，并在阶段报告中记录该限制和后续处理建议。
+
 ## 2026-08-27 用户可见结果行数口径修复
 
 针对同比查询将内部基期行数误显示为“总数据”、使用户误以为结果未完整返回的问题，完成统计协议和前端提示修复。
@@ -405,6 +413,22 @@
 | UI-ROW-001 | P2 | 嵌入式浏览器中 Clipboard API 存在但调用失败时直接提示复制失败，未使用兼容复制。 | 增加 Clipboard API 异常回退到 `document.execCommand('copy')`，并新增回归断言；浏览器复验当前页和全部复制通过。 | 已关闭 |
 
 详细需求与设计已追加到 `SMART_QUERY_COMPLEX_MULTI_DIMENSION_TIME_SEMANTICS_REQUIREMENTS_DESIGN_AND_UAT_2026-08-26.md`。
+
+## 2026-08-28 数据洞察平台稳健性增强
+
+| 日期 | 阶段 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|---|
+| 2026-08-28 | ROB-01~ROB-09 | Evidence Pack 复杂度识别、token 预算、查询相关压缩、覆盖率；Planner/Critic/Narrator 紧凑上下文与分层数字校验；单条违规结论隔离；LLM 超时/超限/错误确定性降级；错误码、阶段审计和内部 `wynai.insight-generation-result/v1` schema；前端降级提示 | `npm run check`、`npm run check:insight`、`npm test`；真实 `8787` 高维问数；LLM 正常/不可用双路径；1280x720 与 390x844 截图 | 233/233；UAT 6/6；开放缺陷 0 | ROB-UI-001 已关闭 |
+
+详细需求、设计、实施和证据见 `DATA_INSIGHT_PLATFORM_ROBUSTNESS_REQUIREMENTS_DESIGN_UAT_2026-08-28.md`；UAT 证据位于 `test/uat-artifacts/data-insight-robustness-2026-08-28/`。
+
+## 2026-08-28 阶段 B：统一 LLM Gateway
+
+| 阶段 | 开发内容 | 自动化状态 | 验收级别 | 当前状态 |
+|---|---|---:|---|---|
+| B | `llm-gateway.mjs` 统一 Provider、超时、重试、备用、熔断、缓存、错误码、metrics 和 snapshot；所有探索/意图/报告 LLM 路径迁移至 Gateway | `npm run check`、`npm run check:insight` 通过；`npm test` 239/239；Gateway 专项 6/6 | 平台 P1 + 关键 P2，异常关键 P3；模块 M2 | 已通过：8787 真实 API、桌面/390x844 浏览器 UAT、控制台和横向溢出检查均通过 |
+
+需求与设计：`DATA_INSIGHT_STAGE_B_LLM_GATEWAY_REQUIREMENTS_DESIGN.md`。阶段 B UAT 报告：`DATA_INSIGHT_STAGE_B_UAT_REPORT_2026-08-28.md`。由于 `test/uat-artifacts` 重解析点限制，机器证据和截图保存于 `uat-stage-b-2026-08-28/`。
 ## 数据洞察系统性增强（2026-08-27）
 
 - 阶段 0 基线：`npm run check` 通过，`npm test` 195/195 通过。
@@ -419,6 +443,17 @@
 - 412 行多维月度专项修复：Evidence Pack 基于全量结果生成时间、维度、时间+维度及大区/省份/城市层级组合聚合；Narrator 数字校验新增日期年份/月、万亿单位和同证据集合受控比例识别，并在首次校验失败后严格修复重试一次。原“Narrator 使用了证据中不存在的数字：2023”已关闭。
 - 412 行真实外部 LLM UAT：使用合成非敏感数据，Insight `ins-abe090f6-0811-4e45-b847-02a30af9263b`，Planner/Critic/Narrator 全部完成，54 条 Evidence、4 个 InsightDocument block；桌面和 390x844 移动页面均无错误及横向溢出。外发审计保持 `rawRowsToLlm=false`，未发送用户真实业务数据。
 - 最终门禁：`npm run check`、`npm run check:insight` 通过，`npm test` 当前最终 209/209；桌面与严格 390x844 移动截图通过且无横向溢出。详细证据见 `DATA_INSIGHT_PHASE3_UAT_REPORT_2026-08-27.md` 至 `DATA_INSIGHT_PHASE6_UAT_REPORT_2026-08-27.md`。
+
+## 2026-08-27 构成占比与纠正型多轮状态机
+
+| 日期 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|
+| 2026-08-27 | 新增 `share-of-total` 语义、受控 QueryProgram 分区计算、内部基数依赖隐藏 | 占比专项 7/7；全量 `npm test` 223/223；`npm run check` | 通过 | SEM-SHARE-001 已关闭 |
+| 2026-08-27 | 新增结构化 `visualizationIntent`，占比字段支持饼图/环形图 | VisualizationSpec 与真实 Wyn UAT | 通过 | 无 |
+| 2026-08-27 | 新增 `correction-replace`，纠正文本替换旧 pending 并记录审计事件 | API + 浏览器两轮 UAT；日志回放 | 通过 | CONV-CORRECTION-001、CLARIFY-TYPE-001 已关闭 |
+| 2026-08-27 | 修复回答摘要重复“占比”文案 | 回归用例 + 浏览器复验 | 通过 | UAT-TEXT-001 已关闭 |
+
+真实 UAT 截图：`test/uat-artifacts/composition-share-correction-2026-08-27/`；日志：`data/operation-events/operation-event-d32e360f-77b5-4b97-9145-161628f8b4a9.json`；专项文档：`SMART_QUERY_COMPOSITION_SHARE_AND_CORRECTION_STATE_REQUIREMENTS_DESIGN_UAT_2026-08-27.md`。
 
 ## 2026-08-27 智能问数名称与可视化展示策略优化
 
@@ -440,3 +475,49 @@
 | 编号 | 严重度 | 问题 | 修复/结论 | 状态 |
 |---|---|---|---|---|
 | SEM-UI-001 | P1 | “商品类型、商品名称”并列时，产品维度匹配先命中“商品类型”中的泛化“商品”子串并被过滤，造成三维问题退化为二维并错误出图 | 语义帧匹配改为选择最长命中；泛化“商品/产品”仅在无显式名称时去重；增加回归测试并真实 Wyn 复验 | 已关闭 |
+
+
+## 2026-08-28 统一结果展示规划与多期间/多维 UAT
+
+| 日期 | 阶段 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|---|
+| 2026-08-28 | Phase 3-P | 修复多年度范围“分别是多少”的时间语义：仅多期间比较形成年度分组，单年度“各自是多少”不新增时间维度 | `npm test` 228/228；`npm run check` | 通过 | TIME-SEM-001 已关闭 |
+| 2026-08-28 | Phase 3-V/P | 接入 `wynai.result-presentation-plan/v1`，占比保留原始值，表格/图表由维度、指标、基数和质量统一决策 | 真实 Wyn + 1280x720 浏览器；4 张截图；DOM/日志复核 | 4/4 通过 | 无 |
+
+### 本批 UAT 汇总
+
+| 用例 | 真实观察 | 证据 | 状态 |
+|---|---|---|---|
+| UAT-PP-01 去年各地区销售额占比 | 6 地区，原始金额+占比，环形图 | `01-share-original-and-chart.png`；trace `trace-cfa8b3bd-e81a-4919-b5b8-d5c2e2067a2a` | 通过 |
+| UAT-PP-02 去年各地区利润和利润占比各自是多少 | 表格为主、图表辅助，详情无隐式年度维度 | `02-profit-share-combo.png`；trace `trace-58b0530b-0787-4a02-8ecc-3bf9b1d65f2a` | 通过 |
+| UAT-PP-03 过去两年每年各地区销售额占比 | 2024/2025 分区各自合计约 100%，组合图+表格 | `03-multi-period-share.png`；trace `trace-e1ff93bd-32c6-49c9-8e9f-792e5fd18a47` | 通过 |
+| UAT-PP-04 过去两年每月/地区/省份/城市/类别销售额和利润 | 一次多维聚合 728 行；无图表；固定高度滚动表格，第 1/8 页 | `04-multidim-table-pagination.png`；trace `trace-78a82aed-a7c1-4419-afe2-247888cc983e` | 通过 |
+
+四条 trace 均可按 1-10 sequence 回放 `planning.completed`、`query.executed`、`result.validated`、`presentation.planned`、`response.composed` 等事件。完整机器可读记录见 `test/uat-artifacts/presentation-plan-2026-08-28/uat-results.json`；本批开放缺陷 0。
+## 2026-08-28 后台完整诊断日志
+
+已新增 `wynai.insight-diagnostic/v1` 持久化记录和 `GET /api/data-insights/{insightId}/diagnostics` 后台查询接口。每条新洞察记录标准输入、运行生命周期、Evidence Pack、Planner/Critic/Narrator（含修复轮次）、Gateway 每次 Provider 调用及完整请求/响应、最终文档和 completed/degraded/failed 结果；暂不增加 UI 导出。历史洞察按需生成 `legacy.snapshot`，只声明可恢复的既有记录。新增 3 项诊断测试，完整回归 246/246 通过；8787 实测新洞察返回 13 个有序事件。
+
+## 2026-08-28 LLM Gateway 平台优化 1-4
+
+- 超时语义拆为连接、响应头等待和单次总请求；修复响应头等待被误报为 `LLM_CONNECT_TIMEOUT` 的缺陷，新增 `LLM_RESPONSE_HEADER_TIMEOUT`，诊断记录保留 phase 和各阶段阈值。
+- 移除数据洞察统一 8 秒阈值，Planner、Critic、Narrator、严格报告、探索、意图和探针按 operation 使用独立策略；默认洞察总时限为 35-45 秒、响应头为 12-15 秒。
+- 单 Provider 和多 Provider 重试均增加指数退避与随机抖动，退避支持 `AbortSignal` 取消；未配置第二 Provider 时不会产生虚假 fallback 计数。
+- 验收级别为平台 P1 + 模块 M1（无 UI 变化，不重复截图型 UAT）。Gateway/诊断专项 13/13 通过；完整回归当前 245/246，唯一失败为既有 `wax-query` 概览查询预期与实际生成器不一致，与 Gateway 改动文件无关，保留单独修复。
+# 本轮字段语义与展示顺序增强（2026-08-28）
+
+- 已完成复合指标识别：`产品销量` 不再扩展为“商品名称”维度；保留“每个产品销售额”等正常产品维度语义。
+- 已完成时间粒度扩展：支持“每个月、每个季度、每个年份”等自然表达。
+- 已完成 ResultPresentationPlan 稳定排序：用户提及顺序优先，时间/地理/产品层级在组内优先；派生指标紧随源指标。
+- 自动化回归：`npm test` 256/256 通过。
+- 真实 API：正式 `8787` 返回字段顺序 `period|region|province|revenue|profit|profit_yoy|order_count|quantity`，未出现未声明商品维度。
+- 浏览器截图 UAT：桌面和严格 `390x844` 均通过，控制台错误/警告为 `[]`；证据见 `uat-governance-evidence/field-order-desktop-20260828.png`、`field-order-mobile-390x844.png`，报告见 `SMART_QUERY_FIELD_ORDER_UAT_REPORT_2026-08-28.md`。
+
+
+## 2026-08-28 用户主动范围与排名依据平台修复
+
+| 日期 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|
+| 2026-08-28 | Canonical 结果范围来源分类；Top/Bottom N、极值、前/后 X% 统一标记为用户主动范围；系统截断才触发告警；摘要与详情显示排名指标和聚合依据 | npm test 263/263；RANGE-001~004 回归通过 | 通过 | RANGE-UX-001 已关闭 |
+
+实现文件：lib/planning/query-request-schema.mjs、lib/semantics/business-query-intent.mjs、lib/semantics/question-semantic-frame.mjs、lib/query/result-normalizer.mjs、lib/query/query-program.mjs、lib/conversation/question-planner.mjs、public/app.js。
