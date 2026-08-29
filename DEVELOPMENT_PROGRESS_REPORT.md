@@ -1,5 +1,25 @@
 # 新智能问数开发、测试与 UAT 汇总
 
+## 2026-08-29 LLM 出站 P0 原型结论
+
+新增跟踪文档：`LLM_EGRESS_STABILITY_GOAL_PLAN.md`。同一 DashScope 目标的 Node、curl、PowerShell 直连对照显示：受限上下文均无法建立 `443` 连接；允许出站上下文均收到远端 HTTP `401`。当前 `8787` 进程仍返回 `EACCES`，因此根因已定性为运行进程出站策略，不是项目调用协议或模型配置。最终根治路径为统一项目级 LLM Gateway 或以明确网络权限运行 8787，不能以临时防火墙尝试作为关闭依据。
+
+## 2026-08-29 数据洞察可组合平台迭代启动
+
+主计划文档：`DATA_INSIGHT_PLATFORM_COMPOSABLE_ROADMAP.md`。阶段 0 基线复现确认 `ins-b8b65202-248` 的核心聚合结果可用，失败由 Evidence Pack 二次压缩、Planner 过度扩展和 Critic 粗粒度阻断叠加造成。
+
+阶段 1-2 首轮实现已完成：合理规模聚合结果保留完整行集并以 `aggregateRowsToLlm=all-within-budget` 标记；`inputCoverage.basis=caller-provided-result` 明确平台不推断用户应提供更多期间；Planner 提示增加 core/extended/optional 分层与直接问题约束；Critic 存在局部支持时输出 `completed-partial`；销售领域平台画像增加核心/可选方法、字段依赖和部分完成规则。
+
+### 2026-08-29 阶段 1-6 收口迭代
+
+- Evidence Pack/LLM 编排层不再对超过 500 行的聚合结果做头尾采样；改为 `chunked-summary-all-rows` 可追溯分块清单，保留完整输入行集及分块统计，证据目录也不再递归压成 12 条。
+- Skill 能力字段迁移到可配置目录 `config/insight-skills/*.json`，服务端启动加载并覆盖运行时画像；销售配置包含核心/扩展方法、字段依赖、阻断规则、部分完成规则和业务语义。
+- Planner 输出归一化为 `coreHypotheses`、`extendedHypotheses`、`optionalHypotheses` 和 `planningMode`；Critic assessment 逐项补充 priority/blocking/evidenceIds。
+- `completed-partial` 的 API 文档块携带 `incompleteItems`，PC/移动端页面逐项显示未完成分析及原因；继续禁止 deterministic fallback 伪装成功。
+- 自动化回归：`npm test` 278/278，`npm run check` 通过。真实外部 LLM 与浏览器正文截图验收仍受当前执行上下文出站权限限制，未标记为通过。
+
+阶段 1-2 自动化专项与全量回归：`npm test` 277/277 通过，`npm run check` 通过。阶段 3-8 将继续实施并在最终 UAT 报告中登记真实 LLM、平台 P2、模块 M3、PC 正文截图和移动端证据。
+
 ## 2026-08-28 平台化阶段 A 启动：业务下限可靠
 
 | 日期 | 阶段 | 开发内容 | 验收级别 | 当前结果 |
@@ -429,6 +449,23 @@
 | B | `llm-gateway.mjs` 统一 Provider、超时、重试、备用、熔断、缓存、错误码、metrics 和 snapshot；所有探索/意图/报告 LLM 路径迁移至 Gateway | `npm run check`、`npm run check:insight` 通过；`npm test` 239/239；Gateway 专项 6/6 | 平台 P1 + 关键 P2，异常关键 P3；模块 M2 | 已通过：8787 真实 API、桌面/390x844 浏览器 UAT、控制台和横向溢出检查均通过 |
 
 需求与设计：`DATA_INSIGHT_STAGE_B_LLM_GATEWAY_REQUIREMENTS_DESIGN.md`。阶段 B UAT 报告：`DATA_INSIGHT_STAGE_B_UAT_REPORT_2026-08-28.md`。由于 `test/uat-artifacts` 重解析点限制，机器证据和截图保存于 `uat-stage-b-2026-08-28/`。
+
+## 2026-08-29 P0-LLM-EGRESS-001 真实复验（进行中）
+
+| 验收项 | 真实结果 | 判定 |
+|---|---|---|
+| 自动化回归 | `npm test` 279/279；`npm run check` 通过 | 通过 |
+| 高基数真实 LLM 洞察 | 连续 3/3；`provider=llm-orchestrated`；Planner/Critic/Narrator 全部完成；正文 1198/1306/1306 字符 | 通过 |
+| 受控修订 | 第 1 次仅发生 1 次 `narrator-repair` 并成功；其余两次无修订 | 通过 |
+| 降级门禁 | 无 `fallback`、`degraded` 或确定性伪成功 | 通过 |
+| 浏览器 PC | 真实洞察正文截图，1280×720；包含管理摘要、关键发现、风险判断、行动建议 | 通过 |
+| 浏览器 Mobile | 390×844 完整正文截图；无横向溢出；console `error/warn=[]` | 通过 |
+| 30 分钟健康监测 | `uat-p0-health-monitor.mjs` 完成 58/58 次 `200 healthy`，`passed=true`，失败 0 | 通过 |
+| 重启/发布一致性 | 当前实例启动日志仍显示项目 `data` 目录不可写并使用临时目录；运行账号和受控启动方式尚未完成闭环 | 未关闭 |
+
+真实洞察 ID：`ins-17d194e3-a43b-4094-81e9-aa5b81dbde89`。
+
+截图证据：`uat-p0-desktop-insight-content-1280x720.png`、`uat-p0-mobile-insight-full-390x844.png`。本轮结果证明当前手动启动实例可以真实使用 LLM，但不代表平台 P0 已根治；运行账号/出站策略、项目数据目录权限、干净重启和 30 分钟监测必须完成后才能关闭 P0。
 ## 数据洞察系统性增强（2026-08-27）
 
 - 阶段 0 基线：`npm run check` 通过，`npm test` 195/195 通过。
@@ -505,6 +542,30 @@
 - 单 Provider 和多 Provider 重试均增加指数退避与随机抖动，退避支持 `AbortSignal` 取消；未配置第二 Provider 时不会产生虚假 fallback 计数。
 - 验收级别为平台 P1 + 模块 M1（无 UI 变化，不重复截图型 UAT）。Gateway/诊断专项 13/13 通过；完整回归当前 245/246，唯一失败为既有 `wax-query` 概览查询预期与实际生成器不一致，与 Gateway 改动文件无关，保留单独修复。
 # 本轮字段语义与展示顺序增强（2026-08-28）
+
+## 数据洞察上下文预算修复（2026-08-29）
+
+- 修复高基数聚合结果在 Evidence Pack 中因 `derived` 派生证据和证据目录重复传输而触发 `LLM_CONTEXT_LIMIT` 的平台缺陷。
+- 派生证据预算改为有界目录摘要；目录值中的大数组改为全量统计摘要；聚合结果仍保留可追溯分块摘要，不做头尾采样。
+- Planner 证据目录支持 32/16/8/4 自适应窗口，防止不同领域长字段导致固定窗口再次超过上下文预算。
+- 离线真实输入回放（1,581 行、7 字段）验证：Evidence Pack 2,215 tokens，Planner 请求 17,438 tokens，三阶段模拟编排全部完成。
+- `npm test` 278/278、`npm run check` 通过。
+- 外部 LLM 浏览器/真实 API UAT 待在允许 Node 访问 DashScope `443` 的受控 `8787` 进程中复跑；受限进程的 `EACCES` 不计为代码修复失败。
+
+## P0-LLM-EGRESS-001 / P0-0 基线（2026-08-29）
+
+- `8787` 真实监听：`0.0.0.0:8787`，PID `19244`，Node 运行账号 `XA-PRO-ZENOS\\CodexSandboxOffline`。
+- 当前启动方式是直接 Node 进程，不是受控 Windows 服务或项目级 Gateway 节点。
+- 真实 `/api/llm/health`：HTTP `503`，底层 `connect EACCES <DashScope IP>:443`；Node、curl、PowerShell 直连原型均复现出站阻断。
+- 当前账号读取 Windows 防火墙配置被拒绝，出站策略无法从项目侧完成审计。
+- P0-0 未通过关闭门禁；未宣称问题已解决。详见 `LLM_EGRESS_STABILITY_GOAL_PLAN.md`。
+
+### P0-0 账号切换复验
+
+- 使用 `CodexSandboxOnline` 启动真实 `8787` 后，运行数据目录回到项目 `data`，Gateway `/api/llm/health` 返回 `200 / healthy`，探针约 `1,073ms`。
+- `npm run uat:data-insight` 真实 UAT 已通过：`ins-17d194e3-a43b-4094-81e9-aa5b81dbde89`，`provider=llm-orchestrated`，Planner/Critic/Narrator 全部完成，正文长度 `1,200`。
+- 连续真实健康探针 `10/10` 成功，延迟约 `747-1,514ms`。
+- 该结果仅关闭“当前受限账号无法出站”的开发阻塞，不代表 P0 总体关闭；连续稳定性、高基数多次运行、重启一致性和浏览器验收仍待完成。
 
 - 已完成复合指标识别：`产品销量` 不再扩展为“商品名称”维度；保留“每个产品销售额”等正常产品维度语义。
 - 已完成时间粒度扩展：支持“每个月、每个季度、每个年份”等自然表达。

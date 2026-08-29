@@ -54,3 +54,41 @@ test('Evidence Pack 超预算时保留预算诊断', () => {
   assert.equal(pack.budget.withinBudget, false);
   assert.ok(pack.budget.estimatedTokens > pack.budget.maxTokens);
 });
+
+test('聚合结果在合理规模内完整传递，不按平台推断缺失期间', () => {
+  const rows = Array.from({ length: 38 }, (_, index) => ({
+    月份: `2022-${String(index + 1).padStart(2, '0')}`,
+    销售额: index + 100,
+    利润: index + 40,
+  }));
+  const pack = buildEvidencePack({
+    title: '过去四年每月销售额和利润',
+    scope: { timeRange: { start: '2022-01-01', end: '2026-01-01' }, grain: 'month' },
+    resultSets: [{ id: 'rs-full-periods', schema: [
+      { name: '月份', type: 'string', role: 'time' },
+      { name: '销售额', type: 'number', role: 'measure' },
+      { name: '利润', type: 'number', role: 'measure' },
+    ], rows }],
+  });
+  assert.equal(pack.resultSets[0].rows.length, 38);
+  assert.equal(pack.policy.sampleStrategy, 'none-for-aggregate-results');
+  assert.equal(pack.inputCoverage.platformDoesNotInferMissingPeriods, true);
+});
+
+test('高基数聚合结果进入可追溯分块清单，不做头尾采样', async () => {
+  const rows = Array.from({ length: 1581 }, (_, index) => ({ 月份: `2020-${String((index % 12) + 1).padStart(2, '0')}`, 地区: `区域${index}`, 销售额: index + 1 }));
+  const pack = buildEvidencePack({ resultSets: [{ id: 'rs-large', schema: [{ name: '月份', type: 'string', role: 'time' }, { name: '地区', type: 'string', role: 'dimension' }, { name: '销售额', type: 'number', role: 'measure' }], rows }] });
+  assert.equal(pack.resultSets[0].rows.length, 1581);
+  const { runInsightLlmOrchestration } = await import('../lib/data-insights/llm-orchestrator.mjs');
+  const seen = [];
+  const llm = { enabled: true, model: 'fake', completeJson: async (messages, options) => {
+    if (options.operation.endsWith('planner')) { seen.push(messages[1].content); return { schema: 'wynai.insight-planner/v1', hypotheses: [], toolRequests: [] }; }
+    if (options.operation.endsWith('critic')) return { schema: 'wynai.insight-critic/v1', verdict: 'sufficient', assessments: [], followUps: [] };
+    return { schema: 'wynai.insight-narrator/v1', managementSummary: [{ text: '分块结果已接收。', evidenceIds: ['ev-rs-large-row-count'] }], keyFindings: [{ text: '分块结果可核验。', evidenceIds: ['ev-rs-large-row-count'] }], risks: [{ text: '暂无明确风险。', evidenceIds: ['ev-rs-large-row-count'] }], actions: [{ text: '继续复核。', evidenceIds: ['ev-rs-large-row-count'] }] };
+  } };
+  const result = await runInsightLlmOrchestration({ llm, input: pack });
+  assert.equal(result.status, 'completed');
+  assert.match(seen[0], /chunked-summary-all-rows/);
+  assert.match(seen[0], /chunkCount/);
+  assert.doesNotMatch(seen[0], /bounded-summary/);
+});

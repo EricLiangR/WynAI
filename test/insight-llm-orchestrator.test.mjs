@@ -24,7 +24,7 @@ test('数据洞察通过 Planner/Critic/Narrator 编排并只允许证据引用'
   assert.match(result.markdown, /管理摘要/);
 });
 
-test('Narrator 数字没有证据支持时隔离违规结论并返回 needs_review', async () => {
+test('Narrator 数字没有证据支持时隔离违规结论并保留可用洞察为 completed-partial', async () => {
   const result = await runInsightLlmOrchestration({
     llm: llm([
       { schema: 'wynai.insight-planner/v1', hypotheses: [], toolRequests: [] },
@@ -33,10 +33,24 @@ test('Narrator 数字没有证据支持时隔离违规结论并返回 needs_revi
       { schema: 'wynai.insight-narrator/v1', managementSummary: [{ text: '销售额为 999。', evidenceIds: ['ev-sales-total'] }], keyFindings: [{ text: '差异需要复核。', evidenceIds: ['ev-sales-total'] }], risks: [{ text: '证据不足。', evidenceIds: ['ev-sales-total'] }], actions: [{ text: '复核数据。', evidenceIds: ['ev-sales-total'] }] },
     ]), input: pack(),
   });
-  assert.equal(result.status, 'needs_review');
-  assert.equal(result.diagnostics.reasonCode, 'NARRATOR_UNSUPPORTED_CLAIM');
+  assert.equal(result.status, 'completed-partial');
+  assert.equal(result.diagnostics.reasonCode, 'PARTIAL_NARRATOR_CLAIMS');
   assert.equal(result.narrative.validation.rejectedClaims[0].token, '999');
   assert.ok(result.narrative.managementSummary[0].verificationRequired);
+  assert.equal(result.narrative.keyFindings[0].verificationRequired, false);
+});
+
+test('Narrator 全部内容都无法核验时仍返回 needs_review', async () => {
+  const result = await runInsightLlmOrchestration({
+    llm: llm([
+      { schema: 'wynai.insight-planner/v1', hypotheses: [], toolRequests: [] },
+      { schema: 'wynai.insight-critic/v1', verdict: 'sufficient', assessments: [], followUps: [] },
+      { schema: 'wynai.insight-narrator/v1', managementSummary: [{ text: '销售额为 999。', evidenceIds: ['ev-sales-total'] }], keyFindings: [{ text: '区域销售额为 999。', evidenceIds: ['ev-sales-total'] }], risks: [{ text: '风险值为 999。', evidenceIds: ['ev-sales-total'] }], actions: [{ text: '目标值为 999。', evidenceIds: ['ev-sales-total'] }] },
+      { schema: 'wynai.insight-narrator/v1', managementSummary: [{ text: '销售额为 999。', evidenceIds: ['ev-sales-total'] }], keyFindings: [{ text: '区域销售额为 999。', evidenceIds: ['ev-sales-total'] }], risks: [{ text: '风险值为 999。', evidenceIds: ['ev-sales-total'] }], actions: [{ text: '目标值为 999。', evidenceIds: ['ev-sales-total'] }] },
+    ]), input: pack(),
+  });
+  assert.equal(result.status, 'needs_review');
+  assert.equal(result.diagnostics.reasonCode, 'NARRATOR_UNSUPPORTED_CLAIM');
 });
 
 test('Narrator 可验证日期/文本证据中的年份和月份', async () => {
@@ -243,4 +257,28 @@ test('Narrator 可引用证据范围中的期间年份', async () => {
     input,
   });
   assert.equal(result.status, 'completed');
+});
+
+test('Critic 局部证据不足时返回 completed-partial 而不是整体失败', async () => {
+  const input = buildEvidencePack({
+    evidence: [
+      { id: 'time-trend', title: '月度趋势', value: [{ 月份: '2024-01', 销售额: 100, 利润: 40 }] },
+      { id: 'revenue-total', title: '销售额合计', value: 100 },
+      { id: 'profit-total', title: '利润合计', value: 40 },
+    ],
+  });
+  const result = await runInsightLlmOrchestration({
+    llm: llm([
+      { schema: 'wynai.insight-planner/v1', hypotheses: [{ id: 'core', requiredEvidenceIds: ['time-trend'] }, { id: 'optional', requiredEvidenceIds: ['time-trend'] }], toolRequests: [] },
+      { schema: 'wynai.insight-critic/v1', verdict: 'insufficient', assessments: [
+        { hypothesisId: 'core', status: 'supported', reason: '月度核心结果可验证', evidenceIds: ['time-trend'] },
+        { hypothesisId: 'optional', status: 'inconclusive', reason: '缺少扩展维度', evidenceIds: ['time-trend'] },
+      ], followUps: [] },
+      { schema: 'wynai.insight-narrator/v1', managementSummary: [{ text: '月度销售额和利润可由当前结果验证。', evidenceIds: ['time-trend'] }], keyFindings: [{ text: '扩展分析暂无法确认。', evidenceIds: ['time-trend'], verificationRequired: true }], risks: [{ text: '请补充扩展维度。', evidenceIds: ['time-trend'], verificationRequired: true }], actions: [{ text: '继续复核当前结果。', evidenceIds: ['time-trend'] }], followUps: [] },
+    ]),
+    prompt: '过去半年每月销售额和利润',
+    input,
+  });
+  assert.equal(result.status, 'completed-partial');
+  assert.equal(result.diagnostics.reasonCode, 'PARTIAL_EVIDENCE');
 });

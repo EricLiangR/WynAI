@@ -18,6 +18,7 @@
     "uvt:v2": "node test/uvt-v2-live.mjs",
     "uat:llm-connectivity": "node test/uat-llm-connectivity-live.mjs",
     "uat:data-insight": "node uat-data-insight-live.mjs",
+    "uat:p0:health": "node uat-p0-health-monitor.mjs",
     "uat:phase0": "node test/uat-phase0-live.mjs",
     "uat:phase0:query-matrix": "node test/uat-phase0-query-matrix-live.mjs",
     "uat:phase0:multi-dataset": "node test/uat-phase0-multi-dataset-live.mjs",

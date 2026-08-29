@@ -1507,7 +1507,9 @@ function handleDataInsights(pathname, requestUrl, request, response) {
   const insightId = pathname.slice('/api/data-insights/'.length);
   if (!insightId) {
     const items = dataInsightStore.list({ sourceType: requestUrl.searchParams.get('sourceType'), sourceId: requestUrl.searchParams.get('sourceId') });
-    sendJson(response, 200, { items, total: items.length, llmConfigured: explorationGateway.enabled, llmProvider: explorationGateway.enabled ? 'llm-gateway' : 'local-fallback', llmModel: effectiveLlmModel || null, llmEndpointHost, llmGateway: explorationGateway.snapshot() });
+    const llmSnapshot = explorationGateway.snapshot();
+    const llmHealthStatus = !explorationGateway.enabled ? 'not-configured' : llmSnapshot.providers.some(provider => provider.open) ? 'circuit-open' : llmSnapshot.lastCall?.status === 'failed' ? 'unhealthy' : llmSnapshot.lastCall?.status === 'completed' ? 'healthy' : 'unknown';
+    sendJson(response, 200, { items, total: items.length, llmConfigured: explorationGateway.enabled, llmHealthStatus, llmProvider: explorationGateway.enabled ? 'llm-gateway' : 'local-fallback', llmModel: effectiveLlmModel || null, llmEndpointHost, llmGateway: llmSnapshot });
     return;
   }
   const detail = dataInsightStore.get(insightId);
@@ -1714,12 +1716,33 @@ async function callConfiguredLlm(record, prompt, diagnosticContext = {}) {
     llm: explorationLlm,
     prompt: prompt || record.input.title,
     input: enrichedEvidencePack,
-    skills: resolvedSkills.map(skill => ({ id: skill.id, version: skill.version, name: skill.name, diagnostics: skill.diagnostics || [], requiredEvidence: skill.requiredEvidence || [], requiredFacts: skill.requiredFacts || [], insightMethods: skill.insightMethods || [], fallbackNarrative: skill.fallbackNarrative || [], qualityThresholds: skill.qualityThresholds || {}, riskRules: skill.riskRules || [], playbook: skill.playbook || [], assumptions: skill.assumptions || [] })),
+    skills: resolvedSkills.map(skill => ({
+      id: skill.id,
+      version: skill.version,
+      name: skill.name,
+      diagnostics: skill.diagnostics || [],
+      requiredEvidence: skill.requiredEvidence || [],
+      requiredFacts: skill.requiredFacts || [],
+      insightMethods: skill.insightMethods || [],
+      coreMethods: skill.coreMethods || [],
+      optionalMethods: skill.optionalMethods || [],
+      requiredFields: skill.requiredFields || [],
+      evidenceRequirements: skill.evidenceRequirements || [],
+      blockingRules: skill.blockingRules || [],
+      partialCompletionRules: skill.partialCompletionRules || [],
+      metricDefinitions: skill.metricDefinitions || skill.metrics || [],
+      businessSemantics: skill.businessSemantics || [],
+      fallbackNarrative: skill.fallbackNarrative || [],
+      qualityThresholds: skill.qualityThresholds || {},
+      riskRules: skill.riskRules || [],
+      playbook: skill.playbook || [],
+      assumptions: skill.assumptions || [],
+    })),
     onStageEvent: event => recordInsightDiagnostic(record.insightId, `llm.stage.${event.stage}`, event, diagnosticContext),
     onGatewayEvent: event => recordInsightDiagnostic(record.insightId, event.type || 'gateway.attempt', event, diagnosticContext),
   });
   await recordInsightDiagnostic(record.insightId, 'orchestration.completed', { orchestration }, diagnosticContext);
-  if (orchestration.status !== 'completed' || orchestration.diagnostics?.rejectedClaims?.length) {
+  if (!['completed', 'completed-partial'].includes(orchestration.status)) {
     const error = new Error('LLM 洞察结果未通过完整证据校验，不生成降级洞察');
     error.code = 'INSIGHT_CLAIM_VALIDATION_FAILED';
     error.status = 422;
@@ -1747,14 +1770,21 @@ async function callConfiguredLlm(record, prompt, diagnosticContext = {}) {
   };
 }
 
-const INSIGHT_SKILL_PROFILES = Object.freeze({
-  'sales-baseline': {
-    requiredFacts: ['revenue-total', 'profit-total', 'data-quality'],
-    insightMethods: ['monthly-trend', 'dimension-contribution', 'concentration', 'anomaly', 'average-order-value'],
-    qualityThresholds: { completeness: 80, evidenceCoverage: 100 },
-    fallbackNarrative: [],
-  },
-});
+async function loadInsightSkillProfiles(directory = join(rootDir, 'config', 'insight-skills')) {
+  const profiles = {};
+  let entries = [];
+  try { entries = await (await import('node:fs/promises')).readdir(directory, { withFileTypes: true }); } catch (error) { if (error.code !== 'ENOENT') throw error; }
+  for (const entry of entries) {
+    if (!entry.isFile() || !entry.name.endsWith('.json')) continue;
+    try {
+      const profile = JSON.parse(await readFile(join(directory, entry.name), 'utf8'));
+      if (profile?.id) profiles[profile.id] = profile;
+    } catch (error) { console.warn(`Insight Skill profile ignored: ${entry.name}`, error.message); }
+  }
+  return Object.freeze(profiles);
+}
+
+const INSIGHT_SKILL_PROFILES = await loadInsightSkillProfiles();
 
 function resolveInsightSkillsForRecord(record, prompt = '') {
   const datasetIds = (record?.input?.datasets || []).map(item => item.id).filter(Boolean);
@@ -1846,7 +1876,15 @@ async function handleSecondaryInsight(request, response, providedBody = null) {
     // remain fully supported. Preserve the verified LLM narrative and expose
     // the unresolved hypotheses as follow-ups; fail only when no hypothesis is
     // supported at all, which would otherwise produce an empty/meaningless document.
-    if (orchestration.critic?.verdict === 'insufficient' && !hasSupportedAssessment) {
+    const coreEvidencePresent = Array.isArray(orchestration.evidence)
+      && orchestration.evidence.some(item => item?.id === 'time-trend')
+      && orchestration.evidence.some(item => item?.id === 'revenue-total')
+      && orchestration.evidence.some(item => item?.id === 'profit-total');
+    const directQuestion = !/(原因|归因|集中度|异常|风险|建议|下钻|季节性)/.test(String(prompt || record.input.title || ''));
+    // Evidence insufficiency is scoped to hypotheses. A direct result request
+    // with usable core time-series facts may complete partially even when an
+    // optional expansion is inconclusive.
+    if (orchestration.critic?.verdict === 'insufficient' && !hasSupportedAssessment && !(directQuestion && coreEvidencePresent)) {
       const error = new Error('Critic 判定当前证据不足，不生成正式洞察');
       error.code = 'EVIDENCE_INSUFFICIENT';
       error.status = 422;
@@ -1898,7 +1936,13 @@ async function handleSecondaryInsight(request, response, providedBody = null) {
     if (run) await insightRunStore.complete(run.id, { error: null, document: insightDocument, metadata: { ...(run.metadata || {}), generatedAt: new Date().toISOString(), provider: result.provider, model: result.model, status: result.status, orchestrationSchema: orchestration.schema || null, exploreRunId: exploreRun?.id || null, gateway: orchestration.gateway || null } });
     insightGovernance.record({ actor: identity.actor, organizationId: identity.organizationId, insightId, runId: run?.id || null, action: 'insight.generate', status: 'completed', model: result.model, prompt, toolCalls: orchestration.planner?.toolRequests || [], stageAudit: orchestration.stageAudit || [], skillRefs: run?.skill?.refs || [], externalDataPolicy: orchestration.externalDataPolicy || { rawRowsToLlm: false }, gateway: orchestration.gateway || explorationGateway.snapshot() });
     await recordInsightDiagnostic(insightId, 'generation.finished', { status: 'completed', provider: result.provider, model: result.model, stageAudit: orchestration.stageAudit || [], gateway: orchestration.gateway || explorationGateway.snapshot() }, diagnosticContext);
-    sendJson(response, 200, { ...result, document: insightDocument, insightId, exploreRun, generatedAt: new Date().toISOString() });
+    const responseStatus = orchestration.status === 'completed-partial' || orchestration.diagnostics?.reasonCode === 'PARTIAL_EVIDENCE' ? 'completed-partial' : 'completed';
+    if (responseStatus === 'completed-partial') {
+      const incomplete = orchestration.diagnostics?.incompleteAssessments || [];
+      const detail = incomplete.map(item => `${item.hypothesisId || '未命名分析'}（${item.priority || 'extended'}）：${item.reason || '证据不足'}`).join('；');
+      insightDocument.blocks.push({ id: 'analysis-completeness', type: 'warning', title: '部分分析未完成', content: '核心分析已完成；部分扩展分析因当前输入证据不足被跳过。', message: detail || '部分扩展分析未完成', incompleteItems: incomplete });
+    }
+    sendJson(response, 200, { ...result, status: responseStatus, document: insightDocument, insightId, exploreRun, generatedAt: new Date().toISOString() });
   } catch (error) {
     if (isRecoverableInsightError(error)) {
       if (run) await insightRunStore.fail(run.id, error);

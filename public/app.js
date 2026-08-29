@@ -474,7 +474,12 @@ function renderPersistedInsightDocument(documentValue, versions = []) {
   elements.secondaryOutput.hidden = false;
   document.querySelector('#output-model').textContent = `InsightDocument v${versions.length || 1}`;
   const blocks = Array.isArray(documentValue.blocks) ? documentValue.blocks : [];
-  const warningMarkup = blocks.filter(block => block.type === 'warning').map(block => `<div class="insight-degraded-notice"><strong>${escapeHtml(block.title || '洞察状态')}</strong><br>${escapeHtml(block.message || block.content || '')}</div>`).join('');
+  const warningMarkup = blocks.filter(block => block.type === 'warning').map(block => {
+    const items = Array.isArray(block.incompleteItems) && block.incompleteItems.length
+      ? `<ul class="insight-incomplete-list">${block.incompleteItems.map(item => `<li><strong>${escapeHtml(item.hypothesisId || '未命名分析')}</strong> · ${escapeHtml(item.priority || 'extended')} · ${escapeHtml(item.reason || '证据不足')}</li>`).join('')}</ul>`
+      : '';
+    return `<div class="insight-degraded-notice"><strong>${escapeHtml(block.title || '洞察状态')}</strong><br>${escapeHtml(block.message || block.content || '')}${items}</div>`;
+  }).join('');
   elements.findingGrid.innerHTML = blocks.filter(block => ['ai-narrative', 'text'].includes(block.type)).map(block => `
     <div class="finding-card violet"><small>${escapeHtml(block.title || '业务洞察')}</small><strong>${escapeHtml(block.content || '')}</strong><span>证据：${escapeHtml((block.evidenceIds || []).join('、') || '待补充')}</span></div>`).join('');
   elements.outputContent.innerHTML = warningMarkup + (blocks.filter(block => block.type === 'ai-narrative').map(block => `<section class="insight-document-section"><h5>${escapeHtml(block.title || '洞察')}</h5><p>${markdown(block.content || '')}</p></section>`).join('') || '<div class="insight-loading">暂无已保存的业务洞察</div>');
@@ -513,7 +518,9 @@ async function loadAnalysisResults(preferredInsightId = '', sourceId = '') {
     if (!response.ok) throw new Error(data.message || '结果列表加载失败');
     state.analysisResults = data.items || [];
     state.llmConfigured = Boolean(data.llmConfigured);
-    elements.modelStatus.querySelector('span').textContent = state.llmConfigured ? '外部大模型已连接' : '内置洞察引擎';
+    const llmHealth = data.llmHealthStatus || (state.llmConfigured ? 'unknown' : 'not-configured');
+    elements.modelStatus.querySelector('span').textContent = !state.llmConfigured ? '内置洞察引擎' : llmHealth === 'healthy' ? '外部大模型已连接' : llmHealth === 'circuit-open' ? '外部大模型熔断中' : llmHealth === 'unhealthy' ? '外部大模型不可用' : '外部大模型状态未知';
+    elements.modelStatus.classList.toggle('error', ['circuit-open', 'unhealthy'].includes(llmHealth));
     renderResultList();
     const targetId = preferredInsightId || state.activeResult?.insightId || state.analysisResults[0]?.insightId;
     if (targetId && state.analysisResults.some(item => item.insightId === targetId)) await selectAnalysisResult(targetId);

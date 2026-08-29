@@ -1,0 +1,16 @@
+{
+  "id": "sales-baseline",
+  "requiredFacts": ["revenue-total", "profit-total", "data-quality"],
+  "insightMethods": ["monthly-trend", "dimension-contribution", "concentration", "anomaly", "average-order-value"],
+  "coreMethods": ["monthly-trend", "revenue-profit-relation"],
+  "optionalMethods": ["seasonality", "anomaly", "region-contribution", "product-contribution", "customer-concentration"],
+  "requiredFields": ["订购日期", "订单金额", "订单利润"],
+  "evidenceRequirements": {
+    "monthly-trend": ["订购日期", "订单金额", "订单利润"],
+    "revenue-profit-relation": ["订单金额", "订单利润"]
+  },
+  "blockingRules": ["核心指标或时间字段不可解释时阻断核心分析"],
+  "partialCompletionRules": ["缺少地区、产品或客户字段时仅跳过对应扩展分析", "扩展证据不足时保留已完成核心分析并披露未完成项"],
+  "businessSemantics": ["平台按调用方传入的聚合结果范围分析，不推断用户应提供更多期间"],
+  "qualityThresholds": { "completeness": 80, "evidenceCoverage": 100 }
+}

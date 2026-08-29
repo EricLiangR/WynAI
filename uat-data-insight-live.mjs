@@ -25,11 +25,14 @@ const generated = await json(`/api/data-insights/${candidate.insightId}/generate
   body: JSON.stringify({ insightId: candidate.insightId, prompt: question }),
 });
 assert.equal(generated.response.status, 200, `数据洞察生成失败：${generated.payload.error?.code || generated.payload.code} ${generated.payload.error?.message || generated.payload.message || ''}`);
-assert.equal(generated.payload.status, 'completed');
+assert.ok(['completed', 'completed-partial'].includes(generated.payload.status), `真实 LLM 洞察状态不可接受：${generated.payload.status}`);
 assert.equal(generated.payload.provider, 'llm-orchestrated');
 assert.ok(generated.payload.content?.trim(), '真实 LLM 未返回洞察正文');
 const stages = generated.payload.orchestration?.stageAudit || [];
-assert.deepEqual(stages.map(item => item.stage), ['planner', 'critic', 'narrator']);
+const stageNames = stages.map(item => item.stage);
+assert.deepEqual(stageNames.slice(0, 3), ['planner', 'critic', 'narrator']);
+assert.ok(stageNames.slice(3).every(stage => stage === 'narrator-repair'), '仅允许受控 narrator-repair 追加阶段');
+assert.ok(stageNames.filter(stage => stage === 'narrator-repair').length <= 1, 'Narrator 修订不得超过一次');
 assert.ok(stages.every(item => item.status === 'completed'), 'Planner/Critic/Narrator 未全部成功');
 assert.ok(generated.payload.document?.blocks?.some(block => block.content?.trim()), '页面文档没有可展示正文');
 
