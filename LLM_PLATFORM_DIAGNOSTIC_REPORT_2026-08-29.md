@@ -53,4 +53,6 @@ GET /api/llm/health
 - `npm test`：275 passed, 0 failed。
 - `npm run check`：通过。
 - 允许出站连接的运行实例：DNS、TCP、TLS 均通过，真实 JSON 探针 200。
-- 普通权限运行实例：DNS 通过，TCP/TLS 被 `EACCES` 阻断，接口返回 `network-unreachable`，未产生降级洞察。
+- 曾有旧运行实例出现：DNS 通过，TCP/TLS 被 `EACCES` 阻断，接口返回 `network-unreachable`，未产生降级洞察。该状态属于当时进程的出站网络权限/运行上下文，不能由应用代码绕过。
+- 当前 `8787` 运行实例已恢复：`GET /api/llm/diagnostics` 返回 `network-reachable`，`GET /api/llm/health` 返回 `200 / healthy`，真实探针延迟约 `1.17s`。
+- 当前真实数据洞察 UAT：`npm run uat:data-insight` 返回 `passed`，生成 `ins-02ee35c0-93c6-4710-bf85-be033d9f7ff2`，Provider 为 `llm-orchestrated`，模型为 `deepseek-v4-flash-0731`，Planner/Critic/Narrator 三阶段均 `completed`，正文长度 `1041`。

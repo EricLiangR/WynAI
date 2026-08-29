@@ -99,7 +99,8 @@ const config = {
   llmBackupBaseUrl: (process.env.LLM_BACKUP_BASE_URL || '').replace(/\/$/, ''),
   llmBackupApiKey: process.env.LLM_BACKUP_API_KEY || '',
   llmBackupModel: process.env.LLM_BACKUP_MODEL || '',
-  llmTimeoutMs: Math.max(10_000, Number(process.env.LLM_TIMEOUT_MS) || 25_000),
+  // Preserve the previously validated direct-client budget unless explicitly overridden.
+  llmTimeoutMs: Math.max(10_000, Number(process.env.LLM_TIMEOUT_MS) || 180_000),
   intentLlmTimeoutMs: Math.max(1_000, Number(process.env.INTENT_LLM_TIMEOUT_MS) || 10_000),
   llmConnectTimeoutMs: Math.max(1_000, Number(process.env.LLM_CONNECT_TIMEOUT_MS) || 3_000),
   llmResponseHeaderTimeoutMs: Math.max(1_000, Number(process.env.LLM_RESPONSE_HEADER_TIMEOUT_MS || process.env.LLM_FIRST_BYTE_TIMEOUT_MS) || 15_000),
