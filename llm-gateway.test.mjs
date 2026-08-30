@@ -169,6 +169,48 @@ test('响应头等待超时与总请求超时使用不同错误码', async () =>
   await assert.rejects(totalTimeout.completeJson([{ role: 'user', content: 'total-timeout' }]), error => error.code === 'LLM_TIMEOUT' && error.phase === 'total');
 });
 
+test('响应头软阈值只产生慢响应事件，不提前终止同步请求', async () => {
+  const events = [];
+  const gateway = createLlmGateway({
+    providers: [providers[0]],
+    timeoutMs: 200,
+    responseHeaderWarningMs: 10,
+    responseHeaderTimeoutMs: 180,
+    maxAttempts: 1,
+    cacheTtlMs: 0,
+    fetchImpl: async () => {
+      await new Promise(resolve => setTimeout(resolve, 35));
+      return okResponse({ answer: 'slow-but-valid' });
+    },
+  });
+  const result = await gateway.completeJson([{ role: 'user', content: 'slow-header' }], { onEvent: event => events.push(event) });
+  assert.deepEqual(result, { answer: 'slow-but-valid' });
+  assert.ok(events.some(event => event.type === 'gateway.slow' && event.timeoutClass === 'soft-warning'));
+  const attempt = events.find(event => event.type === 'gateway.attempt');
+  assert.equal(attempt.responseHeaderWarned, true);
+  assert.equal(attempt.timeoutClass, 'completed-after-soft-warning');
+  assert.equal(gateway.snapshot().metrics.responseHeaderWarnings, 1);
+});
+
+test('响应头之后的响应体等待超时使用独立错误码', async () => {
+  const gateway = createLlmGateway({
+    providers: [providers[0]],
+    timeoutMs: 2_500,
+    responseHeaderWarningMs: 10,
+    responseHeaderTimeoutMs: 2_000,
+    responseBodyTimeoutMs: 1_000,
+    maxAttempts: 1,
+    cacheTtlMs: 0,
+    fetchImpl: async (_url, options) => ({
+      status: 200,
+      ok: true,
+      text: () => new Promise((resolve, reject) => options.signal.addEventListener('abort', () => reject(new Error('body stalled')), { once: true })),
+    }),
+  });
+  await assert.rejects(gateway.completeJson([{ role: 'user', content: 'body-timeout' }]), error => error.code === 'LLM_RESPONSE_BODY_TIMEOUT' && error.phase === 'responseBody');
+  assert.equal(gateway.snapshot().metrics.responseBodyTimeouts, 1);
+});
+
 test('底层连接超时保留 LLM_CONNECT_TIMEOUT 语义', async () => {
   const gateway = createLlmGateway({
     providers: [providers[0]],
@@ -216,11 +258,18 @@ test('洞察各阶段采用独立超时策略且不再使用统一 8 秒阈值',
   const gateway = createLlmGateway({ providers: [providers[0]], maxAttempts: 1, cacheTtlMs: 0, fetchImpl: async () => okResponse() });
   await gateway.completeJson([{ role: 'user', content: 'planner-policy' }], { operation: 'insight-planner' });
   assert.equal(gateway.snapshot().lastCall.policy.requestTimeoutMs, 45_000);
-  assert.equal(gateway.snapshot().lastCall.policy.responseHeaderTimeoutMs, 15_000);
+  assert.equal(gateway.snapshot().lastCall.policy.responseHeaderWarningMs, 15_000);
+  assert.equal(gateway.snapshot().lastCall.policy.responseHeaderTimeoutMs, 45_000);
   await gateway.completeJson([{ role: 'user', content: 'critic-policy' }], { operation: 'insight-critic' });
   assert.equal(gateway.snapshot().lastCall.policy.requestTimeoutMs, 35_000);
-  assert.equal(gateway.snapshot().lastCall.policy.responseHeaderTimeoutMs, 12_000);
+  assert.equal(gateway.snapshot().lastCall.policy.responseHeaderWarningMs, 12_000);
+  assert.equal(gateway.snapshot().lastCall.policy.responseHeaderTimeoutMs, 35_000);
   await gateway.completeJson([{ role: 'user', content: 'narrator-policy' }], { operation: 'insight-narrator' });
   assert.equal(gateway.snapshot().lastCall.policy.requestTimeoutMs, 45_000);
-  assert.equal(gateway.snapshot().lastCall.policy.responseHeaderTimeoutMs, 15_000);
+  assert.equal(gateway.snapshot().lastCall.policy.responseHeaderWarningMs, 15_000);
+  assert.equal(gateway.snapshot().lastCall.policy.responseHeaderTimeoutMs, 45_000);
+  await gateway.completeJson([{ role: 'user', content: 'repair-policy' }], { operation: 'insight-narrator-repair' });
+  assert.equal(gateway.snapshot().lastCall.policy.requestTimeoutMs, 90_000);
+  assert.equal(gateway.snapshot().lastCall.policy.responseHeaderWarningMs, 15_000);
+  assert.equal(gateway.snapshot().lastCall.policy.responseHeaderTimeoutMs, 90_000);
 });

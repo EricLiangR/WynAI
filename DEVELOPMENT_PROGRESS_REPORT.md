@@ -574,6 +574,22 @@
 - 真实 API：正式 `8787` 返回字段顺序 `period|region|province|revenue|profit|profit_yoy|order_count|quantity`，未出现未声明商品维度。
 - 浏览器截图 UAT：桌面和严格 `390x844` 均通过，控制台错误/警告为 `[]`；证据见 `uat-governance-evidence/field-order-desktop-20260828.png`、`field-order-mobile-390x844.png`，报告见 `SMART_QUERY_FIELD_ORDER_UAT_REPORT_2026-08-28.md`。
 
+## 2026-08-30 数据洞察平台可靠性阶段 0-4
+
+- 目标与计划已固化到 `DATA_INSIGHT_PLATFORM_RELIABILITY_GOALS_PLAN_2026-08-30.md`，阶段 0-4 全部完成；阶段 5 流式响应暂不启动。
+- LLM Gateway 保持同步 `fetch`，15 秒响应头阈值改为非破坏性 `gateway.slow` 软告警；新增响应体超时并区分响应头、总截止、取消和 Provider 错误；PowerShell 输出保持现状。
+- Evidence Pack 默认取消固定 40 组、时间 Top 60 和贡献 Top 20；完整输入生成完整核心聚合，显式限制才设置 `resultLimited`。
+- Planner 改为权威 Evidence Catalog 引用，消除高基数证据重复展开导致的 `LLM_CONTEXT_LIMIT`。
+- 新增 `sourceCompleteness`、`evidenceCoverage`、`businessSparsity`，默认 `observed-records-only`，不补零、不要求维度与期间形成笛卡尔积。
+- 核心假设平台强制阻断，扩展项显式可选时支持部分完成；Narrator 单条不合格结论隔离，全部不可用时才执行一次受控 Repair。
+- 新增 `config/insight-skills/retail-baseline.json` 及说明，记录核心/扩展方法、阻断规则、部分完成规则和业务稀疏语义。
+- 自动化门禁：`npm run check` 通过，`npm test` 284/284，专项测试 46/46。
+- 真实 LLM：245 行案例 `ins-aa63dce4-e5af-4d88-a2c2-cf38cf7cf90d` 完成，432 分组、0 省略；1,581 行案例 `ins-09e7f7b3-e36a-4d90-aadb-93a55eaad190` 完成，2,303 分组、0 省略。
+- PC 浏览器 UAT：真实页面显示管理摘要、关键发现、风险判断和行动建议，无降级或 LLM 错误。证据位于 `test/uat-artifacts/data-insight-reliability-2026-08-30/`。
+- 最终真实 LLM 重跑：`npm run uat:data-insight` 通过；Planner 6.805 秒、Critic 4.139 秒、Narrator 7.408 秒，2,303 分组全部覆盖且零省略。
+- 目标关闭审计再次通过真实 LLM UAT：Planner 6.219 秒、Critic 4.325 秒、Narrator 8.389 秒；1,581 行输入无采样、无截断，2,303 分组全部覆盖。
+- 详细实施与验收报告：`DATA_INSIGHT_PLATFORM_RELIABILITY_UAT_REPORT_2026-08-30.md`。
+
 
 ## 2026-08-28 用户主动范围与排名依据平台修复
 

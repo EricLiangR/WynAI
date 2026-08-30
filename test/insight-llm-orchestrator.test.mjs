@@ -38,6 +38,7 @@ test('Narrator 数字没有证据支持时隔离违规结论并保留可用洞�
   assert.equal(result.narrative.validation.rejectedClaims[0].token, '999');
   assert.ok(result.narrative.managementSummary[0].verificationRequired);
   assert.equal(result.narrative.keyFindings[0].verificationRequired, false);
+  assert.deepEqual(result.stageAudit.map(item => item.stage), ['planner', 'critic', 'narrator']);
 });
 
 test('Narrator 全部内容都无法核验时仍返回 needs_review', async () => {
@@ -96,7 +97,7 @@ test('Narrator 对违规数字执行一次受控修订并保留严格校验', as
     llm: llm([
       { schema: 'wynai.insight-planner/v1', hypotheses: [], toolRequests: [] },
       { schema: 'wynai.insight-critic/v1', verdict: 'sufficient', assessments: [], followUps: [] },
-      { schema: 'wynai.insight-narrator/v1', managementSummary: [{ text: '销售额为 999。', evidenceIds: ['ev-sales-total'] }], keyFindings: [{ text: '需要分析。', evidenceIds: ['ev-sales-total'] }], risks: [{ text: '需要复核。', evidenceIds: ['ev-sales-total'] }], actions: [{ text: '复核数据。', evidenceIds: ['ev-sales-total'] }] },
+      { schema: 'wynai.insight-narrator/v1', managementSummary: [{ text: '销售额为 999。', evidenceIds: ['ev-sales-total'] }], keyFindings: [{ text: '差异值为 999。', evidenceIds: ['ev-sales-total'] }], risks: [{ text: '风险值为 999。', evidenceIds: ['ev-sales-total'] }], actions: [{ text: '目标值为 999。', evidenceIds: ['ev-sales-total'] }] },
       { schema: 'wynai.insight-narrator/v1', managementSummary: [{ text: '销售额为 180。', evidenceIds: ['ev-sales-total'] }], keyFindings: [{ text: '需要分析。', evidenceIds: ['ev-sales-total'] }], risks: [{ text: '需要复核。', evidenceIds: ['ev-sales-total'] }], actions: [{ text: '复核数据。', evidenceIds: ['ev-sales-total'] }] },
     ]),
     input,
@@ -269,7 +270,7 @@ test('Critic 局部证据不足时返回 completed-partial 而不是整体失败
   });
   const result = await runInsightLlmOrchestration({
     llm: llm([
-      { schema: 'wynai.insight-planner/v1', hypotheses: [{ id: 'core', requiredEvidenceIds: ['time-trend'] }, { id: 'optional', requiredEvidenceIds: ['time-trend'] }], toolRequests: [] },
+      { schema: 'wynai.insight-planner/v1', hypotheses: [{ id: 'core', priority: 'core', requiredEvidenceIds: ['time-trend'] }, { id: 'optional', priority: 'extended', blocking: false, requiredEvidenceIds: ['time-trend'] }], toolRequests: [] },
       { schema: 'wynai.insight-critic/v1', verdict: 'insufficient', assessments: [
         { hypothesisId: 'core', status: 'supported', reason: '月度核心结果可验证', evidenceIds: ['time-trend'] },
         { hypothesisId: 'optional', status: 'inconclusive', reason: '缺少扩展维度', evidenceIds: ['time-trend'] },
@@ -281,4 +282,21 @@ test('Critic 局部证据不足时返回 completed-partial 而不是整体失败
   });
   assert.equal(result.status, 'completed-partial');
   assert.equal(result.diagnostics.reasonCode, 'PARTIAL_EVIDENCE');
+});
+
+test('Critic 核心证据不足时返回 needs_review，不能被扩展部分伪装为成功', async () => {
+  const input = buildEvidencePack({ evidence: [{ id: 'time-trend', title: '月度趋势', value: [{ 月份: '2024-01', 销售额: 100 }] }] });
+  const result = await runInsightLlmOrchestration({
+    llm: llm([
+      { schema: 'wynai.insight-planner/v1', hypotheses: [{ id: 'core', priority: 'core', blocking: false, requiredEvidenceIds: ['time-trend'] }, { id: 'extension', priority: 'extended', requiredEvidenceIds: ['time-trend'] }], toolRequests: [] },
+      { schema: 'wynai.insight-critic/v1', verdict: 'insufficient', assessments: [
+        { hypothesisId: 'core', status: 'inconclusive', reason: '核心证据不可验证', evidenceIds: ['time-trend'] },
+        { hypothesisId: 'extension', status: 'supported', reason: '扩展证据可验证', evidenceIds: ['time-trend'] },
+      ], followUps: [] },
+      { schema: 'wynai.insight-narrator/v1', managementSummary: [{ text: '扩展分析可验证。', evidenceIds: ['time-trend'] }], keyFindings: [{ text: '核心仍需复核。', evidenceIds: ['time-trend'], verificationRequired: true }], risks: [{ text: '核心证据不足。', evidenceIds: ['time-trend'], verificationRequired: true }], actions: [{ text: '补充核心证据。', evidenceIds: ['time-trend'], verificationRequired: true }], followUps: [] },
+    ]), input,
+  });
+  assert.equal(result.planner.hypotheses[0].blocking, true);
+  assert.equal(result.status, 'needs_review');
+  assert.equal(result.diagnostics.reasonCode, 'CORE_EVIDENCE_INSUFFICIENT');
 });

@@ -84,7 +84,14 @@ export function buildBusinessFactPack({ input = {}, evidencePack = {}, skills = 
   const measureFields = metrics.map(metric => metricBinding(metrics, metric.id, schema).field).filter(Boolean);
   if (times.length && measureFields.length) {
     const rowsByTime = groupBy(rows, [times[0]], measureFields);
-    facts.push(fact('time-trend', '时间趋势', { timeField: times[0].name, rows: rowsByTime.slice(0, 60), measures: measureFields }, 'deterministic.time-group', ['time-trend', 'data-quality'], { grain: times[0].grain || 'period', totalPeriods: rowsByTime.length }));
+    const observedPeriods = rowsByTime.map(row => row[times[0].name]).filter(value => value !== null && value !== undefined && value !== '');
+    facts.push(fact('time-trend', '时间趋势', { timeField: times[0].name, rows: rowsByTime, measures: measureFields, observedPeriods }, 'deterministic.time-group', ['time-trend', 'data-quality'], {
+      grain: times[0].grain || 'period',
+      totalPeriods: rowsByTime.length,
+      representedPeriods: rowsByTime.length,
+      periodCoverageMode: input.scope?.periodCoverageMode || 'observed-records-only',
+      resultLimited: false,
+    }));
     evidenceIds.push('time-trend');
     const ranked = rowsByTime.filter(row => measureFields.some(field => finite(row[field]))).sort((a, b) => num(b[measureFields[0]]) - num(a[measureFields[0]]));
     if (ranked.length >= 2) facts.push(fact('time-anomaly', '时间序列高低点', { highest: ranked[0], lowest: ranked.at(-1) }, 'deterministic.extrema', ['time-trend'], { basedOn: measureFields[0] }));
@@ -92,14 +99,14 @@ export function buildBusinessFactPack({ input = {}, evidencePack = {}, skills = 
   if (dimensions.length && measureFields.length) {
     const contributionRows = groupBy(rows, [dimensions[0]], measureFields).sort((a, b) => num(b[measureFields[0]]) - num(a[measureFields[0]]));
     const total = contributionRows.reduce((value, row) => value + (finite(row[measureFields[0]]) ? num(row[measureFields[0]]) : 0), 0);
-    const contributionRowsWithShare = contributionRows.slice(0, 20).map(row => ({
+    const contributionRowsWithShare = contributionRows.map(row => ({
       ...row,
       share: total && finite(row[measureFields[0]]) ? num(row[measureFields[0]]) / total : null,
     }));
-    facts.push(fact('dimension-contribution', `${dimensions[0].name}贡献`, { dimension: dimensions[0].name, rows: contributionRowsWithShare, measure: measureFields[0], total }, 'deterministic.dimension-group', ['dimension-contribution', 'data-quality'], { totalGroups: contributionRows.length, resultLimited: contributionRows.length > 20 }));
+    facts.push(fact('dimension-contribution', `${dimensions[0].name}贡献`, { dimension: dimensions[0].name, rows: contributionRowsWithShare, measure: measureFields[0], total }, 'deterministic.dimension-group', ['dimension-contribution', 'data-quality'], { totalGroups: contributionRows.length, representedGroups: contributionRows.length, resultLimited: false }));
     evidenceIds.push('dimension-contribution');
     const top = contributionRows.slice(0, 3).reduce((value, row) => value + (finite(row[measureFields[0]]) ? num(row[measureFields[0]]) : 0), 0);
-    facts.push(fact('concentration', `${dimensions[0].name}集中度`, { dimension: dimensions[0].name, topN: 3, share: total ? top / total : null, total, measure: measureFields[0] }, 'deterministic.concentration', ['dimension-contribution'], { resultLimited: contributionRows.length > 20 }));
+    facts.push(fact('concentration', `${dimensions[0].name}集中度`, { dimension: dimensions[0].name, topN: 3, share: total ? top / total : null, total, measure: measureFields[0] }, 'deterministic.concentration', ['dimension-contribution'], { totalGroups: contributionRows.length, resultLimited: false }));
     evidenceIds.push('concentration');
   }
   const requiredFacts = [...new Set(skills.flatMap(item => item.requiredFacts || []))];

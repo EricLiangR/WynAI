@@ -1,0 +1,31 @@
+{
+  "id": "retail-baseline",
+  "requiredFacts": ["metric_1-total", "metric_2-total", "data-quality"],
+  "insightMethods": ["time-trend", "dimension-contribution", "concentration", "dimension-time-comparison"],
+  "coreMethods": ["time-trend", "dimension-contribution", "dimension-time-comparison"],
+  "optionalMethods": ["concentration", "category-concentration", "risk-expansion", "action-plan"],
+  "requiredFields": ["订购日期", "订单金额", "订单利润"],
+  "evidenceRequirements": {
+    "time-trend": ["订购日期", "订单金额", "订单利润"],
+    "dimension-contribution": ["供应商名称", "订单金额", "订单利润"],
+    "dimension-time-comparison": ["订购日期", "供应商名称", "订单金额", "订单利润"]
+  },
+  "blockingRules": [
+    "只有用户明确要求的核心分析证据不可用时才阻断正式洞察",
+    "真实业务期间无记录不等同于平台证据缺失"
+  ],
+  "partialCompletionRules": [
+    "扩展证据不足时保留已验证核心结果并披露未完成项",
+    "单条叙述未通过证据校验时隔离该条，不影响其他已验证内容",
+    "平台不得以固定 Top-N 或固定行数限制核心证据"
+  ],
+  "businessSemantics": [
+    "InsightInput 是调用方提供的权威聚合结果范围",
+    "按实际观测记录分析，不要求供应商与期间形成完整笛卡尔积",
+    "没有业务记录不得自动补零，也不得自动判定为数据缺失"
+  ],
+  "qualityThresholds": {
+    "sourceCompleteness": "declared-by-caller",
+    "coreEvidenceCoverage": 100
+  }
+}

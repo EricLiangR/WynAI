@@ -85,31 +85,36 @@ function retryable(error) {
   const code = errorCode(error);
   if (['REQUEST_ABORTED', 'INSIGHT_LLM_INVALID_OUTPUT', 'INSIGHT_EVIDENCE_EMPTY', 'EVIDENCE_INSUFFICIENT'].includes(code)) return false;
   if (Number(error?.status) >= 400 && Number(error?.status) < 500 && Number(error?.status) !== 429) return false;
-  if (['LLM_TIMEOUT', 'LLM_CONNECT_TIMEOUT', 'LLM_RESPONSE_HEADER_TIMEOUT', 'LLM_REQUEST_FAILED', 'LLM_UPSTREAM_ERROR', 'LLM_RATE_LIMITED', 'LLM_EMPTY_RESPONSE', 'NARRATOR_SCHEMA_INVALID'].includes(code)) return true;
+  if (['LLM_TIMEOUT', 'LLM_CONNECT_TIMEOUT', 'LLM_RESPONSE_HEADER_TIMEOUT', 'LLM_RESPONSE_BODY_TIMEOUT', 'LLM_REQUEST_FAILED', 'LLM_UPSTREAM_ERROR', 'LLM_RATE_LIMITED', 'LLM_EMPTY_RESPONSE', 'NARRATOR_SCHEMA_INVALID'].includes(code)) return true;
   return Number(error?.status) === 429 || Number(error?.status) >= 500;
 }
 function timeoutError(provider, code, phase, timeoutMs, cause = null) {
-  const labels = { total: '总请求', responseHeader: '响应头等待', connect: '连接' };
+  const labels = { total: '总请求', responseHeader: '响应头等待', responseBody: '响应体读取', connect: '连接' };
   const error = new Error(`大模型${labels[phase] || '请求'}超时 (${provider}; ${timeoutMs}ms)`);
   error.code = code;
   error.provider = provider;
   error.phase = phase;
   error.timeoutMs = timeoutMs;
+  error.timeoutClass = phase === 'total' ? 'hard-deadline' : `${phase}-hard-timeout`;
   error.cause = cause;
   return error;
 }
 
 const DEFAULT_OPERATION_POLICIES = {
-  'insight-planner': { requestTimeoutMs: 45_000, responseHeaderTimeoutMs: 15_000 },
-  'insight-critic': { requestTimeoutMs: 35_000, responseHeaderTimeoutMs: 12_000 },
-  'insight-narrator': { requestTimeoutMs: 45_000, responseHeaderTimeoutMs: 15_000 },
-  'agent-report': { requestTimeoutMs: 45_000, responseHeaderTimeoutMs: 15_000 },
-  exploration: { requestTimeoutMs: 45_000, responseHeaderTimeoutMs: 15_000 },
-  intent: { requestTimeoutMs: 15_000, responseHeaderTimeoutMs: 8_000 },
-  probe: { requestTimeoutMs: 10_000, responseHeaderTimeoutMs: 5_000 },
+  // The warning is intentionally shorter than the hard deadline. A slow
+  // provider should be observable without being aborted merely because it
+  // has not produced headers yet.
+  'insight-planner': { requestTimeoutMs: 45_000, responseHeaderWarningMs: 15_000, responseHeaderTimeoutMs: 45_000 },
+  'insight-critic': { requestTimeoutMs: 35_000, responseHeaderWarningMs: 12_000, responseHeaderTimeoutMs: 35_000 },
+  'insight-narrator': { requestTimeoutMs: 45_000, responseHeaderWarningMs: 15_000, responseHeaderTimeoutMs: 45_000 },
+  'insight-narrator-repair': { requestTimeoutMs: 90_000, responseHeaderWarningMs: 15_000, responseHeaderTimeoutMs: 90_000 },
+  'agent-report': { requestTimeoutMs: 45_000, responseHeaderWarningMs: 15_000, responseHeaderTimeoutMs: 45_000 },
+  exploration: { requestTimeoutMs: 45_000, responseHeaderWarningMs: 15_000, responseHeaderTimeoutMs: 45_000 },
+  intent: { requestTimeoutMs: 15_000, responseHeaderWarningMs: 8_000, responseHeaderTimeoutMs: 15_000 },
+  probe: { requestTimeoutMs: 10_000, responseHeaderWarningMs: 5_000, responseHeaderTimeoutMs: 10_000 },
 };
 
-export function createLlmGateway({ providers = [], fetchImpl = globalThis.fetch, timeoutMs = 45_000, connectTimeoutMs = 3_000, firstByteTimeoutMs = null, responseHeaderTimeoutMs = null, maxAttempts = 2, circuitFailureThreshold = 3, circuitCooldownMs = 30_000, cacheTtlMs = 30_000, enableThinking = null, operationPolicies = {}, retryBaseDelayMs = 250, retryMaxDelayMs = 4_000, retryJitterMs = 150, sleepFn = null, randomFn = Math.random } = {}) {
+export function createLlmGateway({ providers = [], fetchImpl = globalThis.fetch, timeoutMs = 45_000, connectTimeoutMs = 3_000, firstByteTimeoutMs = null, responseHeaderTimeoutMs = null, responseHeaderWarningMs = null, responseBodyTimeoutMs = null, maxAttempts = 2, circuitFailureThreshold = 3, circuitCooldownMs = 30_000, cacheTtlMs = 30_000, enableThinking = null, operationPolicies = {}, retryBaseDelayMs = 250, retryMaxDelayMs = 4_000, retryJitterMs = 150, sleepFn = null, randomFn = Math.random } = {}) {
   const normalizedProviders = providers.map((provider, index) => ({
     id: String(provider.id || `provider-${index + 1}`),
     baseUrl: String(provider.baseUrl || '').replace(/\/$/, ''),
@@ -118,13 +123,15 @@ export function createLlmGateway({ providers = [], fetchImpl = globalThis.fetch,
   })).filter(provider => provider.baseUrl && provider.model && fetchImpl);
   const state = new Map(normalizedProviders.map(provider => [provider.id, { failures: 0, openUntil: 0, lastError: null }]));
   const cache = new Map();
-  const metrics = { calls: 0, successes: 0, failures: 0, timeouts: 0, connectTimeouts: 0, responseHeaderTimeouts: 0, retries: 0, retryDelayMs: 0, fallbacks: 0, cacheHits: 0, circuitOpen: 0 };
+  const metrics = { calls: 0, successes: 0, failures: 0, timeouts: 0, connectTimeouts: 0, responseHeaderTimeouts: 0, responseBodyTimeouts: 0, responseHeaderWarnings: 0, retries: 0, retryDelayMs: 0, fallbacks: 0, cacheHits: 0, circuitOpen: 0 };
   let lastCall = null;
 
   const basePolicy = {
     requestTimeoutMs: Math.max(1_000, Number(timeoutMs) || 45_000),
     connectTimeoutMs: Math.max(250, Number(connectTimeoutMs) || 3_000),
-    responseHeaderTimeoutMs: Math.max(1_000, Number(responseHeaderTimeoutMs ?? firstByteTimeoutMs) || 15_000),
+    responseHeaderTimeoutMs: Math.max(1_000, Number(responseHeaderTimeoutMs) || Number(timeoutMs) || 45_000),
+    responseHeaderWarningMs: Math.max(0, Number(responseHeaderWarningMs ?? firstByteTimeoutMs) || 15_000),
+    responseBodyTimeoutMs: Math.max(1_000, Number(responseBodyTimeoutMs) || Number(timeoutMs) || 45_000),
     maxAttempts: Math.max(1, Math.min(4, Number(maxAttempts) || 2)),
     retryBaseDelayMs: Math.max(0, Number(retryBaseDelayMs) || 0),
     retryMaxDelayMs: Math.max(0, Number(retryMaxDelayMs) || 4_000),
@@ -136,10 +143,12 @@ export function createLlmGateway({ providers = [], fetchImpl = globalThis.fetch,
     const policy = { ...basePolicy, ...named, ...configured, ...overrides };
     // `timeoutMs` and `firstByteTimeoutMs` remain accepted as request-level aliases.
     if (overrides.timeoutMs != null && overrides.requestTimeoutMs == null) policy.requestTimeoutMs = overrides.timeoutMs;
-    if (overrides.firstByteTimeoutMs != null && overrides.responseHeaderTimeoutMs == null) policy.responseHeaderTimeoutMs = overrides.firstByteTimeoutMs;
+    if (overrides.firstByteTimeoutMs != null && overrides.responseHeaderWarningMs == null) policy.responseHeaderWarningMs = overrides.firstByteTimeoutMs;
     policy.requestTimeoutMs = Math.max(1_000, Number(policy.requestTimeoutMs) || basePolicy.requestTimeoutMs);
     policy.connectTimeoutMs = Math.max(250, Number(policy.connectTimeoutMs) || basePolicy.connectTimeoutMs);
-    policy.responseHeaderTimeoutMs = Math.max(1_000, Math.min(policy.requestTimeoutMs, Number(policy.responseHeaderTimeoutMs) || basePolicy.responseHeaderTimeoutMs));
+    policy.responseHeaderTimeoutMs = Math.max(1_000, Math.min(policy.requestTimeoutMs, Number(policy.responseHeaderTimeoutMs) || policy.requestTimeoutMs));
+    policy.responseHeaderWarningMs = Math.max(0, Math.min(policy.responseHeaderTimeoutMs, Number(policy.responseHeaderWarningMs) || 0));
+    policy.responseBodyTimeoutMs = Math.max(1_000, Math.min(policy.requestTimeoutMs, Number(policy.responseBodyTimeoutMs) || policy.requestTimeoutMs));
     policy.maxAttempts = Math.max(1, Math.min(4, Number(policy.maxAttempts) || basePolicy.maxAttempts));
     policy.retryBaseDelayMs = Math.max(0, Number(policy.retryBaseDelayMs) || 0);
     policy.retryMaxDelayMs = Math.max(policy.retryBaseDelayMs, Number(policy.retryMaxDelayMs) || basePolicy.retryMaxDelayMs);
@@ -188,6 +197,8 @@ export function createLlmGateway({ providers = [], fetchImpl = globalThis.fetch,
   async function request(provider, messages, { signal = null, policy, maxOutputTokens = 4096, enableThinking: requestThinking = null, operation = 'json', attempt = 1, onEvent = null } = {}) {
     const requestTimeout = policy.requestTimeoutMs;
     const responseHeaderTimeout = Math.min(requestTimeout, policy.responseHeaderTimeoutMs);
+    const responseHeaderWarning = Math.min(responseHeaderTimeout, policy.responseHeaderWarningMs);
+    const responseBodyTimeout = Math.min(requestTimeout, policy.responseBodyTimeoutMs);
     const endpoint = providerEndpoint(provider);
     const startedAt = Date.now();
     const requestPayload = { model: provider.model, temperature: 0.1, max_tokens: Math.max(256, Number(maxOutputTokens) || 4096), ...(typeof (requestThinking ?? enableThinking) === 'boolean' ? { enable_thinking: requestThinking ?? enableThinking } : {}), response_format: { type: 'json_object' }, messages: clone(messages) };
@@ -197,16 +208,44 @@ export function createLlmGateway({ providers = [], fetchImpl = globalThis.fetch,
     let outcomeError = null;
     let timedOut = false;
     let responseHeaderTimedOut = false;
+    let responseBodyTimedOut = false;
+    let responseHeaderWarned = false;
     const controller = new AbortController();
     let cancelled = false;
     const abortFromCaller = () => { cancelled = true; controller.abort(signal?.reason); };
     if (signal?.aborted) abortFromCaller();
     else signal?.addEventListener('abort', abortFromCaller, { once: true });
     const timer = setTimeout(() => { timedOut = true; controller.abort(); }, requestTimeout);
-    // fetch() resolves when response headers are available. This timer therefore
-    // protects the response-header phase; native fetch reports TCP/TLS failures
-    // separately (for example UND_ERR_CONNECT_TIMEOUT).
+    // `fetch()` resolves when response headers are available. The warning timer
+    // is deliberately non-destructive; the hard timer remains the resource
+    // protection boundary for a synchronous request.
+    const emitNonBlocking = event => {
+      try {
+        const pending = onEvent?.(event);
+        if (pending && typeof pending.catch === 'function') pending.catch(() => {});
+      } catch { /* diagnostics must not change the request outcome */ }
+    };
+    const responseHeaderWarningTimer = responseHeaderWarning > 0 && responseHeaderWarning < responseHeaderTimeout
+      ? setTimeout(() => {
+        responseHeaderWarned = true;
+        metrics.responseHeaderWarnings += 1;
+        emitNonBlocking({
+          type: 'gateway.slow',
+          operation,
+          phase: 'responseHeader',
+          provider: provider.id,
+          model: provider.model,
+          elapsedMs: Date.now() - startedAt,
+          responseHeaderWarningMs: responseHeaderWarning,
+          responseHeaderTimeoutMs: responseHeaderTimeout,
+          timeoutClass: 'soft-warning',
+        });
+      }, responseHeaderWarning)
+      : null;
+    // Native fetch reports TCP/TLS failures separately (for example
+    // UND_ERR_CONNECT_TIMEOUT). This hard timer only protects the header phase.
     const responseHeaderTimer = setTimeout(() => { responseHeaderTimedOut = true; controller.abort(); }, responseHeaderTimeout);
+    let responseBodyTimer = null;
     try {
       let response;
       try {
@@ -234,13 +273,28 @@ export function createLlmGateway({ providers = [], fetchImpl = globalThis.fetch,
         throw wrapped;
       }
       clearTimeout(responseHeaderTimer);
+      if (responseBodyTimeout > 0 && responseBodyTimeout < requestTimeout) responseBodyTimer = setTimeout(() => { responseBodyTimedOut = true; controller.abort(); }, responseBodyTimeout);
       responseStatus = response.status;
       let payload = {};
       if (typeof response.text === 'function') {
-        responseRaw = await response.text().catch(() => '');
+        try {
+          responseRaw = await response.text();
+        } catch (error) {
+          if (cancelled) { const wrapped = new Error('请求已取消'); wrapped.code = 'REQUEST_ABORTED'; wrapped.cause = error; throw wrapped; }
+          if (timedOut) throw timeoutError(provider.id, 'LLM_TIMEOUT', 'total', requestTimeout, error);
+          if (responseBodyTimedOut) throw timeoutError(provider.id, 'LLM_RESPONSE_BODY_TIMEOUT', 'responseBody', responseBodyTimeout, error);
+          throw error;
+        }
         try { payload = responseRaw ? JSON.parse(responseRaw) : {}; } catch { payload = {}; }
       } else {
-        payload = await response.json().catch(() => ({}));
+        try {
+          payload = await response.json();
+        } catch (error) {
+          if (cancelled) { const wrapped = new Error('请求已取消'); wrapped.code = 'REQUEST_ABORTED'; wrapped.cause = error; throw wrapped; }
+          if (timedOut) throw timeoutError(provider.id, 'LLM_TIMEOUT', 'total', requestTimeout, error);
+          if (responseBodyTimedOut) throw timeoutError(provider.id, 'LLM_RESPONSE_BODY_TIMEOUT', 'responseBody', responseBodyTimeout, error);
+          throw error;
+        }
         try { responseRaw = JSON.stringify(payload); } catch { responseRaw = null; }
       }
       responsePayload = clone(payload);
@@ -261,6 +315,8 @@ export function createLlmGateway({ providers = [], fetchImpl = globalThis.fetch,
     } finally {
       clearTimeout(timer);
       clearTimeout(responseHeaderTimer);
+      clearTimeout(responseHeaderWarningTimer);
+      clearTimeout(responseBodyTimer);
       signal?.removeEventListener('abort', abortFromCaller);
       if (typeof onEvent === 'function') {
         try {
@@ -269,7 +325,9 @@ export function createLlmGateway({ providers = [], fetchImpl = globalThis.fetch,
             endpointHost: endpointHost(endpoint), durationMs: Date.now() - startedAt,
             request: requestPayload, responseStatus, response: responsePayload, responseRaw,
             timeoutMs: requestTimeout, requestTimeoutMs: requestTimeout, connectTimeoutMs: policy.connectTimeoutMs,
-            responseHeaderTimeoutMs: responseHeaderTimeout, timedOut, responseHeaderTimedOut,
+            responseHeaderWarningMs: responseHeaderWarning, responseHeaderTimeoutMs: responseHeaderTimeout,
+            responseBodyTimeoutMs: responseBodyTimeout, timedOut, responseHeaderTimedOut, responseBodyTimedOut,
+            responseHeaderWarned, timeoutClass: timedOut ? 'hard-deadline' : responseBodyTimedOut ? 'response-body-hard-timeout' : responseHeaderTimedOut ? 'response-header-hard-timeout' : responseHeaderWarned ? 'completed-after-soft-warning' : 'completed',
             // Kept as a read-only diagnostic alias for older log readers.
             firstByteTimedOut: responseHeaderTimedOut, cancelled,
             error: outcomeError ? { code: errorCode(outcomeError) || 'LLM_REQUEST_FAILED', message: String(outcomeError.message || ''), details: serializeError(outcomeError) } : null,
@@ -279,7 +337,7 @@ export function createLlmGateway({ providers = [], fetchImpl = globalThis.fetch,
     }
   }
 
-  async function completeJson(messages, { signal = null, cacheKey = undefined, timeoutMs: timeoutOverrideMs = null, requestTimeoutMs = null, responseHeaderTimeoutMs: responseHeaderOverrideMs = null, firstByteTimeoutMs: firstByteOverrideMs = null, operation = 'json', maxOutputTokens = 4096, enableThinking: requestThinking = null, onEvent = null } = {}) {
+  async function completeJson(messages, { signal = null, cacheKey = undefined, timeoutMs: timeoutOverrideMs = null, requestTimeoutMs = null, responseHeaderTimeoutMs: responseHeaderOverrideMs = null, responseHeaderWarningMs: responseHeaderWarningOverrideMs = null, responseBodyTimeoutMs: responseBodyOverrideMs = null, firstByteTimeoutMs: firstByteOverrideMs = null, operation = 'json', maxOutputTokens = 4096, enableThinking: requestThinking = null, onEvent = null } = {}) {
     const key = cacheKey === null ? null : cacheKey || hash({ operation, messages, providers: normalizedProviders.map(provider => `${provider.id}:${provider.model}`) });
     const cached = cacheGet(key);
     if (cached) {
@@ -298,6 +356,8 @@ export function createLlmGateway({ providers = [], fetchImpl = globalThis.fetch,
       ...(requestTimeoutMs != null ? { requestTimeoutMs } : {}),
       ...(timeoutOverrideMs != null ? { timeoutMs: timeoutOverrideMs } : {}),
       ...(responseHeaderOverrideMs != null ? { responseHeaderTimeoutMs: responseHeaderOverrideMs } : {}),
+      ...(responseHeaderWarningOverrideMs != null ? { responseHeaderWarningMs: responseHeaderWarningOverrideMs } : {}),
+      ...(responseBodyOverrideMs != null ? { responseBodyTimeoutMs: responseBodyOverrideMs } : {}),
       ...(firstByteOverrideMs != null ? { firstByteTimeoutMs: firstByteOverrideMs } : {}),
     });
     const max = policy.maxAttempts;
@@ -327,6 +387,7 @@ export function createLlmGateway({ providers = [], fetchImpl = globalThis.fetch,
         if (['LLM_TIMEOUT', 'LLM_CONNECT_TIMEOUT', 'LLM_RESPONSE_HEADER_TIMEOUT'].includes(error.code)) metrics.timeouts += 1;
         if (error.code === 'LLM_CONNECT_TIMEOUT') metrics.connectTimeouts += 1;
         if (error.code === 'LLM_RESPONSE_HEADER_TIMEOUT') metrics.responseHeaderTimeouts += 1;
+        if (error.code === 'LLM_RESPONSE_BODY_TIMEOUT') { metrics.responseBodyTimeouts += 1; metrics.timeouts += 1; }
         openCircuit(provider, error);
         attempts.push({ provider: provider.id, model: provider.model, code: errorCode(error), durationMs: Date.now() - startedAt, phase: error.phase || null });
         if (!retryable(error) || attemptCount >= max) break;

@@ -103,10 +103,15 @@ const config = {
   llmTimeoutMs: Math.max(10_000, Number(process.env.LLM_TIMEOUT_MS) || 180_000),
   intentLlmTimeoutMs: Math.max(1_000, Number(process.env.INTENT_LLM_TIMEOUT_MS) || 10_000),
   llmConnectTimeoutMs: Math.max(1_000, Number(process.env.LLM_CONNECT_TIMEOUT_MS) || 3_000),
-  llmResponseHeaderTimeoutMs: Math.max(1_000, Number(process.env.LLM_RESPONSE_HEADER_TIMEOUT_MS || process.env.LLM_FIRST_BYTE_TIMEOUT_MS) || 15_000),
+  // Header wait is split into a non-destructive warning and a hard cap. Keep
+  // the legacy timeout variable as an explicit hard-cap override; by default
+  // each operation uses its own total request deadline as the hard cap.
+  llmResponseHeaderWarningMs: Math.max(0, Number(process.env.LLM_RESPONSE_HEADER_WARNING_MS || process.env.LLM_FIRST_BYTE_TIMEOUT_MS) || 15_000),
+  llmResponseHeaderTimeoutMs: Math.max(0, Number(process.env.LLM_RESPONSE_HEADER_TIMEOUT_MS) || 0),
   llmPlannerTimeoutMs: Math.max(10_000, Number(process.env.LLM_INSIGHT_PLANNER_TIMEOUT_MS) || 45_000),
   llmCriticTimeoutMs: Math.max(10_000, Number(process.env.LLM_INSIGHT_CRITIC_TIMEOUT_MS) || 35_000),
   llmNarratorTimeoutMs: Math.max(10_000, Number(process.env.LLM_INSIGHT_NARRATOR_TIMEOUT_MS) || 45_000),
+  llmNarratorRepairTimeoutMs: Math.max(10_000, Number(process.env.LLM_INSIGHT_NARRATOR_REPAIR_TIMEOUT_MS) || 90_000),
   llmAgentReportTimeoutMs: Math.max(10_000, Number(process.env.LLM_AGENT_REPORT_TIMEOUT_MS) || 45_000),
   llmRetryBaseDelayMs: Math.max(0, Number(process.env.LLM_RETRY_BASE_DELAY_MS) || 250),
   llmRetryMaxDelayMs: Math.max(0, Number(process.env.LLM_RETRY_MAX_DELAY_MS) || 4_000),
@@ -153,14 +158,16 @@ const explorationGateway = createLlmGateway({
   providers: llmProviders,
   timeoutMs: config.llmTimeoutMs,
   connectTimeoutMs: config.llmConnectTimeoutMs,
-  responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs,
+  responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmTimeoutMs,
+  responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmTimeoutMs),
   operationPolicies: {
-    exploration: { requestTimeoutMs: config.llmTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs },
-    'agent-report': { requestTimeoutMs: config.llmAgentReportTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs },
-    'insight-planner': { requestTimeoutMs: config.llmPlannerTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs },
-    'insight-critic': { requestTimeoutMs: config.llmCriticTimeoutMs, responseHeaderTimeoutMs: Math.min(config.llmResponseHeaderTimeoutMs, 12_000) },
-    'insight-narrator': { requestTimeoutMs: config.llmNarratorTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs },
-    probe: { requestTimeoutMs: Math.min(config.llmTimeoutMs, 10_000), responseHeaderTimeoutMs: Math.min(config.llmResponseHeaderTimeoutMs, 5_000) },
+    exploration: { requestTimeoutMs: config.llmTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmTimeoutMs) },
+    'agent-report': { requestTimeoutMs: config.llmAgentReportTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmAgentReportTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmAgentReportTimeoutMs) },
+    'insight-planner': { requestTimeoutMs: config.llmPlannerTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmPlannerTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmPlannerTimeoutMs) },
+    'insight-critic': { requestTimeoutMs: config.llmCriticTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmCriticTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmCriticTimeoutMs) },
+    'insight-narrator': { requestTimeoutMs: config.llmNarratorTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmNarratorTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmNarratorTimeoutMs) },
+    'insight-narrator-repair': { requestTimeoutMs: config.llmNarratorRepairTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmNarratorRepairTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmNarratorRepairTimeoutMs) },
+    probe: { requestTimeoutMs: Math.min(config.llmTimeoutMs, 10_000), responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || Math.min(config.llmTimeoutMs, 10_000), responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, 5_000) },
   },
   retryBaseDelayMs: config.llmRetryBaseDelayMs,
   retryMaxDelayMs: config.llmRetryMaxDelayMs,
@@ -175,10 +182,11 @@ const intentGateway = createLlmGateway({
   providers: llmProviders,
   timeoutMs: config.intentLlmTimeoutMs,
   connectTimeoutMs: config.llmConnectTimeoutMs,
-  responseHeaderTimeoutMs: Math.min(config.llmResponseHeaderTimeoutMs, 8_000),
+  responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.intentLlmTimeoutMs,
+  responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.intentLlmTimeoutMs),
   operationPolicies: {
-    intent: { requestTimeoutMs: config.intentLlmTimeoutMs, responseHeaderTimeoutMs: Math.min(config.llmResponseHeaderTimeoutMs, 8_000) },
-    probe: { requestTimeoutMs: Math.min(config.intentLlmTimeoutMs, 10_000), responseHeaderTimeoutMs: Math.min(config.llmResponseHeaderTimeoutMs, 5_000) },
+    intent: { requestTimeoutMs: config.intentLlmTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.intentLlmTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.intentLlmTimeoutMs) },
+    probe: { requestTimeoutMs: Math.min(config.intentLlmTimeoutMs, 10_000), responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || Math.min(config.intentLlmTimeoutMs, 10_000), responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, 5_000) },
   },
   retryBaseDelayMs: config.llmRetryBaseDelayMs,
   retryMaxDelayMs: config.llmRetryMaxDelayMs,
@@ -524,7 +532,7 @@ async function handleHealth(response) {
       llmProvider: explorationGateway.enabled ? 'llm-gateway' : 'local-fallback',
       llmEndpointHost,
       llmHealthStatus,
-      llmGateway: { version: 'wynai.llm-gateway/v1', exploration: llmSnapshot, intent: intentGateway.snapshot(), policy: { requestTimeoutMs: config.llmTimeoutMs, intentRequestTimeoutMs: config.intentLlmTimeoutMs, connectTimeoutMs: config.llmConnectTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs, operationTimeoutMs: { insightPlanner: config.llmPlannerTimeoutMs, insightCritic: config.llmCriticTimeoutMs, insightNarrator: config.llmNarratorTimeoutMs, agentReport: config.llmAgentReportTimeoutMs }, maxAttempts: config.llmMaxAttempts, retryBaseDelayMs: config.llmRetryBaseDelayMs, retryMaxDelayMs: config.llmRetryMaxDelayMs, retryJitterMs: config.llmRetryJitterMs } },
+      llmGateway: { version: 'wynai.llm-gateway/v1', exploration: llmSnapshot, intent: intentGateway.snapshot(), policy: { requestTimeoutMs: config.llmTimeoutMs, intentRequestTimeoutMs: config.intentLlmTimeoutMs, connectTimeoutMs: config.llmConnectTimeoutMs, responseHeaderWarningMs: config.llmResponseHeaderWarningMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmTimeoutMs, responseBodyTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmTimeoutMs, operationTimeoutMs: { insightPlanner: config.llmPlannerTimeoutMs, insightCritic: config.llmCriticTimeoutMs, insightNarrator: config.llmNarratorTimeoutMs, insightNarratorRepair: config.llmNarratorRepairTimeoutMs, agentReport: config.llmAgentReportTimeoutMs }, maxAttempts: config.llmMaxAttempts, retryBaseDelayMs: config.llmRetryBaseDelayMs, retryMaxDelayMs: config.llmRetryMaxDelayMs, retryJitterMs: config.llmRetryJitterMs } },
       intentLlmTimeoutMs: config.intentLlmTimeoutMs,
       status: upstream.status,
       message: upstream.ok ? 'Wyn 服务连接正常' : `Wyn 返回 ${upstream.status}`,
@@ -1820,7 +1828,7 @@ function deterministicInsightDocument(record, prompt, reasonCode, reasonMessage)
 }
 
 function isRecoverableInsightError(error) {
-  return ['INSIGHT_LLM_REQUIRED', 'LLM_UPSTREAM_ERROR', 'LLM_TIMEOUT', 'LLM_CONNECT_TIMEOUT', 'LLM_RESPONSE_HEADER_TIMEOUT', 'LLM_RATE_LIMITED', 'LLM_EMPTY_RESPONSE', 'LLM_CIRCUIT_OPEN', 'LLM_CONTEXT_LIMIT', 'NARRATOR_SCHEMA_INVALID', 'INSIGHT_LLM_INVALID_OUTPUT', 'INSIGHT_CLAIM_VALIDATION_FAILED', 'EVIDENCE_INSUFFICIENT', 'NARRATOR_UNSUPPORTED_CLAIM'].includes(error?.code);
+  return ['INSIGHT_LLM_REQUIRED', 'LLM_UPSTREAM_ERROR', 'LLM_TIMEOUT', 'LLM_CONNECT_TIMEOUT', 'LLM_RESPONSE_HEADER_TIMEOUT', 'LLM_RESPONSE_BODY_TIMEOUT', 'LLM_RATE_LIMITED', 'LLM_EMPTY_RESPONSE', 'LLM_CIRCUIT_OPEN', 'LLM_CONTEXT_LIMIT', 'NARRATOR_SCHEMA_INVALID', 'INSIGHT_LLM_INVALID_OUTPUT', 'INSIGHT_CLAIM_VALIDATION_FAILED', 'EVIDENCE_INSUFFICIENT', 'NARRATOR_UNSUPPORTED_CLAIM'].includes(error?.code);
 }
 
 async function handleSecondaryInsight(request, response, providedBody = null) {
