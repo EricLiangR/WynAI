@@ -71,7 +71,7 @@ test('diagnostic lifecycle detects open and closed generation attempts', () => {
 
 test('adaptive context contracts normalize budgets, transport policy, and Skill boundaries', async () => {
   const { normalizeModelCapability, resolveModelBudget, estimateJsonTokens } = await import('./model-capability-profile.mjs');
-  const { normalizeTransportPolicy, createEvidenceTransportPlan } = await import('./evidence-transport-plan.mjs');
+  const { normalizeTransportPolicy, createEvidenceTransportPlan, decideEvidenceTransport } = await import('./evidence-transport-plan.mjs');
   const { compileSkillPlan } = await import('./skill-plan.mjs');
   const profile = normalizeModelCapability();
   assert.equal(profile.contextWindowTokens, 32768);
@@ -85,6 +85,9 @@ test('adaptive context contracts normalize budgets, transport policy, and Skill 
   assert.deepEqual(normalizeTransportPolicy({ mode: 'invalid', allowLosslessChunking: false }), { mode: 'auto', allowLosslessChunking: false, defaultEvidenceLevel: 'aggregate' });
   const transport = createEvidenceTransportPlan({ mode: 'auto', initialMode: 'aggregate-catalog', finalMode: 'lossless-row-chunk', reason: ['core-evidence-insufficient'], evidence: { sourceRowCount: 418, representedRowCount: 418, chunkCount: 2 } });
   assert.equal(transport.finalMode, 'lossless-row-chunk');
+  const decided = decideEvidenceTransport({ skillPlan: { transportPolicy: { mode: 'auto', allowLosslessChunking: true }, methods: [{ id: 'row-anomaly', priority: 'core', rowLevel: true, allowLosslessChunking: true }] }, pack: { resultSets: [{ rows: [{ value: 1 }] }] }, modelBudget: { inputBudgetTokens: 12000 } });
+  assert.equal(decided.finalMode, 'lossless-row-chunk');
+  assert.ok(decided.reason.includes('auto-core-row-level-method'));
   const skillPlan = compileSkillPlan({ schema: [{ name: '月份' }, { name: '收入' }], skills: [{ id: 'sales-trend', version: '1.0.0', coreMethods: ['trend'], evidenceRequirements: { trend: ['月份', '收入'] }, methodPolicies: { trend: { evidenceLevel: 'aggregate-sufficient' } }, transportPolicy: { mode: 'auto' } }] });
   assert.equal(skillPlan.transportPolicy.mode, 'auto');
   assert.equal(skillPlan.methods[0].evidenceLevel, 'aggregate-sufficient');

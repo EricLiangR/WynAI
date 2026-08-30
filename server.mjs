@@ -35,6 +35,7 @@ import { InsightRunStore } from './lib/data-insights/insight-run-store.mjs';
 import { buildEvidencePack } from './lib/data-insights/evidence-pack.mjs';
 import { runInsightLlmOrchestration } from './lib/data-insights/llm-orchestrator.mjs';
 import { compileSkillPlan } from './skill-plan.mjs';
+import { normalizeModelCapability, resolveModelBudget } from './model-capability-profile.mjs';
 import { InsightGovernanceService, redactInsightInput } from './lib/data-insights/insight-governance.mjs';
 import { buildBusinessFactPack } from './business-fact-engine.mjs';
 import { InsightDiagnosticLookupError, InsightDiagnosticStore, summarizeDiagnosticLifecycle } from './insight-diagnostic-store.mjs';
@@ -97,6 +98,11 @@ const config = {
   llmBaseUrl: (process.env.LLM_BASE_URL || '').replace(/\/$/, ''),
   llmApiKey: process.env.LLM_API_KEY || '',
   llmModel: process.env.LLM_MODEL || '',
+  llmContextWindowTokens: Math.max(4_096, Number(process.env.LLM_CONTEXT_WINDOW_TOKENS) || 32_768),
+  llmMaxInputTokens: Math.max(1_024, Number(process.env.LLM_MAX_INPUT_TOKENS) || 20_000),
+  llmMaxOutputTokens: Math.max(256, Number(process.env.LLM_MAX_OUTPUT_TOKENS) || 4_096),
+  llmSafetyReserveTokens: Math.max(0, Number(process.env.LLM_SAFETY_RESERVE_TOKENS) || 2_048),
+  llmProtocolOverheadTokens: Math.max(0, Number(process.env.LLM_PROTOCOL_OVERHEAD_TOKENS) || 1_024),
   llmBackupBaseUrl: (process.env.LLM_BACKUP_BASE_URL || '').replace(/\/$/, ''),
   llmBackupApiKey: process.env.LLM_BACKUP_API_KEY || '',
   llmBackupModel: process.env.LLM_BACKUP_MODEL || '',
@@ -1740,7 +1746,9 @@ function buildLocalInsight(record, prompt, factPack = null) {
 async function callConfiguredLlm(record, prompt, diagnosticContext = {}) {
   const sensitiveFields = Array.isArray(record.input.context?.sensitiveFields) ? record.input.context.sensitiveFields : [];
   const redacted = redactInsightInput(record.input, sensitiveFields);
-  const evidencePack = buildEvidencePack(redacted.input);
+  const modelCapability = normalizeModelCapability({ provider: llmEndpointHost, model: effectiveLlmModel, contextWindowTokens: config.llmContextWindowTokens, maxInputTokens: config.llmMaxInputTokens, maxOutputTokens: config.llmMaxOutputTokens, safetyReserveTokens: config.llmSafetyReserveTokens, protocolOverheadTokens: config.llmProtocolOverheadTokens, source: 'server-env' });
+  const modelBudget = resolveModelBudget(modelCapability);
+  const evidencePack = buildEvidencePack(redacted.input, { maxTokens: modelBudget.inputBudgetTokens });
   const resolvedSkills = resolveInsightSkillsForRecord(record, prompt);
   const businessFacts = buildBusinessFactPack({ input: redacted.input, evidencePack, skills: resolvedSkills });
   const enrichedEvidencePack = { ...evidencePack, businessFacts };
@@ -1774,7 +1782,7 @@ async function callConfiguredLlm(record, prompt, diagnosticContext = {}) {
     schema: redacted.input.resultSets?.flatMap(resultSet => resultSet.schema || []) || [],
     question: prompt || record.input.title,
   });
-  await recordInsightDiagnostic(record.insightId, 'evidence.pack.created', { evidencePack: enrichedEvidencePack, redactionPolicy: redacted.policy, skills: resolvedSkills, skillPlan }, diagnosticContext);
+  await recordInsightDiagnostic(record.insightId, 'evidence.pack.created', { evidencePack: enrichedEvidencePack, redactionPolicy: redacted.policy, skills: resolvedSkills, skillPlan, modelCapability, modelBudget }, diagnosticContext);
   const orchestration = await runInsightLlmOrchestration({
     llm: explorationLlm,
     prompt: prompt || record.input.title,
