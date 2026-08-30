@@ -459,7 +459,7 @@ function renderResultDetail(result) {
     : `<tr><td colspan="${columns.length + 1}"><span class="null-value">结果集没有有效数据行</span></td></tr>`;
   document.querySelector('#raw-data').textContent = JSON.stringify(result.rows || [], null, 2);
   document.querySelector('#table-quality-note').textContent = result.completeness >= 80
-    ? `✓ 数据完整度 ${result.completeness}%，可进入二次分析`
+    ? `✓ 数据完整度 ${result.completeness}%，可进入数据洞察`
     : `⚠ 数据完整度 ${result.completeness}%，洞察将优先提示质量风险`;
   if (result.document) renderPersistedInsightDocument(result.document, result.versions || []);
   else {
@@ -470,9 +470,42 @@ function renderResultDetail(result) {
   renderResultList();
 }
 
+function insightSectionTone(title = '') {
+  const value = String(title || '');
+  if (value.includes('风险')) return 'risk';
+  if (value.includes('行动')) return 'action';
+  if (value.includes('发现')) return 'finding';
+  return 'summary';
+}
+
+function renderInsightSectionBody(content, tone) {
+  const text = String(content || '').trim();
+  const lines = text.split(/\r?\n/).map(line => line.trim()).filter(Boolean);
+  if ((tone === 'finding' || tone === 'action') && lines.length > 1) {
+    return `<ol class="insight-numbered-list">${lines.map((line, index) => `<li><span class="insight-item-index">${String(index + 1).padStart(2, '0')}</span><div>${inlineMarkdown(escapeHtml(line))}</div></li>`).join('')}</ol>`;
+  }
+  if (tone === 'risk' && lines.length > 1) {
+    return `<ul class="insight-bullet-list">${lines.map(line => `<li>${inlineMarkdown(escapeHtml(line))}</li>`).join('')}</ul>`;
+  }
+  return markdown(text);
+}
+
+function renderInsightNarrativeSections(blocks = [], wrap = true) {
+  const sections = blocks.filter(block => block.type === 'ai-narrative').map(block => {
+    const title = block.title || '洞察';
+    const tone = insightSectionTone(title);
+    const icon = tone === 'risk' ? '!' : tone === 'action' ? '→' : tone === 'finding' ? '•' : '✦';
+    return `<section class="insight-document-section insight-tone-${tone}">
+      <div class="insight-section-head"><span class="insight-section-icon" aria-hidden="true">${icon}</span><h5>${escapeHtml(title)}</h5></div>
+      <div class="insight-section-body">${renderInsightSectionBody(block.content || '', tone)}</div>
+    </section>`;
+  }).join('');
+  return sections && wrap ? `<div class="insight-report-shell">${sections}</div>` : sections;
+}
+
 function renderPersistedInsightDocument(documentValue, versions = []) {
   elements.secondaryOutput.hidden = false;
-  document.querySelector('#output-model').textContent = `InsightDocument v${versions.length || 1}`;
+  document.querySelector('#output-model').textContent = `版本 v${versions.length || 1}`;
   const blocks = Array.isArray(documentValue.blocks) ? documentValue.blocks : [];
   const warningMarkup = blocks.filter(block => block.type === 'warning').map(block => {
     const items = Array.isArray(block.incompleteItems) && block.incompleteItems.length
@@ -480,9 +513,10 @@ function renderPersistedInsightDocument(documentValue, versions = []) {
       : '';
     return `<div class="insight-degraded-notice"><strong>${escapeHtml(block.title || '洞察状态')}</strong><br>${escapeHtml(block.message || block.content || '')}${items}</div>`;
   }).join('');
-  elements.findingGrid.innerHTML = blocks.filter(block => ['ai-narrative', 'text'].includes(block.type)).map(block => `
-    <div class="finding-card violet"><small>${escapeHtml(block.title || '业务洞察')}</small><strong>${escapeHtml(block.content || '')}</strong><span>证据：${escapeHtml((block.evidenceIds || []).join('、') || '待补充')}</span></div>`).join('');
-  elements.outputContent.innerHTML = warningMarkup + (blocks.filter(block => block.type === 'ai-narrative').map(block => `<section class="insight-document-section"><h5>${escapeHtml(block.title || '洞察')}</h5><p>${markdown(block.content || '')}</p></section>`).join('') || '<div class="insight-loading">暂无已保存的业务洞察</div>');
+  if (elements.findingGrid) elements.findingGrid.innerHTML = '';
+  const reportSections = renderInsightNarrativeSections(blocks, false);
+  const reportMarkup = warningMarkup || reportSections ? `<div class="insight-report-shell">${warningMarkup}${reportSections}</div>` : '';
+  elements.outputContent.innerHTML = reportMarkup || '<div class="insight-loading">暂无已保存的数据洞察</div>';
   elements.insightVersionBar.hidden = versions.length < 2;
   elements.insightVersionBar.innerHTML = versions.length > 1 ? `<span>版本 ${versions.map(item => `v${item.version}`).join('、')}</span><button type="button" data-insight-explore="${escapeHtml(state.activeResult?.insightId || '')}">证据不足时发起 Explore</button>` : '';
 }
@@ -559,7 +593,7 @@ async function generateSecondaryInsight() {
   elements.generateInsight.querySelector('span').textContent = '洞察中';
   elements.secondaryOutput.hidden = false;
   elements.findingGrid.innerHTML = '';
-  elements.outputContent.innerHTML = '<div class="insight-loading"><i></i><i></i><i></i><span>正在读取结构化结果并生成二次洞察</span></div>';
+  elements.outputContent.innerHTML = '<div class="insight-loading"><i></i><i></i><i></i><span>正在读取结构化结果并生成数据洞察</span></div>';
   elements.secondaryOutput.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   try {
     const response = await fetch(`/api/data-insights/${encodeURIComponent(state.activeResult.insightId)}/generate`, {
@@ -572,7 +606,7 @@ async function generateSecondaryInsight() {
       state.activeResult = { ...(state.activeResult || {}), document: null };
       elements.insightExport.disabled = true;
       const failure = data.error || {};
-      const error = new Error(failure.message || data.message || '二次洞察未完成');
+      const error = new Error(failure.message || data.message || '数据洞察未完成');
       error.code = failure.code || data.code || 'INSIGHT_GENERATION_FAILED';
       error.retryable = data.retryable !== false;
       throw error;
@@ -580,17 +614,15 @@ async function generateSecondaryInsight() {
     state.activeResult = { ...(state.activeResult || {}), document: data.document || state.activeResult?.document || null, versions: data.document ? [...(state.activeResult?.versions || []), { version: ((state.activeResult?.versions || []).at(-1)?.version || 0) + 1, document: data.document }] : (state.activeResult?.versions || []) };
     elements.insightExport.disabled = !data.document;
     document.querySelector('#output-model').textContent = data.model || 'AI 洞察引擎';
-    const narrative = data.structured || data.document?.blocks || {};
-    const findings = Array.isArray(narrative.keyFindings) ? narrative.keyFindings : (data.findings || []);
-    elements.findingGrid.innerHTML = findings.map(item => `<div class="finding-card violet"><small>关键发现</small><strong>${escapeHtml(item.text || item.value || '')}</strong><span>证据：${escapeHtml((item.evidenceIds || []).join('、'))}</span></div>`).join('');
-    elements.outputContent.innerHTML = data.document ? data.document.blocks.filter(block => block.type === 'ai-narrative').map(block => `<section class="insight-document-section"><h5>${escapeHtml(block.title || '洞察')}</h5><p>${markdown(block.content || '')}</p></section>`).join('') : markdown(data.content || '洞察已完成。');
+    if (elements.findingGrid) elements.findingGrid.innerHTML = '';
+    elements.outputContent.innerHTML = data.document ? renderInsightNarrativeSections(data.document.blocks) : markdown(data.content || '数据洞察已完成。');
     if (data.exploreRun) elements.outputContent.insertAdjacentHTML('beforeend', `<div class="insight-followup-note">证据不足，已关联 Explore 运行 ${escapeHtml(data.exploreRun.id)}，状态：${escapeHtml(statusLabel(data.exploreRun.status))}</div>`);
     if (data.document) renderPersistedInsightDocument(data.document, state.activeResult.versions);
   } catch (error) {
-    elements.outputContent.innerHTML = `<div class="error-box"><strong>本次智能洞察未完成</strong><br>${escapeHtml(error.message)}${error.code ? `<br><small>错误码：${escapeHtml(error.code)}</small>` : ''}${error.retryable ? '<br><button type="button" data-retry-insight="true">重新生成</button>' : ''}</div>`;
+    elements.outputContent.innerHTML = `<div class="error-box"><strong>本次数据洞察未完成</strong><br>${escapeHtml(error.message)}${error.code ? `<br><small>错误码：${escapeHtml(error.code)}</small>` : ''}${error.retryable ? '<br><button type="button" data-retry-insight="true">重新生成</button>' : ''}</div>`;
   } finally {
     elements.generateInsight.disabled = false;
-    elements.generateInsight.querySelector('span').textContent = '开始洞察';
+    elements.generateInsight.querySelector('span').textContent = '生成数据洞察';
   }
 }
 

@@ -148,7 +148,7 @@
         <section class="insights-workspace" id="insights-workspace" hidden>
           <div class="insights-toolbar">
             <div>
-              <div class="insights-kicker">AI 二次分析</div>
+              <div class="insights-kicker">AI 数据洞察</div>
               <h2>数据洞察工作台</h2>
               <p>接收标准结果集，让洞察引擎继续完成趋势、异常与归因分析。</p>
             </div>
@@ -226,7 +226,7 @@
 
                 <article class="analysis-studio">
                   <div class="studio-head">
-                    <div><span class="studio-mark">✦</span><div><span class="card-eyebrow">AI 洞察工作台</span><h4>二次智能洞察</h4></div></div>
+                    <div><span class="studio-mark">✦</span><div><span class="card-eyebrow">AI 洞察工作台</span><h4>数据洞察</h4></div></div>
                     <span class="context-chip">已附加结果上下文</span>
                   </div>
                   <div class="analysis-presets" id="analysis-presets">
@@ -237,13 +237,13 @@
                   </div>
                   <div class="insight-prompt-box">
                     <textarea id="secondary-prompt" rows="3">请从业务趋势、异常和风险角度解读当前结果，并给出可执行建议。</textarea>
-                    <div><span>结果集会在服务端压缩为字段、统计摘要与必要样本</span><button id="generate-insight" type="button"><span>开始洞察</span><svg viewBox="0 0 24 24"><path d="m4 4 17 8-17 8 3-8-3-8Zm3 8h14"/></svg></button></div>
+                    <div><span>结果集会在服务端压缩为字段、统计摘要与必要样本</span><button id="generate-insight" type="button"><span>生成数据洞察</span><svg viewBox="0 0 24 24"><path d="m4 4 17 8-17 8 3-8-3-8Zm3 8h14"/></svg></button></div>
                   </div>
                 </article>
 
                 <article class="secondary-output" id="secondary-output" hidden>
-                  <div class="output-head"><div><span class="studio-mark">AI</span><div><span class="card-eyebrow">二次洞察</span><h4>洞察结论</h4></div></div><span id="output-model">—</span></div>
-                  <div class="finding-grid" id="finding-grid"></div>
+                  <div class="output-head"><div><span class="studio-mark">AI</span><div><span class="card-eyebrow">数据洞察报告</span><h4>洞察结论</h4></div></div><span id="output-model">—</span></div>
+                  <div class="finding-grid" id="finding-grid" hidden aria-hidden="true"></div>
                   <div class="output-content" id="output-content"></div>
                   <div class="insight-version-bar" id="insight-version-bar" hidden></div>
                 </article>

@@ -2,11 +2,55 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildEvidencePack } from '../lib/data-insights/evidence-pack.mjs';
 import { runInsightLlmOrchestration } from '../lib/data-insights/llm-orchestrator.mjs';
+import { assessCapabilityCoverage } from '../capability-coverage.mjs';
 
 function pack() {
   return buildEvidencePack({ title: '区域销售', evidence: [{ id: 'ev-sales-total', value: 180, title: '销售总额' }], resultSets: [{ id: 'rs-sales', schema: [{ name: '区域', type: 'string', role: 'dimension' }, { name: '销售额', type: 'number', role: 'measure' }], rows: [{ 区域: '华东', 销售额: 100 }, { 区域: '华南', 销售额: 80 }] }] });
 }
 function llm(outputs) { let index = 0; return { enabled: true, model: 'fake', completeJson: async () => outputs[index++] }; }
+
+test('能力覆盖将缺少产品字段标记为局部不可执行而不是整体阻断', () => {
+  const coverage = assessCapabilityCoverage({
+    question: '按季度统计供应商、产品类别、产品的销售额、销量和利润',
+    schema: [
+      { name: '供应商名称', type: 'string', role: 'dimension' },
+      { name: '类别名称', type: 'string', role: 'dimension' },
+      { name: '订购日期', type: 'date', role: 'time' },
+      { name: '订单金额', type: 'number', role: 'measure' },
+      { name: '购买数量', type: 'number', role: 'measure' },
+      { name: '订单利润', type: 'number', role: 'measure' },
+    ],
+  });
+  assert.equal(coverage.execution, 'partial');
+  assert.equal(coverage.canProceed, true);
+  assert.deepEqual(coverage.unavailable.map(item => item.id), ['product']);
+  assert.ok(coverage.available.some(item => item.id === 'supplier'));
+  assert.ok(coverage.available.some(item => item.id === 'category'));
+});
+
+test('能力覆盖在所有明确请求能力均缺失时才整体阻断', () => {
+  const coverage = assessCapabilityCoverage({ question: '按产品分析', schema: [{ name: '销售额', type: 'number', role: 'measure' }] });
+  assert.equal(coverage.execution, 'blocked');
+  assert.equal(coverage.canProceed, false);
+  assert.equal(coverage.unavailable[0].id, 'product');
+});
+
+test('编排结果披露缺失请求能力并返回 completed-partial', async () => {
+  const input = buildEvidencePack({
+    resultSets: [{ id: 'rs-sales', schema: [{ name: '供应商', type: 'string', role: 'dimension' }, { name: '销售额', type: 'number', role: 'measure' }], rows: [{ 供应商: 'A', 销售额: 100 }] }],
+  });
+  input.capabilityCoverage = assessCapabilityCoverage({ question: '按供应商和产品分析销售额', schema: [{ name: '供应商', type: 'string', role: 'dimension' }, { name: '销售额', type: 'number', role: 'measure' }] });
+  const result = await runInsightLlmOrchestration({
+    llm: llm([
+      { schema: 'wynai.insight-planner/v1', hypotheses: [{ id: 'h1', priority: 'core', requiredEvidenceIds: [] }], toolRequests: [] },
+      { schema: 'wynai.insight-critic/v1', verdict: 'sufficient', assessments: [{ hypothesisId: 'h1', status: 'supported', evidenceIds: [] }], followUps: [] },
+      { schema: 'wynai.insight-narrator/v1', managementSummary: [{ text: '供应商销售额可核验。', evidenceIds: ['ev-rs-sales-row-count'] }], keyFindings: [{ text: '产品维度未执行。', evidenceIds: ['ev-rs-sales-row-count'], verificationRequired: true }], risks: [{ text: '请补充产品字段。', evidenceIds: ['ev-rs-sales-row-count'], verificationRequired: true }], actions: [{ text: '补充产品字段后重试。', evidenceIds: ['ev-rs-sales-row-count'] }], followUps: [] },
+    ]), prompt: '按供应商和产品分析销售额', input,
+  });
+  assert.equal(result.status, 'completed-partial');
+  assert.equal(result.diagnostics.reasonCode, 'PARTIAL_CAPABILITY_COVERAGE');
+  assert.equal(result.capabilityCoverage.unavailable[0].id, 'product');
+});
 
 test('数据洞察通过 Planner/Critic/Narrator 编排并只允许证据引用', async () => {
   const evidenceId = 'ev-sales-total';

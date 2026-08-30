@@ -1,8 +1,8 @@
 # 数据洞察平台可靠性与证据语义迭代目标计划
 
-> 版本：1.0  
+> 版本：1.1
 > 日期：2026-08-30（Asia/Shanghai）  
-> 状态：阶段 0-4 已完成并通过真实 LLM UAT；阶段 5 暂不启动  
+> 状态：阶段 0-4 已完成并通过真实 LLM UAT；阶段 5 暂不启动；平台兼容迁移待启动
 > 适用范围：`InsightInput v1`、LLM Gateway、Evidence Pack、Skill、Planner/Critic/Narrator、平台与模块 UAT
 
 ## 1. 背景与问题定义
@@ -14,6 +14,8 @@
 3. 真实业务的稀疏数据（例如供应商只在部分月份有记录）被错误判定为证据缺失。
 
 本计划从平台结构解决这些问题，不针对某一个供应商、某一个问题或某一个模型编写专用规则。
+
+本版本补充平台公共能力抽取的兼容性要求：Gateway、Context、Evidence、Skill 和生命周期能力上收时，数据洞察必须通过适配器保持原有输入输出、业务编排、权限和失败语义；切换前建立黄金基线，执行新旧链路双跑、差异门禁、灰度和回滚。详见 `PLATFORM_CAPABILITY_EXTRACTION_COMPATIBILITY_GOALS_PLAN_2026-08-30.md`。
 
 ## 2. 总目标
 

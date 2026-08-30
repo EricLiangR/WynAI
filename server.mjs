@@ -35,6 +35,7 @@ import { InsightRunStore } from './lib/data-insights/insight-run-store.mjs';
 import { buildEvidencePack } from './lib/data-insights/evidence-pack.mjs';
 import { runInsightLlmOrchestration } from './lib/data-insights/llm-orchestrator.mjs';
 import { compileSkillPlan } from './skill-plan.mjs';
+import { assessCapabilityCoverage } from './capability-coverage.mjs';
 import { normalizeModelCapability, resolveModelBudget } from './model-capability-profile.mjs';
 import { InsightGovernanceService, redactInsightInput } from './lib/data-insights/insight-governance.mjs';
 import { buildBusinessFactPack } from './business-fact-engine.mjs';
@@ -1745,7 +1746,7 @@ function buildLocalInsight(record, prompt, factPack = null) {
     provider: 'local-demo',
     model: 'Atlas 内置洞察引擎',
     findings,
-    content: `## 核心结论\n\n本次二次洞察基于 Wyn 返回的 **${summary.rowCount} 行、${summary.columnCount} 列**结构化结果集。${qualityText}\n\n## 指标扫描\n\n${numericText}\n\n## 针对分析目标\n\n${prompt || '请从业务趋势、异常和风险角度解读当前结果。'}\n\n- 将关键结论与原始字段逐项核验，避免把空值或格式化文本当作真实数值。\n- 对时间、地区、产品等维度继续下钻，比较环比、同比和贡献度。\n- 对异常点回查明细记录与筛选条件，再形成可执行的业务动作。\n\n## 建议动作\n\n1. 优先处理完整度低于 80% 的字段。\n2. 将有效指标按核心维度分组，并保留 Top/Bottom 贡献项。\n3. 由业务负责人确认指标口径后，再生成面向管理层的智能报告。`,
+    content: `## 核心结论\n\n本次数据洞察基于 Wyn 返回的 **${summary.rowCount} 行、${summary.columnCount} 列**结构化结果集。${qualityText}\n\n## 指标扫描\n\n${numericText}\n\n## 针对分析目标\n\n${prompt || '请从业务趋势、异常和风险角度解读当前结果。'}\n\n- 将关键结论与原始字段逐项核验，避免把空值或格式化文本当作真实数值。\n- 对时间、地区、产品等维度继续下钻，比较环比、同比和贡献度。\n- 对异常点回查明细记录与筛选条件，再形成可执行的业务动作。\n\n## 建议动作\n\n1. 优先处理完整度低于 80% 的字段。\n2. 将有效指标按核心维度分组，并保留 Top/Bottom 贡献项。\n3. 由业务负责人确认指标口径后，再生成面向管理层的智能报告。`,
   };
 }
 
@@ -1788,7 +1789,12 @@ async function callConfiguredLlm(record, prompt, diagnosticContext = {}) {
     schema: redacted.input.resultSets?.flatMap(resultSet => resultSet.schema || []) || [],
     question: prompt || record.input.title,
   });
-  const effectiveSkillPlan = { ...skillPlan, transportPolicy: { ...skillPlan.transportPolicy, mode: config.insightTransportMode } };
+  const capabilityCoverage = assessCapabilityCoverage({
+    question: prompt || record.input.title,
+    schema: redacted.input.resultSets?.flatMap(resultSet => resultSet.schema || []) || [],
+  });
+  const effectiveSkillPlan = { ...skillPlan, capabilityCoverage, transportPolicy: { ...skillPlan.transportPolicy, mode: config.insightTransportMode } };
+  enrichedEvidencePack.capabilityCoverage = capabilityCoverage;
   await recordInsightDiagnostic(record.insightId, 'evidence.pack.created', { evidencePack: enrichedEvidencePack, redactionPolicy: redacted.policy, skills: resolvedSkills, skillPlan: effectiveSkillPlan, modelCapability, modelBudget }, diagnosticContext);
   const orchestration = await runInsightLlmOrchestration({
     llm: explorationLlm,
@@ -1825,6 +1831,7 @@ async function callConfiguredLlm(record, prompt, diagnosticContext = {}) {
       stageAudit: orchestration.stageAudit || [],
       externalDataPolicy: { ...redacted.policy, sampleStrategy: evidencePack.policy.sampleStrategy, rawRowsToLlm: false },
       businessFacts,
+      capabilityCoverage,
       gateway: explorationGateway.snapshot(),
     },
   };
@@ -1968,6 +1975,20 @@ async function handleSecondaryInsight(request, response, providedBody = null) {
       followUpActions: [],
       nextQuestions: narrative.followUps?.map(item => item.question).filter(Boolean) || [],
     });
+    const capabilityCoverage = orchestration.capabilityCoverage || null;
+    const responseStatus = orchestration.status === 'completed-partial' || orchestration.diagnostics?.reasonCode === 'PARTIAL_EVIDENCE' || orchestration.diagnostics?.reasonCode === 'PARTIAL_CAPABILITY_COVERAGE' ? 'completed-partial' : 'completed';
+    const unavailableCapabilities = Array.isArray(capabilityCoverage?.unavailable) ? capabilityCoverage.unavailable : [];
+    if (unavailableCapabilities.length) {
+      insightDocument.blocks.push({
+        id: 'capability-coverage',
+        type: 'warning',
+        title: '部分请求未执行',
+        content: `以下请求能力因结果集缺少对应字段未执行：${unavailableCapabilities.map(item => item.label || item.id).join('、')}。已继续执行可用能力。`,
+        message: unavailableCapabilities.map(item => `${item.label || item.id}：缺少字段`).join('；'),
+        unavailableCapabilities,
+        evidenceIds: [],
+      });
+    }
     let exploreRun = null;
     const inputDatasetIds = (record.input.datasets || []).map(item => item.id).filter(Boolean);
     if (orchestration.critic?.verdict === 'insufficient' && inputDatasetIds.length) {
@@ -1991,17 +2012,16 @@ async function handleSecondaryInsight(request, response, providedBody = null) {
     if (orchestration.critic?.verdict === 'insufficient' && !exploreRun) {
       insightDocument.nextQuestions = [...new Set([...(insightDocument.nextQuestions || []), '请补充可访问的数据集标识，以便发起受控 Explore 分析。'])].slice(0, 8);
     }
+    if (responseStatus === 'completed-partial' && !insightDocument.blocks.some(block => block.id === 'analysis-completeness')) {
+      const incomplete = orchestration.diagnostics?.incompleteAssessments || [];
+      const detail = incomplete.map(item => `${item.hypothesisId || '未命名分析'}（${item.priority || 'extended'}）：${item.reason || '证据不足'}`).join('；');
+      insightDocument.blocks.push({ id: 'analysis-completeness', type: 'warning', title: '部分分析未完成', content: '核心分析已完成；部分扩展分析或请求能力因当前输入限制未执行。', message: detail || '部分分析未完成', incompleteItems: incomplete });
+    }
     await dataInsightStore.saveDocument(insightId, insightDocument, { runId: run?.id || null, actor: identity.actor, organizationId: identity.organizationId });
     await recordInsightDiagnostic(insightId, 'result.document.saved', { document: insightDocument, result: { provider: result.provider, model: result.model, status: result.status, diagnostics: result.diagnostics || null }, exploreRunId: exploreRun?.id || null }, diagnosticContext);
     if (run) await insightRunStore.complete(run.id, { error: null, document: insightDocument, metadata: { ...(run.metadata || {}), generatedAt: new Date().toISOString(), provider: result.provider, model: result.model, status: result.status, orchestrationSchema: orchestration.schema || null, exploreRunId: exploreRun?.id || null, gateway: orchestration.gateway || null } });
     insightGovernance.record({ actor: identity.actor, organizationId: identity.organizationId, insightId, runId: run?.id || null, action: 'insight.generate', status: 'completed', model: result.model, prompt, toolCalls: orchestration.planner?.toolRequests || [], stageAudit: orchestration.stageAudit || [], skillRefs: run?.skill?.refs || [], externalDataPolicy: orchestration.externalDataPolicy || { rawRowsToLlm: false }, gateway: orchestration.gateway || explorationGateway.snapshot() });
     await recordInsightDiagnostic(insightId, 'generation.finished', { status: 'completed', runId: run?.id || null, attempt: run?.attempt || 1, attemptId: run?.attemptId || null, provider: result.provider, model: result.model, stageAudit: orchestration.stageAudit || [], gateway: orchestration.gateway || explorationGateway.snapshot() }, diagnosticContext);
-    const responseStatus = orchestration.status === 'completed-partial' || orchestration.diagnostics?.reasonCode === 'PARTIAL_EVIDENCE' ? 'completed-partial' : 'completed';
-    if (responseStatus === 'completed-partial') {
-      const incomplete = orchestration.diagnostics?.incompleteAssessments || [];
-      const detail = incomplete.map(item => `${item.hypothesisId || '未命名分析'}（${item.priority || 'extended'}）：${item.reason || '证据不足'}`).join('；');
-      insightDocument.blocks.push({ id: 'analysis-completeness', type: 'warning', title: '部分分析未完成', content: '核心分析已完成；部分扩展分析因当前输入证据不足被跳过。', message: detail || '部分扩展分析未完成', incompleteItems: incomplete });
-    }
     sendJson(response, 200, { ...result, status: responseStatus, document: insightDocument, insightId, exploreRun, generatedAt: new Date().toISOString() });
   } catch (error) {
     if (requestController.signal.aborted || error?.code === 'REQUEST_ABORTED') {
@@ -2020,7 +2040,7 @@ async function handleSecondaryInsight(request, response, providedBody = null) {
     if (run) await insightRunStore.fail(run.id, error);
     insightGovernance.record({ actor: identity.actor, organizationId: identity.organizationId, insightId, runId: run?.id || null, action: 'insight.generate', status: 'failed', model: explorationGateway.model, prompt, skillRefs: run?.skill?.refs || [], externalDataPolicy: { rawRowsToLlm: false }, errorCode: error.code || 'INSIGHT_LLM_FAILED', gateway: explorationGateway.snapshot() });
     await recordInsightDiagnostic(insightId, 'generation.failed', { runId: run?.id || null, attempt: run?.attempt || 1, attemptId: run?.attemptId || null, error: { code: error.code || 'INSIGHT_LLM_FAILED', message: error.message, stack: error.stack || null }, gateway: explorationGateway.snapshot() }, diagnosticContext);
-    sendJson(response, error.status || 502, { code: error.code || 'INSIGHT_LLM_FAILED', message: `项目 LLM 二次洞察失败（${llmEndpointHost || '未配置端点'}）：${error.message}`, retryable: true });
+    sendJson(response, error.status || 502, { code: error.code || 'INSIGHT_LLM_FAILED', message: `项目 LLM 数据洞察失败（${llmEndpointHost || '未配置端点'}）：${error.message}`, retryable: true });
   } finally {
     request.removeListener('aborted', abortGeneration);
     response.removeListener('close', abortGeneration);
