@@ -90,6 +90,11 @@ function validPort(name, value) {
   return port;
 }
 
+function validInsightTransportMode(value) {
+  const mode = String(value || 'auto');
+  return ['auto', 'aggregate-catalog', 'lossless-row-chunk', 'adaptive-hybrid'].includes(mode) ? mode : 'auto';
+}
+
 const config = {
   wynBaseUrl: (process.env.WYN_BASE_URL || 'http://localhost:51980').replace(/\/$/, ''),
   token: process.env.WYN_TOKEN || '',
@@ -103,6 +108,7 @@ const config = {
   llmMaxOutputTokens: Math.max(256, Number(process.env.LLM_MAX_OUTPUT_TOKENS) || 4_096),
   llmSafetyReserveTokens: Math.max(0, Number(process.env.LLM_SAFETY_RESERVE_TOKENS) || 2_048),
   llmProtocolOverheadTokens: Math.max(0, Number(process.env.LLM_PROTOCOL_OVERHEAD_TOKENS) || 1_024),
+  insightTransportMode: validInsightTransportMode(process.env.INSIGHT_TRANSPORT_MODE),
   llmBackupBaseUrl: (process.env.LLM_BACKUP_BASE_URL || '').replace(/\/$/, ''),
   llmBackupApiKey: process.env.LLM_BACKUP_API_KEY || '',
   llmBackupModel: process.env.LLM_BACKUP_MODEL || '',
@@ -1782,13 +1788,14 @@ async function callConfiguredLlm(record, prompt, diagnosticContext = {}) {
     schema: redacted.input.resultSets?.flatMap(resultSet => resultSet.schema || []) || [],
     question: prompt || record.input.title,
   });
-  await recordInsightDiagnostic(record.insightId, 'evidence.pack.created', { evidencePack: enrichedEvidencePack, redactionPolicy: redacted.policy, skills: resolvedSkills, skillPlan, modelCapability, modelBudget }, diagnosticContext);
+  const effectiveSkillPlan = { ...skillPlan, transportPolicy: { ...skillPlan.transportPolicy, mode: config.insightTransportMode } };
+  await recordInsightDiagnostic(record.insightId, 'evidence.pack.created', { evidencePack: enrichedEvidencePack, redactionPolicy: redacted.policy, skills: resolvedSkills, skillPlan: effectiveSkillPlan, modelCapability, modelBudget }, diagnosticContext);
   const orchestration = await runInsightLlmOrchestration({
     llm: explorationLlm,
     prompt: prompt || record.input.title,
     input: enrichedEvidencePack,
     skills: skillsForLlm,
-    skillPlan,
+    skillPlan: effectiveSkillPlan,
     signal: diagnosticContext.signal || null,
     onStageEvent: event => recordInsightDiagnostic(record.insightId, `llm.stage.${event.stage}`, { ...event, attempt: diagnosticContext.attempt || null, attemptId: diagnosticContext.attemptId || null }, diagnosticContext),
     onGatewayEvent: event => recordInsightDiagnostic(record.insightId, event.type || 'gateway.attempt', { ...event, attempt: diagnosticContext.attempt || null, attemptId: diagnosticContext.attemptId || null }, diagnosticContext),
