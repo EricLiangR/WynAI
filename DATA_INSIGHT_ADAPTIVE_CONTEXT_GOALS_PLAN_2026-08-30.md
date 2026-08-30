@@ -2,7 +2,7 @@
 
 > 版本：1.0  
 > 日期：2026-08-30（Asia/Shanghai）  
-> 状态：阶段 A-D 已实施，阶段 E/G 验证中  
+> 状态：阶段 A-G 核心实现已完成，真实 UAT 通过，流式响应阶段 5 未启动  
 > 适用范围：InsightInput v1、Evidence Pack、SkillPlan、LLM Gateway、Planner/Critic/Narrator  
 > 前置共识：采用“平台自动判断、Skill 提供能力边界、用户无需选择模式”的设计
 
@@ -534,8 +534,9 @@ Adaptive Evidence Transport Planner
 
 ## 15. 当前状态和下一步
 
-- 本文档已完成 Review；阶段 A 契约、阶段 B 单条证据 token 门禁、阶段 C 自动传输决策、阶段 D 模型预算适配已实施；
-- 阶段 E 正在补充分块覆盖校验和真实运行验证；阶段 F/G 需在真实 `127.0.0.1:8787` LLM UAT 后完成发布门禁；
+- 本文档已完成 Review；阶段 A 契约、阶段 B 单条证据 token 门禁、阶段 C 自动传输决策、阶段 D 模型预算适配、阶段 E 分块边界和阶段 G 受控开关已实施；
+- 阶段 F 已完成真实 `127.0.0.1:8787` LLM UAT：`ins-a4385336-d931-4fe8-b69a-f529cf07477d`，主 Provider 成功，Planner/Critic/Narrator 全部完成，核心洞察正文可用；
+- 本次 UAT 返回 `completed-partial`，仅扩展项因输入证据未覆盖而不阻断核心结果；流式响应阶段 5 继续单独评审。
 - 每个阶段完成代码、自动化测试和对应级别 UAT 后再进入下一阶段；
 - 阶段 F 真实成功 LLM UAT 通过后，才评估是否需要启动流式响应阶段 5；
 - 所有失败结论必须区分模型能力不足、平台预算不足、运行环境阻断和业务证据不足。
