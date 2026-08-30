@@ -68,3 +68,44 @@ test('diagnostic lifecycle detects open and closed generation attempts', () => {
   assert.equal(open.valid, false);
   assert.equal(open.openAttempts, 1);
 });
+
+test('adaptive context contracts normalize budgets, transport policy, and Skill boundaries', async () => {
+  const { normalizeModelCapability, resolveModelBudget, estimateJsonTokens } = await import('./model-capability-profile.mjs');
+  const { normalizeTransportPolicy, createEvidenceTransportPlan } = await import('./evidence-transport-plan.mjs');
+  const { compileSkillPlan } = await import('./skill-plan.mjs');
+  const profile = normalizeModelCapability();
+  assert.equal(profile.contextWindowTokens, 32768);
+  assert.equal(resolveModelBudget(profile, { operationCapTokens: 18000 }).inputBudgetTokens, 18000);
+  assert.equal(estimateJsonTokens({ hello: 'world' }, { charsPerToken: 4 }), Math.ceil(JSON.stringify({ hello: 'world' }).length / 4));
+  for (const contextWindowTokens of [16384, 32768, 131072]) {
+    const configured = normalizeModelCapability({ contextWindowTokens, maxInputTokens: contextWindowTokens, maxOutputTokens: 4096 });
+    const budget = resolveModelBudget(configured);
+    assert.ok(budget.inputBudgetTokens + budget.outputReserveTokens + budget.safetyReserveTokens + budget.protocolOverheadTokens <= contextWindowTokens);
+  }
+  assert.deepEqual(normalizeTransportPolicy({ mode: 'invalid', allowLosslessChunking: false }), { mode: 'auto', allowLosslessChunking: false, defaultEvidenceLevel: 'aggregate' });
+  const transport = createEvidenceTransportPlan({ mode: 'auto', initialMode: 'aggregate-catalog', finalMode: 'lossless-row-chunk', reason: ['core-evidence-insufficient'], evidence: { sourceRowCount: 418, representedRowCount: 418, chunkCount: 2 } });
+  assert.equal(transport.finalMode, 'lossless-row-chunk');
+  const skillPlan = compileSkillPlan({ schema: [{ name: '月份' }, { name: '收入' }], skills: [{ id: 'sales-trend', version: '1.0.0', coreMethods: ['trend'], evidenceRequirements: { trend: ['月份', '收入'] }, methodPolicies: { trend: { evidenceLevel: 'aggregate-sufficient' } }, transportPolicy: { mode: 'auto' } }] });
+  assert.equal(skillPlan.transportPolicy.mode, 'auto');
+  assert.equal(skillPlan.methods[0].evidenceLevel, 'aggregate-sufficient');
+});
+
+test('418-row aggregate evidence is summarized per item and does not expand Planner context', async () => {
+  const { buildEvidencePack } = await import('./lib/data-insights/evidence-pack.mjs');
+  const { runInsightLlmOrchestration } = await import('./lib/data-insights/llm-orchestrator.mjs');
+  const rows = Array.from({ length: 418 }, (_, index) => ({ 月份: `2024-${String((index % 6) + 1).padStart(2, '0')}`, 地区: `区域${index}`, 销售额: index + 1 }));
+  const input = buildEvidencePack({ evidence: [{ id: 'ev-418', title: '月度区域结果', value: rows }], resultSets: [] });
+  let plannerContent = '';
+  const llm = { enabled: true, model: 'fake', completeJson: async (messages, options) => {
+    if (options.operation === 'insight-planner') { plannerContent = messages[1].content; return { schema: 'wynai.insight-planner/v1', hypotheses: [], toolRequests: [] }; }
+    if (options.operation === 'insight-critic') return { schema: 'wynai.insight-critic/v1', verdict: 'sufficient', assessments: [], followUps: [] };
+    return { schema: 'wynai.insight-narrator/v1', managementSummary: [{ text: '证据摘要可核验。', evidenceIds: ['ev-418'] }], keyFindings: [{ text: '结果保留完整行数。', evidenceIds: ['ev-418'] }], risks: [{ text: '暂无明确风险。', evidenceIds: ['ev-418'] }], actions: [{ text: '继续复核。', evidenceIds: ['ev-418'] }] };
+  } };
+  const result = await runInsightLlmOrchestration({ llm, input });
+  assert.equal(result.status, 'completed');
+  assert.equal(input.evidence[0].value.length, 418);
+  assert.match(plannerContent, /chunked-summary-all-rows/);
+  assert.match(plannerContent, /rowCount/);
+  assert.doesNotMatch(plannerContent, /区域417/);
+  assert.equal(result.contextBudget.plannerCatalogTransmission, 'summary-and-evidence-id-only');
+});
