@@ -14,11 +14,14 @@
 - `requiredFields/requiredFacts`：方法的字段和确定性事实依赖。
 - `blockingRules/partialCompletionRules`：核心失败和扩展失败的边界。
 - `rowLevelMethods`：允许启动无损行级分块的方法。
+- `transportPolicy`：仅声明 `mode`、`allowLosslessChunking` 和默认证据层级，不配置块大小或 token。
+- `methodPolicies[id].evidenceLevel`：声明聚合证据是否足够，或是否允许在聚合不足时使用行级关系。
+- `methodPolicies[id].rowRelationship`：声明行级关系的业务能力边界，而非具体传输策略。
 - `businessSemantics/metricDefinitions/riskRules`：行业语义和口径。
 
 ## 编译规则
 
-`compileSkillPlan` 生成 `wynai.skill-plan/v1`，固化方法、字段、事实、不可用核心方法和分块上限。Planner 的 `methodId` 必须存在于计划；核心假设不能引用扩展方法；Critic 不能自行改变 `blocking`。
+`compileSkillPlan` 生成 `wynai.skill-plan/v1`，固化方法、字段、事实、不可用核心方法和能力边界。平台统一将未声明的传输模式视为 `auto`，并由 Evidence Transport Planner 决定摘要或分块；Planner 的 `methodId` 必须存在于计划；核心假设不能引用扩展方法；Critic 不能自行改变 `blocking`。
 
 ## 容错规则
 

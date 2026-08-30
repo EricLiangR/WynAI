@@ -2,7 +2,7 @@
 
 > 版本：1.0  
 > 日期：2026-08-30（Asia/Shanghai）  
-> 状态：待用户 Review，尚未授权实施  
+> 状态：已确认，阶段 A 实施中  
 > 适用范围：InsightInput v1、Evidence Pack、SkillPlan、LLM Gateway、Planner/Critic/Narrator  
 > 前置共识：采用“平台自动判断、Skill 提供能力边界、用户无需选择模式”的设计
 
@@ -520,22 +520,22 @@ Adaptive Evidence Transport Planner
 | 强模型被过度使用 | 仍执行单条证据门禁和 operation 预算 |
 | 旧 Skill 缺少新字段 | 使用安全默认值，不要求一次性迁移所有 Skill |
 
-## 14. 需要 Review 的问题
+## 14. 已确认的决策
 
-请重点确认以下决策：
+以下决策已确认，作为实施基线：
 
-1. 是否确认平台默认使用 `transportMode=auto`，用户不选择模式；
-2. 是否接受 Skill 只声明 `evidenceLevel/rowRelationship/allowLosslessChunking` 等高层能力；
-3. 是否同意引入 Model Capability Profile，并由平台配置上下文窗口、输入预算和输出预留；
-4. 是否同意“聚合优先，核心证据不足时自动无损分块”的混合策略；
-5. 是否同意 418 行案例作为首个回归门禁，证明单条证据大小门禁生效；
-6. 是否同意阶段 F 必须包含 16K/32K/128K 三档模型能力测试；
-7. 是否确认本计划不启动流式响应，阶段 5 继续单独评审。
+1. 平台默认使用 `transportMode=auto`，用户不选择模式；
+2. Skill 只声明 `evidenceLevel/rowRelationship/allowLosslessChunking` 等高层能力；
+3. 引入 Model Capability Profile，由平台配置上下文窗口、输入预算和输出预留；
+4. `transportMode=auto` 采用“聚合证据优先，核心证据不足且满足条件时自动无损分块”的混合策略；
+5. 418 行案例作为首个回归门禁，验证单条证据大小门禁；
+6. 阶段 F 包含 16K/32K/128K 三档模型能力测试；
+7. 本计划不启动流式响应，阶段 5 继续单独评审。
 
 ## 15. 当前状态和下一步
 
-- 本文档目前仅用于 Review，尚未修改代码；
-- 用户确认后先实施阶段 A，完成契约和基线冻结；
+- 本文档已完成 Review，阶段 A 正在实施；
+- 阶段 A 先完成契约和基线冻结；
 - 每个阶段完成代码、自动化测试和对应级别 UAT 后再进入下一阶段；
 - 阶段 F 真实成功 LLM UAT 通过后，才评估是否需要启动流式响应阶段 5；
 - 所有失败结论必须区分模型能力不足、平台预算不足、运行环境阻断和业务证据不足。
