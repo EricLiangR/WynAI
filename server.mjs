@@ -34,9 +34,10 @@ import { IndependentQueryInsightAdapter } from './lib/data-insights/independent-
 import { InsightRunStore } from './lib/data-insights/insight-run-store.mjs';
 import { buildEvidencePack } from './lib/data-insights/evidence-pack.mjs';
 import { runInsightLlmOrchestration } from './lib/data-insights/llm-orchestrator.mjs';
+import { compileSkillPlan } from './skill-plan.mjs';
 import { InsightGovernanceService, redactInsightInput } from './lib/data-insights/insight-governance.mjs';
 import { buildBusinessFactPack } from './business-fact-engine.mjs';
-import { InsightDiagnosticLookupError, InsightDiagnosticStore } from './insight-diagnostic-store.mjs';
+import { InsightDiagnosticLookupError, InsightDiagnosticStore, summarizeDiagnosticLifecycle } from './insight-diagnostic-store.mjs';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 const publicDir = join(rootDir, 'public');
@@ -108,6 +109,7 @@ const config = {
   // each operation uses its own total request deadline as the hard cap.
   llmResponseHeaderWarningMs: Math.max(0, Number(process.env.LLM_RESPONSE_HEADER_WARNING_MS || process.env.LLM_FIRST_BYTE_TIMEOUT_MS) || 15_000),
   llmResponseHeaderTimeoutMs: Math.max(0, Number(process.env.LLM_RESPONSE_HEADER_TIMEOUT_MS) || 0),
+  llmResponseBodyTimeoutMs: Math.max(0, Number(process.env.LLM_RESPONSE_BODY_TIMEOUT_MS) || 0),
   llmPlannerTimeoutMs: Math.max(10_000, Number(process.env.LLM_INSIGHT_PLANNER_TIMEOUT_MS) || 45_000),
   llmCriticTimeoutMs: Math.max(10_000, Number(process.env.LLM_INSIGHT_CRITIC_TIMEOUT_MS) || 35_000),
   llmNarratorTimeoutMs: Math.max(10_000, Number(process.env.LLM_INSIGHT_NARRATOR_TIMEOUT_MS) || 45_000),
@@ -160,14 +162,15 @@ const explorationGateway = createLlmGateway({
   connectTimeoutMs: config.llmConnectTimeoutMs,
   responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmTimeoutMs,
   responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmTimeoutMs),
+  responseBodyTimeoutMs: config.llmResponseBodyTimeoutMs || config.llmTimeoutMs,
   operationPolicies: {
-    exploration: { requestTimeoutMs: config.llmTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmTimeoutMs) },
-    'agent-report': { requestTimeoutMs: config.llmAgentReportTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmAgentReportTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmAgentReportTimeoutMs) },
-    'insight-planner': { requestTimeoutMs: config.llmPlannerTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmPlannerTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmPlannerTimeoutMs) },
-    'insight-critic': { requestTimeoutMs: config.llmCriticTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmCriticTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmCriticTimeoutMs) },
-    'insight-narrator': { requestTimeoutMs: config.llmNarratorTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmNarratorTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmNarratorTimeoutMs) },
-    'insight-narrator-repair': { requestTimeoutMs: config.llmNarratorRepairTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmNarratorRepairTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmNarratorRepairTimeoutMs) },
-    probe: { requestTimeoutMs: Math.min(config.llmTimeoutMs, 10_000), responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || Math.min(config.llmTimeoutMs, 10_000), responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, 5_000) },
+    exploration: { requestTimeoutMs: config.llmTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmTimeoutMs), responseBodyTimeoutMs: config.llmResponseBodyTimeoutMs || config.llmTimeoutMs },
+    'agent-report': { requestTimeoutMs: config.llmAgentReportTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmAgentReportTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmAgentReportTimeoutMs), responseBodyTimeoutMs: config.llmResponseBodyTimeoutMs || config.llmAgentReportTimeoutMs },
+    'insight-planner': { requestTimeoutMs: config.llmPlannerTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmPlannerTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmPlannerTimeoutMs), responseBodyTimeoutMs: config.llmResponseBodyTimeoutMs || config.llmPlannerTimeoutMs },
+    'insight-critic': { requestTimeoutMs: config.llmCriticTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmCriticTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmCriticTimeoutMs), responseBodyTimeoutMs: config.llmResponseBodyTimeoutMs || config.llmCriticTimeoutMs },
+    'insight-narrator': { requestTimeoutMs: config.llmNarratorTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmNarratorTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmNarratorTimeoutMs), responseBodyTimeoutMs: config.llmResponseBodyTimeoutMs || config.llmNarratorTimeoutMs },
+    'insight-narrator-repair': { requestTimeoutMs: config.llmNarratorRepairTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmNarratorRepairTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.llmNarratorRepairTimeoutMs), responseBodyTimeoutMs: config.llmResponseBodyTimeoutMs || config.llmNarratorRepairTimeoutMs },
+    probe: { requestTimeoutMs: Math.min(config.llmTimeoutMs, 10_000), responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || Math.min(config.llmTimeoutMs, 10_000), responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, 5_000), responseBodyTimeoutMs: config.llmResponseBodyTimeoutMs || Math.min(config.llmTimeoutMs, 10_000) },
   },
   retryBaseDelayMs: config.llmRetryBaseDelayMs,
   retryMaxDelayMs: config.llmRetryMaxDelayMs,
@@ -184,9 +187,10 @@ const intentGateway = createLlmGateway({
   connectTimeoutMs: config.llmConnectTimeoutMs,
   responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.intentLlmTimeoutMs,
   responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.intentLlmTimeoutMs),
+  responseBodyTimeoutMs: config.llmResponseBodyTimeoutMs || config.intentLlmTimeoutMs,
   operationPolicies: {
-    intent: { requestTimeoutMs: config.intentLlmTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.intentLlmTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.intentLlmTimeoutMs) },
-    probe: { requestTimeoutMs: Math.min(config.intentLlmTimeoutMs, 10_000), responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || Math.min(config.intentLlmTimeoutMs, 10_000), responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, 5_000) },
+    intent: { requestTimeoutMs: config.intentLlmTimeoutMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.intentLlmTimeoutMs, responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, config.intentLlmTimeoutMs), responseBodyTimeoutMs: config.llmResponseBodyTimeoutMs || config.intentLlmTimeoutMs },
+    probe: { requestTimeoutMs: Math.min(config.intentLlmTimeoutMs, 10_000), responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || Math.min(config.intentLlmTimeoutMs, 10_000), responseHeaderWarningMs: Math.min(config.llmResponseHeaderWarningMs, 5_000), responseBodyTimeoutMs: config.llmResponseBodyTimeoutMs || Math.min(config.intentLlmTimeoutMs, 10_000) },
   },
   retryBaseDelayMs: config.llmRetryBaseDelayMs,
   retryMaxDelayMs: config.llmRetryMaxDelayMs,
@@ -282,6 +286,31 @@ async function recordInsightDiagnostic(insightId, type, data = {}, context = {})
     console.error('Insight diagnostic event failed', error.message);
     return null;
   }
+}
+
+// A process restart must close every persisted non-terminal run before new
+// traffic is accepted, so diagnostics never leave a started attempt hanging.
+const recoveredInsightRuns = await insightRunStore.recoverUnfinished('process-restart');
+for (const recovered of recoveredInsightRuns) {
+  const diagnosticInsightId = recovered.insightId || recovered.metadata?.sourceInsightId || null;
+  const context = { actor: recovered.actor, organizationId: recovered.organizationId, runId: recovered.id, source: recovered.metadata?.source || null };
+  await recordInsightDiagnostic(diagnosticInsightId, 'run.interrupted', { run: recovered, reason: recovered.interruption?.reason || 'process-restart', attempt: recovered.attempt, attemptId: recovered.attemptId }, context);
+  let existingDiagnostic = null;
+  if (diagnosticInsightId) {
+    try { existingDiagnostic = insightDiagnosticStore.get(diagnosticInsightId); } catch { existingDiagnostic = null; }
+  }
+  const startedAttempt = existingDiagnostic?.events?.some(event => event.type === 'generation.started' && (event.data?.attemptId === recovered.attemptId || event.data?.runId === recovered.id));
+  if (recovered.mode === 'interpret' && startedAttempt) {
+    await recordInsightDiagnostic(diagnosticInsightId, 'generation.interrupted', { status: 'interrupted', reason: 'process-restart', attempt: recovered.attempt, attemptId: recovered.attemptId }, context);
+  }
+}
+
+function llmHealthStatusFor(gateway, snapshot = gateway?.snapshot?.() || {}) {
+  if (!gateway?.enabled) return 'not_configured';
+  if (snapshot.providers?.length && snapshot.providers.every(provider => provider.open)) return 'circuit_open';
+  if (snapshot.lastCall?.status === 'failed') return 'unhealthy';
+  if (snapshot.lastCall?.status === 'completed' || snapshot.lastCall?.status === 'cache-hit') return 'healthy';
+  return 'not_checked';
 }
 
 const skillRegistry = await loadSkillsFromDirectory(join(rootDir, 'skills'));
@@ -511,15 +540,7 @@ async function handleHealth(response) {
   try {
     const upstream = await wynFetch('/api/v2/chat/analysis/sessions', { method: 'GET', timeout: 8_000 });
     const llmSnapshot = explorationGateway.snapshot();
-    const llmHealthStatus = !explorationGateway.enabled
-      ? 'not-configured'
-      : llmSnapshot.lastCall?.status === 'completed'
-        ? 'healthy'
-        : llmSnapshot.providers.some(provider => provider.open)
-          ? 'circuit-open'
-          : llmSnapshot.lastCall?.status === 'failed'
-            ? 'unhealthy'
-            : 'unknown';
+    const llmHealthStatus = llmHealthStatusFor(explorationGateway, llmSnapshot);
     sendJson(response, upstream.ok ? 200 : 502, {
       connected: upstream.ok,
       server: config.wynBaseUrl,
@@ -532,7 +553,7 @@ async function handleHealth(response) {
       llmProvider: explorationGateway.enabled ? 'llm-gateway' : 'local-fallback',
       llmEndpointHost,
       llmHealthStatus,
-      llmGateway: { version: 'wynai.llm-gateway/v1', exploration: llmSnapshot, intent: intentGateway.snapshot(), policy: { requestTimeoutMs: config.llmTimeoutMs, intentRequestTimeoutMs: config.intentLlmTimeoutMs, connectTimeoutMs: config.llmConnectTimeoutMs, responseHeaderWarningMs: config.llmResponseHeaderWarningMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmTimeoutMs, responseBodyTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmTimeoutMs, operationTimeoutMs: { insightPlanner: config.llmPlannerTimeoutMs, insightCritic: config.llmCriticTimeoutMs, insightNarrator: config.llmNarratorTimeoutMs, insightNarratorRepair: config.llmNarratorRepairTimeoutMs, agentReport: config.llmAgentReportTimeoutMs }, maxAttempts: config.llmMaxAttempts, retryBaseDelayMs: config.llmRetryBaseDelayMs, retryMaxDelayMs: config.llmRetryMaxDelayMs, retryJitterMs: config.llmRetryJitterMs } },
+      llmGateway: { version: 'wynai.llm-gateway/v1', exploration: llmSnapshot, intent: intentGateway.snapshot(), policy: { requestTimeoutMs: config.llmTimeoutMs, intentRequestTimeoutMs: config.intentLlmTimeoutMs, connectTimeoutMs: config.llmConnectTimeoutMs, responseHeaderWarningMs: config.llmResponseHeaderWarningMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmTimeoutMs, responseBodyTimeoutMs: config.llmResponseBodyTimeoutMs || config.llmTimeoutMs, operationTimeoutMs: { insightPlanner: config.llmPlannerTimeoutMs, insightCritic: config.llmCriticTimeoutMs, insightNarrator: config.llmNarratorTimeoutMs, insightNarratorRepair: config.llmNarratorRepairTimeoutMs, agentReport: config.llmAgentReportTimeoutMs }, maxAttempts: config.llmMaxAttempts, retryBaseDelayMs: config.llmRetryBaseDelayMs, retryMaxDelayMs: config.llmRetryMaxDelayMs, retryJitterMs: config.llmRetryJitterMs } },
       intentLlmTimeoutMs: config.intentLlmTimeoutMs,
       status: upstream.status,
       message: upstream.ok ? 'Wyn 服务连接正常' : `Wyn 返回 ${upstream.status}`,
@@ -795,20 +816,21 @@ async function callAgentReportLlm(analysis, metadata) {
 
 async function handleLlmHealth(response) {
   if (!explorationGateway.enabled) {
-    sendJson(response, 503, { ok: false, status: 'not-configured', code: 'INSIGHT_LLM_REQUIRED', gateway: explorationGateway.snapshot() });
+    sendJson(response, 503, { ok: false, status: 'not_configured', code: 'INSIGHT_LLM_REQUIRED', gateway: explorationGateway.snapshot() });
     return;
   }
   try {
     const result = await explorationGateway.probe();
-    sendJson(response, 200, { ok: result.ok === true, status: result.ok === true ? 'healthy' : 'contract-failed', model: result.model, latencyMs: result.latencyMs, gateway: explorationGateway.snapshot() });
+    const ok = result.ok === true;
+    sendJson(response, ok ? 200 : 503, { ok, status: ok ? 'healthy' : 'unhealthy', code: ok ? null : 'LLM_PROBE_CONTRACT_FAILED', model: result.model, latencyMs: result.latencyMs, gateway: explorationGateway.snapshot() });
   } catch (error) {
-    sendJson(response, 503, { ok: false, status: error.code === 'LLM_CIRCUIT_OPEN' ? 'circuit-open' : 'unhealthy', code: error.code || 'LLM_REQUEST_FAILED', message: error.message, error: serializeError(error), gateway: explorationGateway.snapshot() });
+    sendJson(response, 503, { ok: false, status: error.code === 'LLM_CIRCUIT_OPEN' ? 'circuit_open' : 'unhealthy', code: error.code || 'LLM_REQUEST_FAILED', message: error.message, error: serializeError(error), gateway: explorationGateway.snapshot() });
   }
 }
 
 async function handleLlmDiagnostics(response) {
   if (!explorationGateway.enabled) {
-    sendJson(response, 503, { ok: false, status: 'not-configured', code: 'INSIGHT_LLM_REQUIRED', providers: [] });
+    sendJson(response, 503, { ok: false, status: 'not_configured', code: 'INSIGHT_LLM_REQUIRED', providers: [] });
     return;
   }
   try {
@@ -1516,7 +1538,7 @@ function handleDataInsights(pathname, requestUrl, request, response) {
   if (!insightId) {
     const items = dataInsightStore.list({ sourceType: requestUrl.searchParams.get('sourceType'), sourceId: requestUrl.searchParams.get('sourceId') });
     const llmSnapshot = explorationGateway.snapshot();
-    const llmHealthStatus = !explorationGateway.enabled ? 'not-configured' : llmSnapshot.providers.some(provider => provider.open) ? 'circuit-open' : llmSnapshot.lastCall?.status === 'failed' ? 'unhealthy' : llmSnapshot.lastCall?.status === 'completed' ? 'healthy' : 'unknown';
+    const llmHealthStatus = llmHealthStatusFor(explorationGateway, llmSnapshot);
     sendJson(response, 200, { items, total: items.length, llmConfigured: explorationGateway.enabled, llmHealthStatus, llmProvider: explorationGateway.enabled ? 'llm-gateway' : 'local-fallback', llmModel: effectiveLlmModel || null, llmEndpointHost, llmGateway: llmSnapshot });
     return;
   }
@@ -1569,6 +1591,7 @@ async function executeExploreInsightRun(run) {
   }
   const diagnosticInsightId = run.insightId || run.metadata?.sourceInsightId || null;
   const diagnosticContext = { actor: run.actor, organizationId: run.organizationId, runId: run.id, source: run.metadata?.source || null };
+  await recordInsightDiagnostic(diagnosticInsightId, 'generation.started', { runId: run.id, attempt: run.attempt || 1, attemptId: run.attemptId || null, mode: run.mode, question: run.question }, diagnosticContext);
   await insightRunStore.transition(run.id, 'planning');
   await recordInsightDiagnostic(diagnosticInsightId, 'run.transition', { runId: run.id, mode: run.mode, status: 'planning' }, diagnosticContext);
   await insightRunStore.transition(run.id, 'running');
@@ -1609,11 +1632,13 @@ async function executeExploreInsightRun(run) {
       metadata: { ...(run.metadata || {}), analysis: result.analysis, resultSets: result.resultSets, audit: result.audit, provider: 'llm-orchestrated', model: explorationGateway.model, gateway: explorationGateway.snapshot() },
     });
     await recordInsightDiagnostic(diagnosticInsightId, 'explore.completed', { run: completed, analysis: result.analysis }, diagnosticContext);
+    await recordInsightDiagnostic(diagnosticInsightId, 'generation.finished', { status: 'completed', runId: run.id, attempt: completed.attempt || 1, attemptId: completed.attemptId || null, provider: 'llm-orchestrated', model: explorationGateway.model, gateway: explorationGateway.snapshot() }, diagnosticContext);
     insightGovernance.record({ actor: run.actor, organizationId: run.organizationId, insightId: null, runId: run.id, action: 'insight.explore', status: 'completed', model: explorationGateway.model, prompt: run.question, toolCalls: completed.toolCalls, skillRefs: skills.map(skill => `${skill.id}@${skill.version}`), externalDataPolicy: { rawRowsToLlm: false }, gateway: explorationGateway.snapshot() });
     return completed;
   } catch (error) {
     await insightRunStore.fail(run.id, error);
     await recordInsightDiagnostic(diagnosticInsightId, 'run.failed', { runId: run.id, error: { code: error.code || 'INSIGHT_EXPLORE_FAILED', message: error.message, stack: error.stack || null } }, diagnosticContext);
+    await recordInsightDiagnostic(diagnosticInsightId, 'generation.finished', { status: 'failed', runId: run.id, attempt: run.attempt || 1, attemptId: run.attemptId || null, error: { code: error.code || 'INSIGHT_EXPLORE_FAILED', message: error.message }, gateway: explorationGateway.snapshot() }, diagnosticContext);
     insightGovernance.record({ actor: run.actor, organizationId: run.organizationId, runId: run.id, action: 'insight.explore', status: 'failed', model: explorationGateway.model, prompt: run.question, errorCode: error.code || 'INSIGHT_EXPLORE_FAILED', externalDataPolicy: { rawRowsToLlm: false }, gateway: explorationGateway.snapshot() });
     throw error;
   }
@@ -1719,35 +1744,46 @@ async function callConfiguredLlm(record, prompt, diagnosticContext = {}) {
   const resolvedSkills = resolveInsightSkillsForRecord(record, prompt);
   const businessFacts = buildBusinessFactPack({ input: redacted.input, evidencePack, skills: resolvedSkills });
   const enrichedEvidencePack = { ...evidencePack, businessFacts };
-  await recordInsightDiagnostic(record.insightId, 'evidence.pack.created', { evidencePack: enrichedEvidencePack, redactionPolicy: redacted.policy, skills: resolvedSkills }, diagnosticContext);
+  const skillsForLlm = resolvedSkills.map(skill => ({
+    id: skill.id,
+    version: skill.version,
+    name: skill.name,
+    diagnostics: skill.diagnostics || [],
+    requiredEvidence: skill.requiredEvidence || [],
+    requiredFacts: skill.requiredFacts || [],
+    insightMethods: skill.insightMethods || [],
+    coreMethods: skill.coreMethods || [],
+    optionalMethods: skill.optionalMethods || [],
+    extendedMethods: skill.extendedMethods || [],
+    requiredFields: skill.requiredFields || [],
+    evidenceRequirements: skill.evidenceRequirements || {},
+    rowLevelMethods: skill.rowLevelMethods || [],
+    methodPolicies: skill.methodPolicies || {},
+    blockingRules: skill.blockingRules || [],
+    partialCompletionRules: skill.partialCompletionRules || [],
+    metricDefinitions: skill.metricDefinitions || skill.metrics || [],
+    businessSemantics: skill.businessSemantics || [],
+    fallbackNarrative: skill.fallbackNarrative || [],
+    qualityThresholds: skill.qualityThresholds || {},
+    riskRules: skill.riskRules || [],
+    playbook: skill.playbook || [],
+    assumptions: skill.assumptions || [],
+  }));
+  const skillPlan = compileSkillPlan({
+    skills: skillsForLlm,
+    schema: redacted.input.resultSets?.flatMap(resultSet => resultSet.schema || []) || [],
+    question: prompt || record.input.title,
+  });
+  await recordInsightDiagnostic(record.insightId, 'evidence.pack.created', { evidencePack: enrichedEvidencePack, redactionPolicy: redacted.policy, skills: resolvedSkills, skillPlan }, diagnosticContext);
   const orchestration = await runInsightLlmOrchestration({
     llm: explorationLlm,
     prompt: prompt || record.input.title,
     input: enrichedEvidencePack,
-    skills: resolvedSkills.map(skill => ({
-      id: skill.id,
-      version: skill.version,
-      name: skill.name,
-      diagnostics: skill.diagnostics || [],
-      requiredEvidence: skill.requiredEvidence || [],
-      requiredFacts: skill.requiredFacts || [],
-      insightMethods: skill.insightMethods || [],
-      coreMethods: skill.coreMethods || [],
-      optionalMethods: skill.optionalMethods || [],
-      requiredFields: skill.requiredFields || [],
-      evidenceRequirements: skill.evidenceRequirements || [],
-      blockingRules: skill.blockingRules || [],
-      partialCompletionRules: skill.partialCompletionRules || [],
-      metricDefinitions: skill.metricDefinitions || skill.metrics || [],
-      businessSemantics: skill.businessSemantics || [],
-      fallbackNarrative: skill.fallbackNarrative || [],
-      qualityThresholds: skill.qualityThresholds || {},
-      riskRules: skill.riskRules || [],
-      playbook: skill.playbook || [],
-      assumptions: skill.assumptions || [],
-    })),
-    onStageEvent: event => recordInsightDiagnostic(record.insightId, `llm.stage.${event.stage}`, event, diagnosticContext),
-    onGatewayEvent: event => recordInsightDiagnostic(record.insightId, event.type || 'gateway.attempt', event, diagnosticContext),
+    skills: skillsForLlm,
+    skillPlan,
+    signal: diagnosticContext.signal || null,
+    onStageEvent: event => recordInsightDiagnostic(record.insightId, `llm.stage.${event.stage}`, { ...event, attempt: diagnosticContext.attempt || null, attemptId: diagnosticContext.attemptId || null }, diagnosticContext),
+    onGatewayEvent: event => recordInsightDiagnostic(record.insightId, event.type || 'gateway.attempt', { ...event, attempt: diagnosticContext.attempt || null, attemptId: diagnosticContext.attemptId || null }, diagnosticContext),
   });
   await recordInsightDiagnostic(record.insightId, 'orchestration.completed', { orchestration }, diagnosticContext);
   if (!['completed', 'completed-partial'].includes(orchestration.status)) {
@@ -1770,6 +1806,7 @@ async function callConfiguredLlm(record, prompt, diagnosticContext = {}) {
       planner: orchestration.planner,
       critic: orchestration.critic,
       evidence: orchestration.evidence,
+      skillPlan: orchestration.skillPlan || null,
       stageAudit: orchestration.stageAudit || [],
       externalDataPolicy: { ...redacted.policy, sampleStrategy: evidencePack.policy.sampleStrategy, rawRowsToLlm: false },
       businessFacts,
@@ -1841,11 +1878,19 @@ async function handleSecondaryInsight(request, response, providedBody = null) {
   if (detail.actor && detail.actor !== 'anonymous' && detail.actor !== identity.actor && (!detail.organizationId || detail.organizationId !== identity.organizationId)) {
     return sendJson(response, 403, { code: 'DATA_INSIGHT_FORBIDDEN', message: '无权生成该数据洞察' });
   }
+  const requestController = new AbortController();
+  const abortGeneration = () => {
+    if (!requestController.signal.aborted && !response.writableEnded) requestController.abort(new Error('客户端已取消数据洞察请求'));
+  };
+  request.once('aborted', abortGeneration);
+  response.once('close', abortGeneration);
   const record = insightRecord(detail);
   let releaseGeneration = null;
   try {
     releaseGeneration = insightGovernance.beginGeneration(identity);
   } catch (error) {
+    request.removeListener('aborted', abortGeneration);
+    response.removeListener('close', abortGeneration);
     return sendJson(response, error.status || 429, { code: error.code, message: error.message, retryAfterMs: error.retryAfterMs || null, retryable: true });
   }
   let run = insightRunStore.list({ mode: 'interpret', insightId }).at(0) || null;
@@ -1856,12 +1901,24 @@ async function handleSecondaryInsight(request, response, providedBody = null) {
     run = await insightRunStore.create({ mode: 'interpret', insightId, datasetIds, question: prompt || record.input.title, actor: identity.actor, organizationId: identity.organizationId, skill: { refs: resolvedSkills.map(skill => `${skill.id}@${skill.version}`), diagnostics: resolvedSkills.flatMap(skill => skill.diagnostics) }, metadata: { source: record.input.source || null, createdDuringGeneration: true } });
     await recordInsightDiagnostic(insightId, 'run.created', { run: { id: run.id, mode: run.mode, status: run.status, datasetIds: run.datasetIds, question: run.question, skill: run.skill, metadata: run.metadata, createdAt: run.createdAt } }, { actor: identity.actor, organizationId: identity.organizationId, runId: run.id, source: record.input.source || null });
   }
-  const diagnosticContext = { actor: identity.actor, organizationId: identity.organizationId, runId: run?.id || null, source: record.input.source || null };
-  if (run && ['queued', 'completed', 'failed'].includes(run.status)) {
+  let diagnosticContext = { actor: identity.actor, organizationId: identity.organizationId, runId: run?.id || null, attempt: run?.attempt || 1, attemptId: run?.attemptId || null, source: record.input.source || null, signal: requestController.signal };
+  if (run && ['completed', 'failed', 'interrupted'].includes(run.status)) {
     try {
-      await insightRunStore.transition(run.id, 'planning', { error: null, document: null, metadata: { ...(run.metadata || {}), generationPrompt: prompt } });
-      await insightRunStore.transition(run.id, 'running');
+      run = await insightRunStore.retry(run.id);
+      run = await insightRunStore.transition(run.id, 'running', { metadata: { ...(run.metadata || {}), generationPrompt: prompt } });
+      diagnosticContext = { ...diagnosticContext, runId: run.id, attempt: run.attempt, attemptId: run.attemptId };
     } catch (error) {
+      request.removeListener('aborted', abortGeneration);
+      response.removeListener('close', abortGeneration);
+      return sendJson(response, 409, { code: 'INSIGHT_RUN_STATE_ERROR', message: error.message });
+    }
+  } else if (run?.status === 'queued') {
+    try {
+      await insightRunStore.transition(run.id, 'planning', { metadata: { ...(run.metadata || {}), generationPrompt: prompt } });
+      run = await insightRunStore.transition(run.id, 'running');
+    } catch (error) {
+      request.removeListener('aborted', abortGeneration);
+      response.removeListener('close', abortGeneration);
       return sendJson(response, 409, { code: 'INSIGHT_RUN_STATE_ERROR', message: error.message });
     }
   }
@@ -1869,7 +1926,7 @@ async function handleSecondaryInsight(request, response, providedBody = null) {
   try {
     // A retry must not expose the previous successful document while the new LLM run is pending.
     await dataInsightStore.clearDocument(insightId);
-    await recordInsightDiagnostic(insightId, 'generation.started', { prompt, input: record.input, runId: run?.id || null, gateway: explorationGateway.snapshot() }, diagnosticContext);
+    await recordInsightDiagnostic(insightId, 'generation.started', { prompt, input: record.input, runId: run?.id || null, attempt: run?.attempt || 1, attemptId: run?.attemptId || null, gateway: explorationGateway.snapshot() }, diagnosticContext);
     if (!explorationGateway.enabled) {
       const error = new Error('正式数据洞察必须配置外部 LLM；固定统计仅作为数据准备诊断');
       error.code = 'INSIGHT_LLM_REQUIRED';
@@ -1878,26 +1935,6 @@ async function handleSecondaryInsight(request, response, providedBody = null) {
     }
     const result = await callConfiguredLlm(record, prompt, diagnosticContext);
     const orchestration = result.orchestration || {};
-    const criticAssessments = Array.isArray(orchestration.critic?.assessments) ? orchestration.critic.assessments : [];
-    const hasSupportedAssessment = criticAssessments.some(item => item?.status === 'supported');
-    // Critic may mark individual hypotheses inconclusive while other hypotheses
-    // remain fully supported. Preserve the verified LLM narrative and expose
-    // the unresolved hypotheses as follow-ups; fail only when no hypothesis is
-    // supported at all, which would otherwise produce an empty/meaningless document.
-    const coreEvidencePresent = Array.isArray(orchestration.evidence)
-      && orchestration.evidence.some(item => item?.id === 'time-trend')
-      && orchestration.evidence.some(item => item?.id === 'revenue-total')
-      && orchestration.evidence.some(item => item?.id === 'profit-total');
-    const directQuestion = !/(原因|归因|集中度|异常|风险|建议|下钻|季节性)/.test(String(prompt || record.input.title || ''));
-    // Evidence insufficiency is scoped to hypotheses. A direct result request
-    // with usable core time-series facts may complete partially even when an
-    // optional expansion is inconclusive.
-    if (orchestration.critic?.verdict === 'insufficient' && !hasSupportedAssessment && !(directQuestion && coreEvidencePresent)) {
-      const error = new Error('Critic 判定当前证据不足，不生成正式洞察');
-      error.code = 'EVIDENCE_INSUFFICIENT';
-      error.status = 422;
-      throw error;
-    }
     const narrative = result.structured || {};
     const evidence = orchestration.evidence || [];
     const blocks = [
@@ -1943,7 +1980,7 @@ async function handleSecondaryInsight(request, response, providedBody = null) {
     await recordInsightDiagnostic(insightId, 'result.document.saved', { document: insightDocument, result: { provider: result.provider, model: result.model, status: result.status, diagnostics: result.diagnostics || null }, exploreRunId: exploreRun?.id || null }, diagnosticContext);
     if (run) await insightRunStore.complete(run.id, { error: null, document: insightDocument, metadata: { ...(run.metadata || {}), generatedAt: new Date().toISOString(), provider: result.provider, model: result.model, status: result.status, orchestrationSchema: orchestration.schema || null, exploreRunId: exploreRun?.id || null, gateway: orchestration.gateway || null } });
     insightGovernance.record({ actor: identity.actor, organizationId: identity.organizationId, insightId, runId: run?.id || null, action: 'insight.generate', status: 'completed', model: result.model, prompt, toolCalls: orchestration.planner?.toolRequests || [], stageAudit: orchestration.stageAudit || [], skillRefs: run?.skill?.refs || [], externalDataPolicy: orchestration.externalDataPolicy || { rawRowsToLlm: false }, gateway: orchestration.gateway || explorationGateway.snapshot() });
-    await recordInsightDiagnostic(insightId, 'generation.finished', { status: 'completed', provider: result.provider, model: result.model, stageAudit: orchestration.stageAudit || [], gateway: orchestration.gateway || explorationGateway.snapshot() }, diagnosticContext);
+    await recordInsightDiagnostic(insightId, 'generation.finished', { status: 'completed', runId: run?.id || null, attempt: run?.attempt || 1, attemptId: run?.attemptId || null, provider: result.provider, model: result.model, stageAudit: orchestration.stageAudit || [], gateway: orchestration.gateway || explorationGateway.snapshot() }, diagnosticContext);
     const responseStatus = orchestration.status === 'completed-partial' || orchestration.diagnostics?.reasonCode === 'PARTIAL_EVIDENCE' ? 'completed-partial' : 'completed';
     if (responseStatus === 'completed-partial') {
       const incomplete = orchestration.diagnostics?.incompleteAssessments || [];
@@ -1952,17 +1989,26 @@ async function handleSecondaryInsight(request, response, providedBody = null) {
     }
     sendJson(response, 200, { ...result, status: responseStatus, document: insightDocument, insightId, exploreRun, generatedAt: new Date().toISOString() });
   } catch (error) {
+    if (requestController.signal.aborted || error?.code === 'REQUEST_ABORTED') {
+      const interruptionReason = request.aborted ? 'client-disconnected' : 'request-aborted';
+      if (run) await insightRunStore.interrupt(run.id, interruptionReason);
+      await recordInsightDiagnostic(insightId, 'generation.interrupted', { status: 'interrupted', reason: interruptionReason, attempt: run?.attempt || 1, attemptId: run?.attemptId || null, error: { code: error.code || 'REQUEST_ABORTED', message: error.message }, gateway: explorationGateway.snapshot() }, diagnosticContext);
+      if (!response.destroyed && !response.writableEnded) sendJson(response, 499, { schema: 'wynai.insight-generation-result/v1', insightId, status: 'interrupted', retryable: true, error: { code: 'INSIGHT_RUN_INTERRUPTED', message: '数据洞察请求已中断，可稍后重试。' } });
+      return;
+    }
     if (isRecoverableInsightError(error)) {
       if (run) await insightRunStore.fail(run.id, error);
       insightGovernance.record({ actor: identity.actor, organizationId: identity.organizationId, insightId, runId: run?.id || null, action: 'insight.generate', status: 'failed', model: explorationGateway.model, prompt, skillRefs: run?.skill?.refs || [], externalDataPolicy: { rawRowsToLlm: false }, errorCode: error.code || 'INSIGHT_GENERATION_FAILED', gateway: explorationGateway.snapshot() });
-      await recordInsightDiagnostic(insightId, 'generation.finished', { status: 'failed', provider: 'llm-orchestrated', model: explorationGateway.model, error: { code: error.code || 'INSIGHT_GENERATION_FAILED', message: error.message }, diagnostics: error.diagnostics || null, gateway: explorationGateway.snapshot() }, diagnosticContext);
+      await recordInsightDiagnostic(insightId, 'generation.finished', { status: 'failed', runId: run?.id || null, attempt: run?.attempt || 1, attemptId: run?.attemptId || null, provider: 'llm-orchestrated', model: explorationGateway.model, error: { code: error.code || 'INSIGHT_GENERATION_FAILED', message: error.message }, diagnostics: error.diagnostics || null, gateway: explorationGateway.snapshot() }, diagnosticContext);
       return sendJson(response, error.status || 502, { schema: 'wynai.insight-generation-result/v1', insightId, status: 'failed', retryable: !['EVIDENCE_INSUFFICIENT', 'INSIGHT_CLAIM_VALIDATION_FAILED'].includes(error.code), error: { code: error.code || 'INSIGHT_GENERATION_FAILED', message: error.message }, diagnostics: error.diagnostics || null, generatedAt: new Date().toISOString() });
     }
     if (run) await insightRunStore.fail(run.id, error);
     insightGovernance.record({ actor: identity.actor, organizationId: identity.organizationId, insightId, runId: run?.id || null, action: 'insight.generate', status: 'failed', model: explorationGateway.model, prompt, skillRefs: run?.skill?.refs || [], externalDataPolicy: { rawRowsToLlm: false }, errorCode: error.code || 'INSIGHT_LLM_FAILED', gateway: explorationGateway.snapshot() });
-    await recordInsightDiagnostic(insightId, 'generation.failed', { error: { code: error.code || 'INSIGHT_LLM_FAILED', message: error.message, stack: error.stack || null }, gateway: explorationGateway.snapshot() }, diagnosticContext);
+    await recordInsightDiagnostic(insightId, 'generation.failed', { runId: run?.id || null, attempt: run?.attempt || 1, attemptId: run?.attemptId || null, error: { code: error.code || 'INSIGHT_LLM_FAILED', message: error.message, stack: error.stack || null }, gateway: explorationGateway.snapshot() }, diagnosticContext);
     sendJson(response, error.status || 502, { code: error.code || 'INSIGHT_LLM_FAILED', message: `项目 LLM 二次洞察失败（${llmEndpointHost || '未配置端点'}）：${error.message}`, retryable: true });
   } finally {
+    request.removeListener('aborted', abortGeneration);
+    response.removeListener('close', abortGeneration);
     releaseGeneration?.();
   }
 }
@@ -2157,7 +2203,7 @@ const server = http.createServer(async (request, response) => {
         const actor = detail?.actor || diagnostic.actor;
         const organizationId = detail?.organizationId || diagnostic.organizationId;
         if (actor && actor !== 'anonymous' && actor !== identity.actor && (!organizationId || organizationId !== identity.organizationId)) return sendJson(response, 403, { code: 'DATA_INSIGHT_FORBIDDEN', message: '无权访问该数据洞察诊断日志' });
-        return sendJson(response, 200, { ...diagnostic, access: { scope: 'backend-diagnostic', redacted: false, uiExport: false } });
+         return sendJson(response, 200, { ...diagnostic, lifecycle: summarizeDiagnosticLifecycle(diagnostic.events), access: { scope: 'backend-diagnostic', redacted: false, uiExport: false } });
       } catch (error) {
         if (error instanceof InsightDiagnosticLookupError) return sendJson(response, error.status || 404, { code: error.code, message: error.message, matches: error.matches || [] });
         throw error;

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { buildEvidencePack } from '../lib/data-insights/evidence-pack.mjs';
 import { buildBusinessFactPack } from '../business-fact-engine.mjs';
+import { compileSkillPlan } from '../skill-plan.mjs';
 
 test('Evidence Pack 使用全量统计并禁止原始明细外发', () => {
   const pack = buildEvidencePack({ title: '销售分析', resultSets: [{ id: 'rs-1', schema: [{ name: '区域', type: 'string', role: 'dimension' }, { name: '销售额', type: 'number', role: 'measure' }], rows: [{ 区域: '华东', 销售额: 100 }, { 区域: '华南', 销售额: 80 }, { 区域: '华东', 销售额: 20 }] }] });
@@ -134,4 +135,28 @@ test('高基数聚合结果进入可追溯分块清单，不做头尾采样', as
   assert.match(seen[0], /chunked-summary-all-rows/);
   assert.match(seen[0], /chunkCount/);
   assert.doesNotMatch(seen[0], /bounded-summary/);
+});
+
+test('SkillPlan 将核心与扩展方法编译为不可弱化的运行时契约', () => {
+  const plan = compileSkillPlan({
+    question: '按月分析收入',
+    schema: [
+      { name: '月份', type: 'string', role: 'time' },
+      { name: '收入', type: 'number', role: 'measure' },
+    ],
+    skills: [{
+      id: 'demo',
+      version: '1.0.0',
+      insightMethods: ['monthly-trend', 'region-contribution'],
+      coreMethods: ['monthly-trend'],
+      optionalMethods: ['region-contribution'],
+      evidenceRequirements: { 'monthly-trend': ['月份', '收入'], 'region-contribution': ['地区', '收入'] },
+    }],
+  });
+  assert.equal(plan.schema, 'wynai.skill-plan/v1');
+  assert.equal(plan.methods.find(item => item.id === 'monthly-trend').blocking, true);
+  assert.equal(plan.methods.find(item => item.id === 'monthly-trend').available, true);
+  assert.deepEqual(plan.unavailableCoreMethods, []);
+  assert.equal(plan.methods.find(item => item.id === 'region-contribution').priority, 'extended');
+  assert.deepEqual(plan.methods.find(item => item.id === 'region-contribution').missingFields, ['地区']);
 });

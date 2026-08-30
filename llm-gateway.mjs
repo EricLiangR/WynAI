@@ -352,6 +352,7 @@ export function createLlmGateway({ providers = [], fetchImpl = globalThis.fetch,
     let lastError = null;
     let attemptCount = 0;
     let previousProviderId = null;
+    let retryDelayTotalMs = 0;
     const policy = policyFor(operation, {
       ...(requestTimeoutMs != null ? { requestTimeoutMs } : {}),
       ...(timeoutOverrideMs != null ? { timeoutMs: timeoutOverrideMs } : {}),
@@ -373,12 +374,14 @@ export function createLlmGateway({ providers = [], fetchImpl = globalThis.fetch,
       const provider = candidates[round % candidates.length];
       if (!available(provider)) { metrics.circuitOpen += 1; continue; }
       attemptCount += 1;
+      const attemptStartedAt = Date.now();
       try {
         const value = await request(provider, messages, { signal, policy, maxOutputTokens, enableThinking: requestThinking, operation, attempt: attemptCount, onEvent });
         closeCircuit(provider);
         metrics.successes += 1;
         if (previousProviderId && previousProviderId !== provider.id) metrics.fallbacks += 1;
-        lastCall = { status: 'completed', operation, provider: provider.id, model: provider.model, attempts: attemptCount, durationMs: Date.now() - startedAt, retries: Math.max(0, attemptCount - 1), policy: clone(policy) };
+        const totalDurationMs = Date.now() - startedAt;
+        lastCall = { status: 'completed', operation, provider: provider.id, model: provider.model, attempts: attemptCount, durationMs: totalDurationMs, totalDurationMs, retries: Math.max(0, attemptCount - 1), retryDelayTotalMs, totalBudgetMs: policy.requestTimeoutMs * max + retryDelayTotalMs, policy: clone(policy) };
         cacheSet(key, value);
         return value;
       } catch (error) {
@@ -389,16 +392,17 @@ export function createLlmGateway({ providers = [], fetchImpl = globalThis.fetch,
         if (error.code === 'LLM_RESPONSE_HEADER_TIMEOUT') metrics.responseHeaderTimeouts += 1;
         if (error.code === 'LLM_RESPONSE_BODY_TIMEOUT') { metrics.responseBodyTimeouts += 1; metrics.timeouts += 1; }
         openCircuit(provider, error);
-        attempts.push({ provider: provider.id, model: provider.model, code: errorCode(error), durationMs: Date.now() - startedAt, phase: error.phase || null });
+        attempts.push({ provider: provider.id, model: provider.model, code: errorCode(error), durationMs: Date.now() - attemptStartedAt, phase: error.phase || null });
         if (!retryable(error) || attemptCount >= max) break;
         metrics.retries += 1;
-        await waitBeforeRetry(attemptCount, policy, signal);
+        retryDelayTotalMs += await waitBeforeRetry(attemptCount, policy, signal);
       }
     }
     metrics.failures += 1;
     const finalError = lastError || new Error('LLM 调用失败');
-    finalError.gateway = { attempts, providerCount: normalizedProviders.length, maxAttempts: max, operation, policy: clone(policy) };
-    lastCall = { status: 'failed', operation, provider: attempts.at(-1)?.provider || null, attempts: attemptCount, durationMs: Date.now() - startedAt, retries: Math.max(0, attemptCount - 1), errorCode: errorCode(finalError), policy: clone(policy) };
+    const totalDurationMs = Date.now() - startedAt;
+    finalError.gateway = { attempts, providerCount: normalizedProviders.length, maxAttempts: max, operation, policy: clone(policy), totalDurationMs, retryDelayTotalMs, totalBudgetMs: policy.requestTimeoutMs * max + retryDelayTotalMs };
+    lastCall = { status: 'failed', operation, provider: attempts.at(-1)?.provider || null, attempts: attemptCount, durationMs: totalDurationMs, totalDurationMs, retries: Math.max(0, attemptCount - 1), retryDelayTotalMs, totalBudgetMs: policy.requestTimeoutMs * max + retryDelayTotalMs, errorCode: errorCode(finalError), policy: clone(policy) };
     throw finalError;
   }
 

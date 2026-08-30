@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { mkdtemp, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { InsightDiagnosticLookupError, InsightDiagnosticStore } from './insight-diagnostic-store.mjs';
+import { InsightDiagnosticLookupError, InsightDiagnosticStore, summarizeDiagnosticLifecycle } from './insight-diagnostic-store.mjs';
 import { JsonRunStore } from './lib/run-store.mjs';
 import { createLlmGateway } from './llm-gateway.mjs';
 
@@ -55,3 +55,16 @@ test('gateway emits complete provider attempt diagnostics', async () => {
   assert.equal(events[0].request.apiKey, undefined);
 });
 
+test('diagnostic lifecycle detects open and closed generation attempts', () => {
+  const closed = summarizeDiagnosticLifecycle([
+    { type: 'generation.started', at: '2026-08-30T00:00:00.000Z', runId: 'ir-closed', data: { runId: 'ir-closed', attempt: 1, attemptId: 'at-closed' } },
+    { type: 'generation.finished', at: '2026-08-30T00:00:01.000Z', runId: 'ir-closed', data: { runId: 'ir-closed', attempt: 1, attemptId: 'at-closed', status: 'failed' } },
+  ]);
+  assert.equal(closed.valid, true);
+  assert.equal(closed.openAttempts, 0);
+  const open = summarizeDiagnosticLifecycle([
+    { type: 'generation.started', at: '2026-08-30T00:00:00.000Z', runId: 'ir-open', data: { runId: 'ir-open', attempt: 1, attemptId: 'at-open' } },
+  ]);
+  assert.equal(open.valid, false);
+  assert.equal(open.openAttempts, 1);
+});

@@ -590,6 +590,15 @@
 - 目标关闭审计再次通过真实 LLM UAT：Planner 6.219 秒、Critic 4.325 秒、Narrator 8.389 秒；1,581 行输入无采样、无截断，2,303 分组全部覆盖。
 - 详细实施与验收报告：`DATA_INSIGHT_PLATFORM_RELIABILITY_UAT_REPORT_2026-08-30.md`。
 
+## 2026-08-30 数据洞察平台可靠性后续实施确认（方案 1-3）
+
+- 方案 1“全量事实源 + 按需无损分块”已落地：Evidence Pack 不再隐式二次采样，分块记录来源范围、块序号和覆盖关系；`omittedGroups=0` 不再被解释为业务数据全量。
+- 方案 2“SkillPlan 可执行契约”已落地：核心/扩展方法、字段依赖、阻断和部分完成规则由 Skill 编译，通用编排器移除销售字段硬编码。
+- 方案 3“生命周期、诊断终态和 Gateway 治理”已落地：attempt、interrupted、启动恢复、终态校验、分层超时、健康状态和总预算均可审计。
+- 自动化复验：`npm run check` 通过，`npm test` 288/288 通过。
+- 当前 `127.0.0.1:8787` 真实复验：`/api/live` 正常；`/api/llm/health` 因运行环境禁止 Node 访问 DashScope `443` 返回 `unhealthy/circuit_open`。`npm run uat:followup` 正确返回 HTTP 502、`failed`、无洞察正文/文档，诊断生命周期有效且无开放 attempt。
+- 当前未关闭项是运行账号/出站策略，不是 1-3 的代码实现；允许访问 `443` 后需重跑真实成功 LLM UAT 和 PC 正文截图。阶段 5 流式响应继续暂缓。
+
 
 ## 2026-08-28 用户主动范围与排名依据平台修复
 

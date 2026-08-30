@@ -518,9 +518,11 @@ async function loadAnalysisResults(preferredInsightId = '', sourceId = '') {
     if (!response.ok) throw new Error(data.message || '结果列表加载失败');
     state.analysisResults = data.items || [];
     state.llmConfigured = Boolean(data.llmConfigured);
-    const llmHealth = data.llmHealthStatus || (state.llmConfigured ? 'unknown' : 'not-configured');
-    elements.modelStatus.querySelector('span').textContent = !state.llmConfigured ? '内置洞察引擎' : llmHealth === 'healthy' ? '外部大模型已连接' : llmHealth === 'circuit-open' ? '外部大模型熔断中' : llmHealth === 'unhealthy' ? '外部大模型不可用' : '外部大模型状态未知';
-    elements.modelStatus.classList.toggle('error', ['circuit-open', 'unhealthy'].includes(llmHealth));
+    const llmHealth = data.llmHealthStatus || (state.llmConfigured ? 'not_checked' : 'not_configured');
+    const isCircuitOpen = llmHealth === 'circuit_open' || llmHealth === 'circuit-open';
+    const isUnhealthy = llmHealth === 'unhealthy';
+    elements.modelStatus.querySelector('span').textContent = !state.llmConfigured ? '内置洞察引擎' : llmHealth === 'healthy' ? '外部大模型已连接' : isCircuitOpen ? '外部大模型熔断中' : isUnhealthy ? '外部大模型不可用' : '外部大模型状态未检查';
+    elements.modelStatus.classList.toggle('error', isCircuitOpen || isUnhealthy);
     renderResultList();
     const targetId = preferredInsightId || state.activeResult?.insightId || state.analysisResults[0]?.insightId;
     if (targetId && state.analysisResults.some(item => item.insightId === targetId)) await selectAnalysisResult(targetId);

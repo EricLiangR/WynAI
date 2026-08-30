@@ -13,6 +13,28 @@ function validInsightId(value) {
 
 function now() { return new Date().toISOString(); }
 
+export function summarizeDiagnosticLifecycle(events = []) {
+  const attempts = new Map();
+  for (const event of events || []) {
+    const data = event?.data || {};
+    const key = `${data.runId || event.runId || 'unknown'}:${data.attemptId || 'legacy'}`;
+    if (event.type === 'generation.started') {
+      const item = attempts.get(key) || { key, runId: data.runId || event.runId || null, attemptId: data.attemptId || null, attempt: data.attempt || null, startedAt: event.at, terminals: [] };
+      item.startedAt ||= event.at;
+      item.startedCount = (item.startedCount || 0) + 1;
+      attempts.set(key, item);
+    }
+    if (['generation.finished', 'generation.failed', 'generation.interrupted'].includes(event.type)) {
+      const item = attempts.get(key) || { key, runId: data.runId || event.runId || null, attemptId: data.attemptId || null, attempt: data.attempt || null, startedAt: null, startedCount: 0, terminals: [] };
+      item.terminals.push({ type: event.type, status: data.status || (event.type === 'generation.interrupted' ? 'interrupted' : event.type === 'generation.failed' ? 'failed' : null), at: event.at, error: data.error || null });
+      attempts.set(key, item);
+    }
+  }
+  const items = [...attempts.values()].map(item => ({ ...item, terminal: item.terminals.at(-1) || null, valid: item.startedCount > 0 ? item.terminals.length === 1 : true }));
+  const startedAttempts = items.filter(item => item.startedCount > 0);
+  return { schema: 'wynai.insight-diagnostic-lifecycle/v1', valid: startedAttempts.length === 0 || startedAttempts.every(item => item.valid), attempts: items, openAttempts: startedAttempts.filter(item => item.terminals.length === 0).length, orphanTerminalEvents: items.filter(item => item.startedCount === 0 && item.terminals.length > 0).length };
+}
+
 export class InsightDiagnosticLookupError extends Error {
   constructor(code, message, matches = []) {
     super(message);
@@ -89,4 +111,3 @@ export class InsightDiagnosticStore {
     return clone(event);
   }
 }
-
