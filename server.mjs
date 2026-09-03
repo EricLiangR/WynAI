@@ -12,6 +12,15 @@ import { buildInsightDocumentExport } from './insight-document-export.mjs';
 import { runAutonomousAnalysis } from './lib/harness/orchestrator.mjs';
 import { createExplorationLlm } from './lib/llm/exploration-agent.mjs';
 import { createLlmGateway, serializeError } from './llm-gateway.mjs';
+import { createPlatformGatewayManager } from './platform-gateway-manager.mjs';
+import { compilePlatformContextManifest, validatePlatformEvidenceTransport } from './platform-context-governance.mjs';
+import { createDataInsightCompatibilityAdapter } from './data-insight-compatibility-adapter.mjs';
+import { createSmartQueryCompatibilityAdapter } from './smart-query-compatibility-adapter.mjs';
+import { createMigrationRoutingPolicy, normalizeMigrationMode } from './platform-migration-policy.mjs';
+import { createPlatformMigrationRuntime } from './platform-migration-runtime.mjs';
+import { createCandidateInsightOrchestrator, createCandidateSmartQueryOrchestrator } from './platform-business-orchestrators.mjs';
+import { normalizeInsightInput } from './lib/data-insights/insight-input.mjs';
+import { normalizeAIInteractionRequest } from './lib/protocol/interaction-contract.mjs';
 import { normalizeCanonicalFilters } from './lib/planning/query-request-schema.mjs';
 import { prepareStructuredReport, structuredReportMarkdown, validateStructuredReport } from './lib/report/structured-report.mjs';
 import { normalizeInsightDocument } from './lib/protocol/interaction-contract.mjs';
@@ -214,6 +223,10 @@ const intentGateway = createLlmGateway({
   cacheTtlMs: config.llmCacheTtlMs,
   enableThinking: config.llmEnableThinking,
 });
+const platformGatewayManager = createPlatformGatewayManager({
+  gateways: { exploration: explorationGateway, intent: intentGateway },
+  operationBudgets: { exploration: config.llmTimeoutMs * Math.max(1, config.llmMaxAttempts), intent: config.intentLlmTimeoutMs * Math.max(1, config.llmMaxAttempts) },
+});
 const effectiveLlmBaseUrl = config.llmBaseUrl || config.llmBackupBaseUrl;
 const effectiveLlmModel = config.llmModel || config.llmBackupModel;
 const explorationLlm = createExplorationLlm({
@@ -222,7 +235,7 @@ const explorationLlm = createExplorationLlm({
   model: effectiveLlmModel,
   timeoutMs: config.llmTimeoutMs,
   enableThinking: config.llmEnableThinking,
-  transport: explorationGateway.transport,
+  transport: platformGatewayManager.transport('exploration'),
 });
 const intentLlm = createExplorationLlm({
   baseUrl: effectiveLlmBaseUrl,
@@ -230,7 +243,7 @@ const intentLlm = createExplorationLlm({
   model: effectiveLlmModel,
   timeoutMs: config.intentLlmTimeoutMs,
   enableThinking: config.llmEnableThinking,
-  transport: intentGateway.transport,
+  transport: platformGatewayManager.transport('intent'),
 });
 config.viewProxyPort = validPort(
   'WYN_VIEW_PROXY_PORT',
@@ -244,6 +257,28 @@ const configuredDataDir = resolveRuntimePath(process.env.WYN_AI_DATA_DIR, join(r
 const runtimeData = await resolveWritableDataDirectory(configuredDataDir, join(tmpdir(), `WynAI-runtime-data-${config.port}`));
 const dataDir = runtimeData.path;
 const dataInsightStore = new DataInsightStore({ maxItems: 30, persistence: new JsonRunStore(join(dataDir, 'data-insights'), { maxItems: 30 }) });
+const platformMigrationMode = normalizeMigrationMode(process.env.PLATFORM_MIGRATION_MODE);
+function parseMigrationModuleModes(value) {
+  if (!value) return {};
+  try {
+    const parsed = JSON.parse(value);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) return parsed;
+  } catch { /* accept simple module=mode pairs below */ }
+  return Object.fromEntries(String(value).split(',').map(item => item.split('=').map(part => part.trim())).filter(([module, mode]) => module && mode));
+}
+const platformMigrationRoutingPolicy = createMigrationRoutingPolicy({
+  defaultMode: platformMigrationMode,
+  moduleModes: parseMigrationModuleModes(process.env.PLATFORM_MIGRATION_MODULE_MODES),
+  percentage: process.env.PLATFORM_MIGRATION_PERCENTAGE == null ? 100 : process.env.PLATFORM_MIGRATION_PERCENTAGE,
+  users: process.env.PLATFORM_MIGRATION_USERS,
+  organizations: process.env.PLATFORM_MIGRATION_ORGANIZATIONS,
+  salt: process.env.PLATFORM_MIGRATION_SALT || 'wynai-platform-v1',
+});
+const dataInsightCompatibilityAdapter = createDataInsightCompatibilityAdapter({ mode: platformMigrationMode });
+const platformMigrationRuntime = createPlatformMigrationRuntime({
+  mode: platformMigrationMode,
+  resolveMode: ({ module, context, input }) => platformMigrationRoutingPolicy.resolve({ module, identity: context || {}, context: input?.identity || {} }),
+});
 await dataInsightStore.init();
 const insightGovernance = new InsightGovernanceService({
   auditPersistence: new JsonRunStore(join(dataDir, 'insight-audit'), { maxItems: 5000 }),
@@ -376,6 +411,13 @@ const conversations = new SmartQueryConversationStore({
       strictMode,
     });
   },
+});
+const smartQueryCompatibilityAdapter = createSmartQueryCompatibilityAdapter({ mode: platformMigrationMode });
+const candidateSmartQueryOrchestrator = createCandidateSmartQueryOrchestrator({
+  normalize: value => smartQueryCompatibilityAdapter.normalizeRequest(value).request,
+});
+const candidateInsightOrchestrator = createCandidateInsightOrchestrator({
+  execute: ({ record, prompt, ...diagnosticContext }) => callConfiguredLlm(record, prompt, diagnosticContext),
 });
 await conversations.init();
 const templatePersistence = new JsonRunStore(join(dataDir, 'report-templates'), { maxItems: 100 });
@@ -564,8 +606,10 @@ async function handleHealth(response) {
       runtimeDataFallback: runtimeData.fallback,
       llmModel: effectiveLlmModel || 'Atlas 内置洞察引擎',
       llmProvider: explorationGateway.enabled ? 'llm-gateway' : 'local-fallback',
+      platformMigrationMode,
       llmEndpointHost,
       llmHealthStatus,
+      platformGateway: platformGatewayManager.snapshot(),
       llmGateway: { version: 'wynai.llm-gateway/v1', exploration: llmSnapshot, intent: intentGateway.snapshot(), policy: { requestTimeoutMs: config.llmTimeoutMs, intentRequestTimeoutMs: config.intentLlmTimeoutMs, connectTimeoutMs: config.llmConnectTimeoutMs, responseHeaderWarningMs: config.llmResponseHeaderWarningMs, responseHeaderTimeoutMs: config.llmResponseHeaderTimeoutMs || config.llmTimeoutMs, responseBodyTimeoutMs: config.llmResponseBodyTimeoutMs || config.llmTimeoutMs, operationTimeoutMs: { insightPlanner: config.llmPlannerTimeoutMs, insightCritic: config.llmCriticTimeoutMs, insightNarrator: config.llmNarratorTimeoutMs, insightNarratorRepair: config.llmNarratorRepairTimeoutMs, agentReport: config.llmAgentReportTimeoutMs }, maxAttempts: config.llmMaxAttempts, retryBaseDelayMs: config.llmRetryBaseDelayMs, retryMaxDelayMs: config.llmRetryMaxDelayMs, retryJitterMs: config.llmRetryJitterMs } },
       intentLlmTimeoutMs: config.intentLlmTimeoutMs,
       status: upstream.status,
@@ -825,6 +869,32 @@ async function callAgentReportLlm(analysis, metadata) {
   const error = lastError || new Error('大模型报告校验失败');
   error.diagnostics = { reportAttempts: outputPreviews.length, validationErrors, outputPreviews };
   throw error;
+}
+
+function handlePlatformMigrationStatus(response) {
+  const gateway = platformGatewayManager.snapshot();
+  const llmSnapshot = explorationGateway.snapshot();
+  const llmHealthStatus = llmHealthStatusFor(explorationGateway, llmSnapshot);
+  sendJson(response, 200, {
+    schema: 'wynai.platform-migration-status/v1',
+    version: 1,
+    mode: platformMigrationMode,
+    rollbackMode: 'legacy',
+    adapters: {
+      dataInsight: { schema: dataInsightCompatibilityAdapter.schema, version: dataInsightCompatibilityAdapter.version, mode: dataInsightCompatibilityAdapter.mode },
+      smartQuery: { schema: smartQueryCompatibilityAdapter.schema, version: smartQueryCompatibilityAdapter.version, mode: smartQueryCompatibilityAdapter.mode },
+    },
+    runtime: { schema: platformMigrationRuntime.schema, version: 1, mode: platformMigrationRuntime.mode, dynamicRouting: platformMigrationRuntime.dynamicRouting === true, shadowResultVisible: false },
+    routing: platformMigrationRoutingPolicy.snapshot(),
+    gateway,
+    llm: { status: llmHealthStatus, configured: explorationGateway.enabled, endpointHost: llmEndpointHost },
+    policy: {
+      rollbackSupported: true,
+      runtimeModeChange: false,
+      requestRouting: true,
+      note: '默认模式由 PLATFORM_MIGRATION_MODE 配置；可用模块、主体和比例规则进行请求级灰度，故障时重启为 legacy 回滚。',
+    },
+  });
 }
 
 async function handleLlmHealth(response) {
@@ -1138,6 +1208,32 @@ async function handleConversationMessage(request, response, conversationId) {
     requestAudit.record({ method: request.method, path: request.url, status: 403, durationMs: Date.now() - startedAt, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId });
     return sendJson(response, 403, { message: '无权访问该智能问数会话' });
   }
+  const conversationInput = conversations.get(conversationId);
+  const interactionInput = { ...body, dataset: body.dataset || conversationInput?.dataset || null, conversationId };
+  let migrationRun;
+  try {
+    migrationRun = await platformMigrationRuntime.run({
+      module: 'smart-query-request',
+      input: interactionInput,
+      context: identity,
+      legacy: value => normalizeAIInteractionRequest(value),
+      candidate: value => candidateSmartQueryOrchestrator.run(value),
+      snapshot: value => {
+        const request = value?.request || value;
+        return {
+          numericResults: [],
+          filters: request.context?.activeFilters || [],
+          permissions: { dataset: request.dataset || null, conversationId: request.conversationId || null },
+          evidenceRelations: [],
+          terminalStatus: 'accepted',
+          skillSemantics: request.skills || [],
+          userVisibleAnswer: null,
+        };
+      },
+    });
+  } catch (error) {
+    return sendJson(response, error.status || 400, { code: error.code || 'SMART_QUERY_CONTRACT_INVALID', message: error.message, details: error.details || [] });
+  }
   const controller = new AbortController();
   const traceId = createTraceId();
   operationalEventLog.record({ traceId, conversationId, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, event: 'request.accepted', phase: 'transport', details: { method: request.method, path: request.url } });
@@ -1149,7 +1245,8 @@ async function handleConversationMessage(request, response, conversationId) {
   response.once('close', abort);
   let result;
   try {
-    result = await conversations.ask(conversationId, { ...body, signal: controller.signal, traceId });
+    const askInput = ['canary', 'platform'].includes(migrationRun.mode) ? (migrationRun.result?.request || migrationRun.result) : body;
+    result = await conversations.ask(conversationId, { ...askInput, signal: controller.signal, traceId });
   } catch (error) {
     if (controller.signal.aborted || error?.code === 'REQUEST_ABORTED') {
       operationalEventLog.record({ traceId, conversationId, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, event: 'request.cancelled', phase: 'transport', outcome: 'cancelled', durationMs: Date.now() - startedAt });
@@ -1180,7 +1277,14 @@ async function handleConversationMessage(request, response, conversationId) {
     response.removeListener('close', abort);
   }
   const planning = result.response?.planningDiagnostics || {};
-  result.response = { ...(result.response || {}), trace: { traceId, ...(result.response?.trace || {}) } };
+  result.response = {
+    ...(result.response || {}),
+    trace: {
+      traceId,
+      ...(result.response?.trace || {}),
+      platformMigration: { schema: migrationRun.schema, version: 1, mode: migrationRun.mode, routing: migrationRun.routing || null, comparison: migrationRun.comparison, fallback: migrationRun.fallback, candidateMetadata: migrationRun.candidateMetadata || null },
+    },
+  };
   const turnId = result.response.trace?.turnId;
   if (result.response.status === 'ok' && turnId && result.response.resultSets?.some(item => item?.rows?.length)) {
     try {
@@ -1209,6 +1313,7 @@ async function handleConversationMessage(request, response, conversationId) {
       console.error('独立问数结果注册数据洞察失败', error);
     }
   }
+  operationalEventLog.record({ traceId, conversationId, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, event: 'platform.migration.run', phase: 'migration', outcome: migrationRun.comparison ? (migrationRun.comparison.passed ? 'matched' : 'blocked') : (migrationRun.fallback ? 'fallback' : 'selected'), details: { module: migrationRun.module, mode: migrationRun.mode, routing: migrationRun.routing || null, comparison: migrationRun.comparison, fallback: migrationRun.fallback, candidateMetadata: migrationRun.candidateMetadata || null, schema: migrationRun.schema } });
   operationalEventLog.record({ traceId, conversationId, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, event: 'request.completed', phase: 'transport', outcome: result.response.status || 'ok', durationMs: Date.now() - startedAt, details: { plannerMode: planning.route, risk: planning.riskAssessment } });
   requestAudit.record({ method: request.method, path: request.url, status: 200, durationMs: Date.now() - startedAt, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, requestId: traceId, plannerMode: planning.route, planningDurationMs: planning.planningDurationMs, llmAttempted: planning.llmAttempted, llmDurationMs: planning.llmDurationMs });
   sendJson(response, 200, { ...result, conversation: publicConversation(result.conversation) });
@@ -1552,7 +1657,7 @@ function handleDataInsights(pathname, requestUrl, request, response) {
     const items = dataInsightStore.list({ sourceType: requestUrl.searchParams.get('sourceType'), sourceId: requestUrl.searchParams.get('sourceId') });
     const llmSnapshot = explorationGateway.snapshot();
     const llmHealthStatus = llmHealthStatusFor(explorationGateway, llmSnapshot);
-    sendJson(response, 200, { items, total: items.length, llmConfigured: explorationGateway.enabled, llmHealthStatus, llmProvider: explorationGateway.enabled ? 'llm-gateway' : 'local-fallback', llmModel: effectiveLlmModel || null, llmEndpointHost, llmGateway: llmSnapshot });
+    sendJson(response, 200, { items, total: items.length, llmConfigured: explorationGateway.enabled, llmHealthStatus, llmProvider: explorationGateway.enabled ? 'llm-gateway' : 'local-fallback', llmModel: effectiveLlmModel || null, llmEndpointHost, platformMigrationMode, platformGateway: platformGatewayManager.snapshot(), llmGateway: llmSnapshot });
     return;
   }
   const detail = dataInsightStore.get(insightId);
@@ -1578,7 +1683,16 @@ async function handleDataInsightInput(request, response) {
   try {
     const identity = requestIdentity(request);
     const idempotencyKey = request.headers['idempotency-key'] || null;
-    const result = dataInsightStore.register(body, { idempotencyKey, actor: identity.actor, organizationId: identity.organizationId });
+    const migrationRun = await platformMigrationRuntime.run({
+      module: 'data-insight-input',
+      input: body,
+      context: identity,
+      legacy: value => normalizeInsightInput(value),
+      candidate: value => dataInsightCompatibilityAdapter.adapt(value).input,
+      snapshot: value => dataInsightCompatibilityAdapter.snapshot({ input: value, status: 'accepted' }),
+    });
+    const adaptedInput = migrationRun.result;
+    const result = dataInsightStore.register(adaptedInput, { idempotencyKey, actor: identity.actor, organizationId: identity.organizationId });
     const existingRuns = insightRunStore.list({ mode: 'interpret', insightId: result.record.insightId });
     const datasetIds = (result.record.input.datasets || []).map(item => item.id);
     const skillQuestion = [result.record.input.title, result.record.input.context?.question, result.record.input.context?.query?.name].filter(Boolean).join(' ');
@@ -1586,6 +1700,7 @@ async function handleDataInsightInput(request, response) {
     const run = existingRuns[0] || await insightRunStore.create({ mode: 'interpret', insightId: result.record.insightId, datasetIds, question: result.record.input.title, actor: identity.actor, organizationId: identity.organizationId, skill: { refs: resolvedSkills.map(skill => `${skill.id}@${skill.version}`), diagnostics: resolvedSkills.flatMap(skill => skill.diagnostics) }, metadata: { source: result.record.input.source || null } });
     const diagnosticContext = { actor: identity.actor, organizationId: identity.organizationId, runId: run.id, source: result.record.input.source || null };
     await recordInsightDiagnostic(result.record.insightId, 'input.accepted', { input: result.record.input, created: result.created, idempotencyKey: idempotencyKey || null }, diagnosticContext);
+    await recordInsightDiagnostic(result.record.insightId, 'platform.migration.run', { module: migrationRun.module, mode: migrationRun.mode, routing: migrationRun.routing || null, comparison: migrationRun.comparison, fallback: migrationRun.fallback, schema: migrationRun.schema }, diagnosticContext);
     await recordInsightDiagnostic(result.record.insightId, 'run.created', { run: { id: run.id, mode: run.mode, status: run.status, datasetIds: run.datasetIds, question: run.question, skill: run.skill, metadata: run.metadata, createdAt: run.createdAt } }, diagnosticContext);
     sendJson(response, result.created ? 201 : 200, { schema: 'wynai.insight-input-ack/v1', insightId: result.record.insightId, runId: run.id, status: result.created ? 'accepted' : 'updated' });
   } catch (error) {
@@ -1756,6 +1871,7 @@ async function callConfiguredLlm(record, prompt, diagnosticContext = {}) {
   const modelCapability = normalizeModelCapability({ provider: llmEndpointHost, model: effectiveLlmModel, contextWindowTokens: config.llmContextWindowTokens, maxInputTokens: config.llmMaxInputTokens, maxOutputTokens: config.llmMaxOutputTokens, safetyReserveTokens: config.llmSafetyReserveTokens, protocolOverheadTokens: config.llmProtocolOverheadTokens, source: 'server-env' });
   const modelBudget = resolveModelBudget(modelCapability);
   const evidencePack = buildEvidencePack(redacted.input, { maxTokens: modelBudget.inputBudgetTokens });
+  const evidenceTransport = validatePlatformEvidenceTransport(evidencePack);
   const resolvedSkills = resolveInsightSkillsForRecord(record, prompt);
   const businessFacts = buildBusinessFactPack({ input: redacted.input, evidencePack, skills: resolvedSkills });
   const enrichedEvidencePack = { ...evidencePack, businessFacts };
@@ -1795,7 +1911,8 @@ async function callConfiguredLlm(record, prompt, diagnosticContext = {}) {
   });
   const effectiveSkillPlan = { ...skillPlan, capabilityCoverage, transportPolicy: { ...skillPlan.transportPolicy, mode: config.insightTransportMode } };
   enrichedEvidencePack.capabilityCoverage = capabilityCoverage;
-  await recordInsightDiagnostic(record.insightId, 'evidence.pack.created', { evidencePack: enrichedEvidencePack, redactionPolicy: redacted.policy, skills: resolvedSkills, skillPlan: effectiveSkillPlan, modelCapability, modelBudget }, diagnosticContext);
+  const platformContext = compilePlatformContextManifest({ question: prompt || record.input.title, input: redacted.input, skills: resolvedSkills, skillPlan: effectiveSkillPlan, evidencePack: enrichedEvidencePack, permissions: { actor: diagnosticContext.actor || null, organizationId: diagnosticContext.organizationId || null, scope: redacted.input.scope || null } });
+  await recordInsightDiagnostic(record.insightId, 'evidence.pack.created', { evidencePack: enrichedEvidencePack, evidenceTransport, platformContext, redactionPolicy: redacted.policy, skills: resolvedSkills, skillPlan: effectiveSkillPlan, modelCapability, modelBudget }, diagnosticContext);
   const orchestration = await runInsightLlmOrchestration({
     llm: explorationLlm,
     prompt: prompt || record.input.title,
@@ -1955,7 +2072,16 @@ async function handleSecondaryInsight(request, response, providedBody = null) {
       error.status = 503;
       throw error;
     }
-    const result = await callConfiguredLlm(record, prompt, diagnosticContext);
+    const generationMigrationRun = await platformMigrationRuntime.run({
+      module: 'data-insight-orchestration',
+      input: { insightId, prompt, runId: run?.id || null, inputSchema: record.input.schema },
+      context: identity,
+      legacy: () => callConfiguredLlm(record, prompt, { ...diagnosticContext, migrationPath: 'legacy' }),
+      candidate: () => candidateInsightOrchestrator.run({ record, prompt, diagnosticContext }),
+      snapshot: value => dataInsightCompatibilityAdapter.snapshot({ input: record.input, status: value?.status || 'failed', document: value?.structured || null, result: value }),
+    });
+    const result = { ...generationMigrationRun.result, platformMigration: { schema: generationMigrationRun.schema, version: 1, mode: generationMigrationRun.mode, routing: generationMigrationRun.routing || null, comparison: generationMigrationRun.comparison, fallback: generationMigrationRun.fallback, candidateMetadata: generationMigrationRun.candidateMetadata || null, candidateError: generationMigrationRun.candidateError || null } };
+    await recordInsightDiagnostic(insightId, 'platform.migration.orchestration', { module: generationMigrationRun.module, mode: generationMigrationRun.mode, routing: generationMigrationRun.routing || null, comparison: generationMigrationRun.comparison, fallback: generationMigrationRun.fallback, candidateMetadata: generationMigrationRun.candidateMetadata || null, candidateError: generationMigrationRun.candidateError || null, schema: generationMigrationRun.schema }, diagnosticContext);
     const orchestration = result.orchestration || {};
     const narrative = result.structured || {};
     const evidence = orchestration.evidence || [];
@@ -2090,6 +2216,7 @@ const server = http.createServer(async (request, response) => {
       });
     }
     if (request.method === 'GET' && pathname === '/api/health') return await handleHealth(response);
+    if (request.method === 'GET' && pathname === '/api/platform/migration') return handlePlatformMigrationStatus(response);
     if (request.method === 'GET' && pathname === '/api/llm/health') return await handleLlmHealth(response);
     if (request.method === 'GET' && pathname === '/api/llm/diagnostics') return await handleLlmDiagnostics(response);
     if (request.method === 'GET' && pathname === '/api/datasets') return await handleDatasets(response);

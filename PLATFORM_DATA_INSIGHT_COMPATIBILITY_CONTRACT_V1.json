@@ -1,0 +1,10 @@
+{
+  "schema": "wynai.platform-compatibility-contract/v1",
+  "version": 1,
+  "module": "data-insight",
+  "adapter": "data-insight-adapter/v1",
+  "versions": {"input":"wynai.insight-input/v1","gateway":"wynai.llm-gateway/v1","evidence":"wynai.evidence-pack/v1","skill":"wynai.skill/v1","lifecycle":"wynai.insight-run/v1","document":"wynai.insight-document/v1","migrationRuntime":"wynai.platform-migration-runtime/v1"},
+  "contextClasses": {"original-question":"required-lossless","active-conversation-context":"required-lossless","dataset-metadata":"required-lossless","skill-references":"required-lossless","permissions-and-scope":"required-lossless","derived-metric-formulas":"required-lossless","evidence-provenance":"required-lossless","redundant-history":"summarizable-with-provenance","provider-credentials":"never-forward"},
+  "invariants": {"numeric-results":true,"filters":true,"permissions":true,"evidence-relations":true,"terminal-status":true,"skill-semantics":true,"user-visible-answer":true},
+  "modes": ["legacy","shadow","canary","platform"]
+}

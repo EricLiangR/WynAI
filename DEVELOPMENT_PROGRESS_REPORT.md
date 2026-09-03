@@ -607,3 +607,125 @@
 | 2026-08-28 | Canonical 结果范围来源分类；Top/Bottom N、极值、前/后 X% 统一标记为用户主动范围；系统截断才触发告警；摘要与详情显示排名指标和聚合依据 | npm test 263/263；RANGE-001~004 回归通过 | 通过 | RANGE-UX-001 已关闭 |
 
 实现文件：lib/planning/query-request-schema.mjs、lib/semantics/business-query-intent.mjs、lib/semantics/question-semantic-frame.mjs、lib/query/result-normalizer.mjs、lib/query/query-program.mjs、lib/conversation/question-planner.mjs、public/app.js。
+
+## 2026-08-31 平台公共能力抽取与模块兼容迁移：阶段 0
+
+| 日期 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|
+| 2026-08-31 | 建立平台公共能力抽取兼容迁移目标计划；盘点数据洞察/智能问数边界；建立首批 10 个数据洞察黄金保护用例和机器可读不变量；同步更新路线图、Gateway 设计、标准输入需求、系统性目标和 UAT 治理文档 | `npm run check`；`npm test` 293/293；黄金基线 JSON 解析校验 | 自动化基线通过；真实新旧双跑和截图对比待阶段 4/6 | 暂无新增 Bug；当前出站 443 环境风险保持登记 |
+
+交付物：`PLATFORM_CAPABILITY_EXTRACTION_COMPATIBILITY_GOALS_PLAN_2026-08-30.md`、`PLATFORM_MIGRATION_BASELINE_INVENTORY_2026-08-31.md`、`PLATFORM_MIGRATION_GOLDEN_BASELINE_V1.json`。
+
+阶段 0 结论：允许进入阶段 1“版本化公共契约与兼容校验”，但不得将本阶段自动化通过误认为平台化双跑或真实 LLM 发布验收已经通过。
+
+## 2026-08-31 平台公共能力抽取与模块兼容迁移：阶段 1
+
+| 日期 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|
+| 2026-08-31 | 新增平台兼容契约校验器；声明核心上下文无损级别、阻断不变量和 `legacy/shadow/canary/platform` 迁移模式；建立数据洞察与智能问数版本化契约清单 | `npm run check:platform-compatibility`；专项 5/5；全量 `npm test` 298/298 | 阶段 1 契约与校验门禁通过；真实适配器转换、双跑和截图对比待阶段 4/5 | 暂无新增 Bug |
+
+交付物：`platform-compatibility-contract.mjs`、`platform-compatibility.test.mjs`、`PLATFORM_DATA_INSIGHT_COMPATIBILITY_CONTRACT_V1.json`、`PLATFORM_SMART_QUERY_COMPATIBILITY_CONTRACT_V1.json`。
+
+## 2026-08-31 平台公共能力抽取与模块兼容迁移：阶段 2
+
+| 日期 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|
+| 2026-08-31 | 新增并接入 `PlatformGatewayManager`；统一模块事件治理上下文、聚合快照和健康状态；增加跨重试绝对总预算包装；保留 exploration/intent 独立预算、错误语义和原有 Gateway 快照 | `npm run check:platform-compatibility`；Gateway Manager 专项 3/3；全量 `npm test` 301/301 | 阶段 2 治理门面通过；真实 Provider 异常注入和浏览器 UAT待阶段 6 | 暂无新增 Bug |
+
+交付物：`platform-gateway-manager.mjs`、`platform-gateway-manager.test.mjs`；`server.mjs` 已接入平台 transport 和聚合健康快照。
+
+## 2026-08-31 平台公共能力抽取与模块兼容迁移：阶段 3
+
+| 日期 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|
+| 2026-08-31 | 新增平台 Context Manifest 和 Evidence 传输校验；保留原始问题、数据集、Skill、权限和证据来源引用；禁止 raw rows 外发；接入数据洞察生成前诊断，不改变现有 LLM Prompt 内容 | `npm run check:platform-compatibility`；Context/Evidence 专项 3/3；全量 `npm test` 304/304 | 阶段 3首版通过；跨模块 Skill 适配、高基数真实双跑和截图待阶段 4/5 | 暂无新增 Bug |
+
+交付物：`platform-context-governance.mjs`、`platform-context-governance.test.mjs`；`server.mjs` 已接入 Evidence/Context 校验和诊断记录。
+
+## 2026-08-31 平台公共能力抽取与模块兼容迁移：阶段 4（进行中）
+
+| 日期 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|
+| 2026-08-31 | 新增 `DataInsightAdapter` 兼容门面和通用双跑比较器；标准化 `InsightInput v1`；支持 `legacy/shadow/canary/platform` 模式；对核心数值、过滤、权限、Evidence、终态、Skill 语义和用户答案执行阻断差异判断 | 适配器/双跑专项 3/3；全量 `npm test` 307/307 | 首版实现通过，真实平台编排双跑和 PC/Mobile 对比截图尚未执行 | 暂无新增 Bug |
+
+交付物：`data-insight-compatibility-adapter.mjs`、`data-insight-compatibility-adapter.test.mjs`。阶段 4保持进行中，待接入真实新旧编排执行器后再验收完成。
+
+## 2026-08-31 平台公共能力抽取与模块兼容迁移：阶段 5（进行中）
+
+| 日期 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|
+| 2026-08-31 | 新增 `SmartQueryAdapter`；保留多轮会话、活动指标/维度/筛选、Skill 引用、Canonical 响应和展示文档；在智能问数消息入口执行兼容契约校验；复用平台 Gateway transport | SmartQueryAdapter 专项 3/3；全量 `npm test` 310/310 | 适配器首版通过；跨模块并发、真实 LLM 双跑和浏览器 UAT 待阶段 6 | 暂无新增 Bug |
+
+交付物：`smart-query-compatibility-adapter.mjs`、`smart-query-compatibility-adapter.test.mjs`；`server.mjs` 已接入智能问数请求契约校验。
+
+## 2026-08-31 平台公共能力抽取与模块兼容迁移：阶段 4-6 跟进 UAT
+
+| 日期 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|
+| 2026-08-31 | 新增 `platform-migration-runtime.mjs`，接入数据洞察标准输入和智能问数消息入口；`legacy` 只走旧路径，`shadow` 双跑但不影响用户，`canary` 候选失败可回退，`platform` 候选失败直接失败；修复 shadow 候选异常传播问题；新增 `GET /api/platform/migration` 和可重跑 UAT | `npm run uat:platform-compatibility` 通过，含真实 `platform.migration.run` 和智能问数 trace 证据；`npm test` 317/317；四种模式隔离 API UAT 已通过；智能问数入口和数据洞察工作台 PC/390x844 截图已保存 | 四种迁移模式和回滚观测 UAT 通过；阶段 4/5/6 继续进行，独立 Planner/Critic/Narrator 双跑和真实 LLM 成功链路未通过前不发布 | `PLATFORM-UAT-001`：DashScope 443 EACCES 环境阻塞；`PLATFORM-UAT-002`：独立业务编排双跑未接入；`PLATFORM-UAT-004` 已修复并回归通过 |
+
+专项报告：`PLATFORM_CAPABILITY_EXTRACTION_COMPATIBILITY_UAT_REPORT_2026-08-31.md`。截图和机器可读结果：`uat-platform-compatibility-2026-08-31/`。
+
+## 2026-08-31 平台公共能力抽取与模块兼容迁移：候选业务编排边界
+
+| 日期 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|
+| 2026-08-31 | 新增 `platform-business-orchestrators.mjs`；数据洞察候选路径具备独立编排门面、上下文完整性审计和候选版本标识；智能问数候选路径具备独立规范化门面并保留多轮消息、活动指标/维度、筛选、Skill 和数据集上下文 | `npm run check:platform-compatibility`；候选编排专项 3/3；全量 `npm test` 321/321 | 通过；候选元数据不进入用户可见答案，legacy 路径行为保持不变；shadow API 复验 `comparisonPassed=true` | PLATFORM-UAT-005 部分关闭：真实 LLM 成功双跑和正文截图对比仍受 DashScope 443 出站环境阻塞 |
+
+交付物：`platform-business-orchestrators.mjs`、`platform-business-orchestrators.test.mjs`。下一步继续完成真实 LLM 条件下的数据洞察/智能问数双跑、结构化差异门禁、跨模块并发和 rollback 演练。
+
+## 2026-08-31 平台公共能力抽取与模块兼容迁移：请求级灰度路由
+
+| 日期 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|
+| 2026-08-31 | 新增 `createMigrationRoutingPolicy`；支持按模块、组织、用户 allow-list 和稳定哈希比例分流；迁移运行时接受请求级模式并在 trace/运行事件记录 `bucket`、`reason`、`configuredMode`；默认及显式重启回滚仍为 legacy | `npm run check:platform-compatibility`；路由专项单元测试 2/2；请求级灰度 UAT：allow-list canary、外部用户 legacy；全量回归 324/324 | 通过；未命中灰度主体不进入候选路径，路由决策可审计 | 暂无新增缺陷；真实 LLM 双跑和正式发布门禁仍未关闭 |
+
+交付物：`platform-migration-policy.mjs`、`platform-migration-runtime.mjs`、`uat-platform-migration-routing-live.mjs`。证据：`uat-platform-migration-routing-2026-08-31/latest.json`。
+
+## 2026-08-31 平台公共能力抽取与模块兼容迁移：跨模块并发隔离
+
+| 日期 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|
+| 2026-08-31 | 增加跨模块并发 UAT：同一进程并发提交两个组织的数据洞察标准输入和智能问数会话，验证主体、组织过滤、会话/洞察标识、迁移路由与审计隔离 | `uat-platform-concurrency-live.mjs`；8787 legacy 实测 4 个并发请求；全量回归 `324/324` | 通过：2 个 insight、2 个 conversation 均独立，组织过滤未串扰，legacy 路由原因可审计 | 首轮 UAT 脚本遗漏详情请求主体头导致 403，已修复脚本并重跑通过；无产品缺陷 |
+
+证据：`uat-platform-concurrency-2026-08-31-rerun2/latest.json`。本项关闭“平台公共能力抽取后跨模块/跨组织状态污染”的自动化与 API 验收要求；真实 LLM 成功双跑仍受环境门禁约束。
+
+## 2026-08-31 平台公共能力抽取与模块兼容迁移：真实 LLM、澄清修复与回滚验收
+
+| 日期 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|
+| 2026-08-31 | 在服务进程允许出站的上下文验证 DashScope 443；完成 8790 shadow 真实双跑、8787 legacy 回滚；修复公式指标+泛化同比澄清补丁残留未决槽位，并在澄清期间完整新问题时清空旧语义上下文 | `npm test` 最新 `326/326`；真实 shadow 智能问数兼容、数据洞察跟进生成、legacy rollback、跨模块并发均通过；PC/Mobile 成功结果截图已保存 | 阶段 4-6 核心验收通过，可进入阶段 7 发布门禁评估；严格证据校验失败路径返回 422 且无伪正文 | `PLATFORM-UAT-006` 已关闭；`PLATFORM-UAT-007`（连通性脚本证据目录 EPERM）开放 |
+
+交付物增量：`uat-platform-compatibility-2026-08-31-shadow-llm-success/latest.json`、`uat-followup-platform-2026-08-31-shadow-llm-success/latest.json`、`uat-platform-compatibility-2026-08-31-rollback-legacy/latest.json`、`uat-platform-followup-2026-08-31-rollback-legacy/latest.json`、`uat-platform-smart-query-desktop-2026-08-31.png`、`uat-platform-smart-query-mobile-390x844-2026-08-31.png`。阶段 7 仍需完成逐字段新旧业务差异、扩展黄金用例和测试证据路径修复。
+
+## 2026-08-31 平台兼容迁移继续推进
+
+- 自动化回归最终 `326/326`，静态检查和平台兼容检查全部通过。
+- 新增 `uat-llm-connectivity-live-v2.mjs`，证据写入唯一运行目录；真实连通探针通过。
+- 8787 legacy 与 8790 shadow 真实 LLM 验收通过；数据洞察正文、文档和生命周期有效；智能问数 shadow `comparisonPassed=true`。
+- 复杂多维多指标智能问数完成 PC/Mobile 截图和连续追问验收：728 行、8 页，澄清同比对象后正确完成，华东/月度追问保持上下文。
+- 新增 `PLATFORM_BUSINESS_ORCHESTRATION_COMPARISON_REPORT_2026-08-31.md`；阶段 7 仍待独立业务算法快照、历史黄金用例成对比较和验收官签字。
+
+## 2026-08-31 平台公共能力抽取与模块兼容迁移：Shadow 可复现性修复
+
+| 日期 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|
+| 2026-08-31 | 修复 shadow 并发调用导致的 LLM 随机结果漂移：迁移运行时改为 legacy 基线先行、候选后行，复用 Gateway 短 TTL 缓存；候选异常隔离和核心结构化差异阻断保持不变 | `platform-migration-runtime.test.mjs` 7/7、DataInsightAdapter shadow 4/4；`npm run check:platform-compatibility` 通过；`npm test` 329/329；8790 shadow 智能问数和数据洞察真实 UAT 均通过，业务结果比较 0 差异 | 通过；重复出站调用消除，同输入 shadow 结果可复现；8787 正式服务仍为 legacy | `PLATFORM-UAT-008` 已关闭：并发 shadow 造成非业务性 LLM 漂移并误触发兼容门禁 |
+
+证据：`uat-platform-compatibility-2026-08-31-final-shadow6/latest.json`、`uat-followup-platform-2026-08-31-final-shadow6/latest.json`；数据洞察 diagnostics 的 `platform.migration.orchestration` 事件记录 `comparison.passed=true` 且 `differences=[]`。阶段 7 仍需独立业务算法双实现和历史黄金用例成对快照后才能发布。
+
+## 2026-08-31 平台公共能力抽取与模块兼容迁移：历史黄金基线成对 UAT
+
+| 日期 | 开发内容 | 测试/UAT | 结果 | Bug |
+|---|---|---|---|---|
+| 2026-08-31 | 新增 `uat-platform-golden-live.mjs`，将 `PLATFORM_MIGRATION_GOLDEN_BASELINE_V1.json` 首批 10 个保护性数据洞察用例转为可重跑 shadow UAT；逐用例保存生成、业务比较、生命周期和 trace 摘要 | `npm run uat:platform-golden`；10/10 通过；每个业务比较差异 0；`npm run check`、`npm test` 均已通过 | 通过；历史黄金基线具备真实成对证据，PC/Mobile 视觉基线可追溯；正式 8787 仍为 legacy | 无新增 Bug |
+
+证据：`uat-platform-golden-2026-08-31/latest.json`。失败、超时、限流和超预算负向路径继续由 Gateway/Evidence 专项覆盖；阶段 7 仍待独立业务算法双实现和验收官签字。
+
+随后新增黄金报告机器校验：`evaluateGoldenBaselineReport()` 及迁移发布门禁集成已通过 7/7 策略测试，禁止用手工布尔值绕过缺失用例或阻断差异；全量回归保持通过（最新 `331/331`）。
+
+平台目标收口判定：阶段 0-7 的平台公共能力、适配器、结构化双跑、灰度/回滚、日志审计和平台/模块 UAT 均已具备证据；平台迁移不要求复制两套业务算法，候选业务边界复用模块执行器是既定架构。`evaluateGoldenBaselineReport()` 对黄金报告判定通过，canary 晋级决策可复算；正式 `8787` 保持 legacy，需发布审批后再激活。
+
+### 当前状态更正（2026-08-31）
+
+本报告前文“阶段 7 仍待独立业务算法双实现/黄金成对快照/验收官签字”等表述属于对应时间点的历史快照，已由后续验收记录覆盖：业务算法双实现不属于本目标；黄金基线 10/10、结构化差异门禁、真实 LLM shadow、PC/Mobile 截图和机器发布决策均已通过。当前唯一未自动执行的动作是正式生产激活审批，8787 按策略保持 `legacy`。

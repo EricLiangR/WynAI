@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { planBusinessQuestion, planBusinessQuestionAsync } from '../lib/conversation/question-planner.mjs';
 import { applyQueryProgram } from '../lib/query/query-program.mjs';
 import { SmartQueryConversationStore } from '../lib/conversation/session.mjs';
@@ -454,4 +455,39 @@ test('派生指标澄清支持自由文本全部选择并清除旧待决槽位',
   assert.equal(second.response.status, 'ok');
   assert.equal(second.conversation.pendingContext, null);
   assert.deepEqual(second.conversation.committedContext.intent.derivedMetrics.map(item => item.alias), ['revenue_yoy', 'profit_yoy']);
+});
+
+test('公式指标与泛化同比并存时澄清选择清除旧未决槽位', async () => {
+  const formulaMetadata = { ...metadata, id: '2b445034-38fe-4350-9cab-b7684c28b5f8' };
+  const formulaSkill = new SkillRegistry([JSON.parse(await readFile(new URL('../skills/sales/skill.json', import.meta.url), 'utf8'))]);
+  const executeQuery = async ({ requests }) => ({ resultSets: [{ id: 'rs-formula-clarify', requestId: requests[0].id, schema: [
+    { name: 'period', role: 'dimension', type: 'date', grain: 'year' },
+    { name: 'revenue', role: 'measure', type: 'number' }, { name: 'profit', role: 'measure', type: 'number' },
+    { name: 'gross_margin_rate', role: 'measure', type: 'number', format: 'percentage' },
+    { name: 'revenue_yoy', role: 'measure', type: 'number', format: 'percentage' }, { name: 'profit_yoy', role: 'measure', type: 'number', format: 'percentage' },
+  ], rows: [{ period: '2024-01-01', revenue: 100, profit: 20, gross_margin_rate: 0.2, revenue_yoy: 0.1, profit_yoy: 0.2 }, { period: '2025-01-01', revenue: 110, profit: 24, gross_margin_rate: 0.218, revenue_yoy: 0.1, profit_yoy: 0.2 }], quality: { isSample: false, isTruncated: false, warnings: [] } }] });
+  const store = new SmartQueryConversationStore({ loadMetadata: async () => formulaMetadata, executeQuery, runAnalysis: async () => { throw new Error('不应走旧降级路径'); }, skillRegistry: formulaSkill });
+  const conversation = await store.create({ datasetId: formulaMetadata.id });
+  const first = await store.ask(conversation.id, { question: '过去两年每年销售额、利润和毛利率，并比较同比变化' });
+  assert.equal(first.response.status, 'needs_clarification');
+  const second = await store.ask(conversation.id, { question: '销售额和利润都做同比增长率', clarificationSelection: { concepts: ['revenue', 'profit'], mode: 'all' } });
+  assert.equal(second.response.status, 'ok');
+  assert.equal(second.conversation.pendingContext, null);
+  assert.deepEqual(second.conversation.committedContext.intent.derivedMetrics.map(item => item.alias), ['gross_margin_rate', 'revenue_yoy', 'profit_yoy']);
+});
+
+test('澄清中的新问题不会继承旧的派生指标或筛选上下文', async () => {
+  const executeQuery = async ({ requests }) => ({ resultSets: [resultSet(requests[0], [
+    { period: '2023-01-01T00:00:00.000Z', revenue: 100, profit: 20 },
+    { period: '2024-01-01T00:00:00.000Z', revenue: 110, profit: 24 },
+    { period: '2025-01-01T00:00:00.000Z', revenue: 120, profit: 28 },
+  ])] });
+  const store = new SmartQueryConversationStore({ loadMetadata: async () => metadata, executeQuery, runAnalysis: async () => { throw new Error('不应走旧降级路径'); } });
+  const conversation = await store.create({ datasetId: metadata.id });
+  const first = await store.ask(conversation.id, { question: '销售额、利润和同比增长率' });
+  assert.equal(first.response.status, 'needs_clarification');
+  const fresh = await store.ask(conversation.id, { question: '2023至2025年每年销售额和利润' });
+  assert.equal(fresh.response.status, 'ok');
+  assert.deepEqual(fresh.conversation.committedContext.intent.derivedMetrics, []);
+  assert.deepEqual(fresh.conversation.activeMetrics, ['订单金额', '订单利润']);
 });

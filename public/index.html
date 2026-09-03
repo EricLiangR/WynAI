@@ -197,37 +197,39 @@
               </div>
 
               <div class="insight-detail" id="insight-detail" hidden>
-                <div class="dataset-heading">
-                  <div class="dataset-title-wrap">
-                    <span class="dataset-glyph"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></span>
-                    <div><div class="dataset-breadcrumb">标准输入 / <span id="insight-id">—</span></div><h3 id="insight-topic">分析结果</h3></div>
+                <div class="insight-result-overview">
+                  <div class="dataset-heading">
+                    <div class="dataset-title-wrap">
+                      <span class="studio-mark" aria-hidden="true"><svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg></span>
+                      <div><h3 id="insight-topic">分析结果</h3></div>
+                    </div>
+                    <span class="capture-status"><i></i> 已捕获结果集</span>
                   </div>
-                  <span class="capture-status"><i></i> 已捕获结果集</span>
-                </div>
 
-                <div class="insight-stat-grid">
-                  <article><span class="stat-icon violet">#</span><div><small>结果记录</small><strong id="stat-rows">0</strong><em>记录</em></div></article>
-                  <article><span class="stat-icon cyan">▦</span><div><small>字段数量</small><strong id="stat-columns">0</strong><em>字段</em></div></article>
-                  <article><span class="stat-icon green">✓</span><div><small>数据完整度</small><strong id="stat-completeness">0%</strong><em>质量</em></div></article>
-                  <article><span class="stat-icon amber">AI</span><div><small>洞察引擎</small><strong id="stat-model">内置引擎</strong><em>模型</em></div></article>
-                </div>
+                  <div class="insight-stat-grid">
+                    <article><span class="stat-icon violet">#</span><div><small>结果记录</small><strong id="stat-rows">0</strong><em>记录</em></div></article>
+                    <article><span class="stat-icon cyan">▦</span><div><small>字段数量</small><strong id="stat-columns">0</strong><em>字段</em></div></article>
+                    <article><span class="stat-icon green">✓</span><div><small>数据完整度</small><strong id="stat-completeness">0%</strong><em>质量</em></div></article>
+                    <article><span class="stat-icon amber">AI</span><div><small>洞察引擎</small><strong id="stat-model">内置引擎</strong><em>模型</em></div></article>
+                  </div>
 
                 <article class="data-preview-card">
-                  <div class="card-title-row">
-                    <div><span class="card-eyebrow">结构化结果</span><h4>结果集预览</h4></div>
-                    <div class="preview-meta"><span id="preview-range">前 0 行</span><button id="toggle-raw-data" type="button">查看 JSON</button></div>
+                  <div class="card-title-row insight-area-head">
+                    <div class="insight-area-title"><h4>数据预览</h4></div>
+                    <div class="preview-meta"><button id="toggle-raw-data" type="button">查看 JSON</button></div>
                   </div>
                   <div class="data-table-wrap" id="data-table-wrap">
                     <table class="data-table"><thead id="insight-table-head"></thead><tbody id="insight-table-body"></tbody></table>
                   </div>
                   <pre class="raw-data" id="raw-data" hidden></pre>
-                  <div class="table-foot"><span id="table-quality-note">等待结果质量检查</span><span>InsightInput v1</span></div>
-                </article>
+                  <div class="table-foot"><div class="smart-table-pagination" id="insight-table-pagination" hidden></div></div>
+                  </article>
+                </div>
 
                 <article class="analysis-studio">
-                  <div class="studio-head">
-                    <div><span class="studio-mark">✦</span><div><span class="card-eyebrow">AI 洞察工作台</span><h4>数据洞察</h4></div></div>
-                    <span class="context-chip">已附加结果上下文</span>
+                  <div class="studio-head insight-area-head">
+                    <div class="insight-area-title"><span class="studio-mark" aria-hidden="true">✦</span><h4>洞察工作台</h4></div>
+                    <span class="context-chip"><i aria-hidden="true"></i> 已附加上下文</span>
                   </div>
                   <div class="analysis-presets" id="analysis-presets">
                     <button type="button" data-preset="请识别最重要的趋势变化，并用数据证据解释。">趋势洞察</button>
@@ -242,7 +244,7 @@
                 </article>
 
                 <article class="secondary-output" id="secondary-output" hidden>
-                  <div class="output-head"><div><span class="studio-mark">AI</span><div><span class="card-eyebrow">数据洞察报告</span><h4>洞察结论</h4></div></div><span id="output-model">—</span></div>
+                  <div class="output-head insight-area-head"><div class="insight-area-title"><span class="studio-mark" aria-hidden="true">AI</span><h4>洞察结论</h4></div><span id="output-model" hidden>—</span></div>
                   <div class="finding-grid" id="finding-grid" hidden aria-hidden="true"></div>
                   <div class="output-content" id="output-content"></div>
                   <div class="insight-version-bar" id="insight-version-bar" hidden></div>

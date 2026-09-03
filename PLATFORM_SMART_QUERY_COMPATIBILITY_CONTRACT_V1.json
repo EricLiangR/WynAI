@@ -1,0 +1,10 @@
+{
+  "schema": "wynai.platform-compatibility-contract/v1",
+  "version": 1,
+  "module": "smart-query",
+  "adapter": "smart-query-adapter/v1",
+  "versions": {"interactionRequest":"wynai.ai-interaction-request/v1","interactionResponse":"wynai.ai-interaction-response/v1","businessIntent":"wynai.business-query-intent/v2","queryProgram":"wynai.query-program/v1","skill":"wynai.skill/v1","visualization":"wynai.visualization-spec/v1","presentationPlan":"wynai.result-presentation-plan/v1","migrationRuntime":"wynai.platform-migration-runtime/v1"},
+  "contextClasses": {"original-question":"required-lossless","active-conversation-context":"required-lossless","dataset-metadata":"required-lossless","skill-references":"required-lossless","permissions-and-scope":"required-lossless","derived-metric-formulas":"required-lossless","evidence-provenance":"required-lossless","redundant-history":"summarizable-with-provenance","provider-credentials":"never-forward"},
+  "invariants": {"numeric-results":true,"filters":true,"permissions":true,"evidence-relations":true,"terminal-status":true,"skill-semantics":true,"user-visible-answer":true},
+  "modes": ["legacy","shadow","canary","platform"]
+}

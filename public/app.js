@@ -127,6 +127,8 @@ const state = {
   reportProposal: null,
   reportRun: null,
   reportContentBlockId: null,
+  insightPreviewPage: 0,
+  insightPreviewPageSize: 100,
 };
 
 const SIDEBAR_STORAGE_KEY = 'wynai.sidebarCollapsed';
@@ -425,8 +427,27 @@ function renderResultList() {
     </button>`).join('');
 }
 
+function renderInsightPreviewTable(result, columns, schemaMap, timeZone) {
+  const allRows = Array.isArray(result.rows) ? result.rows : [];
+  const pageSize = state.insightPreviewPageSize;
+  const pageCount = Math.max(1, Math.ceil(allRows.length / pageSize));
+  state.insightPreviewPage = Math.max(0, Math.min(state.insightPreviewPage, pageCount - 1));
+  const start = state.insightPreviewPage * pageSize;
+  const rows = allRows.slice(start, start + pageSize);
+  document.querySelector('#insight-table-body').innerHTML = rows.length
+    ? rows.map((row, index) => `<tr><td>${start + index + 1}</td>${columns.map(column => `<td title="${escapeHtml(typeof row[column] === 'object' ? JSON.stringify(row[column]) : String(row[column] ?? ''))}">${compactValue(row[column], schemaMap.get(column), timeZone)}</td>`).join('')}</tr>`).join('')
+    : `<tr><td colspan="${columns.length + 1}"><span class="null-value">结果集没有有效数据行</span></td></tr>`;
+  const pagination = document.querySelector('#insight-table-pagination');
+  pagination.hidden = pageCount <= 1;
+  pagination.innerHTML = pageCount > 1
+    ? `<button type="button" data-insight-page-delta="-1" aria-label="上一页"${state.insightPreviewPage === 0 ? ' disabled' : ''}>上一页</button><span>第 ${state.insightPreviewPage + 1} / ${pageCount} 页 · 共 ${allRows.length.toLocaleString('zh-CN')} 行</span><button type="button" data-insight-page-delta="1" aria-label="下一页"${state.insightPreviewPage >= pageCount - 1 ? ' disabled' : ''}>下一页</button>`
+    : '';
+}
+
 function renderResultDetail(result) {
+  const previousInsightId = state.activeResult?.insightId;
   state.activeResult = result;
+  if (previousInsightId !== result.insightId) state.insightPreviewPage = 0;
   const resultIndex = state.analysisResults.findIndex(item => item.insightId === result.insightId);
   if (resultIndex >= 0) {
     state.analysisResults[resultIndex] = {
@@ -440,7 +461,6 @@ function renderResultDetail(result) {
   }
   elements.insightEmpty.hidden = true;
   elements.insightDetail.hidden = false;
-  document.querySelector('#insight-id').textContent = result.insightId.slice(0, 16);
   document.querySelector('#insight-topic').textContent = result.title || '数据洞察结果';
   document.querySelector('#stat-rows').textContent = result.rowCount;
   document.querySelector('#stat-columns').textContent = result.columnCount;
@@ -448,19 +468,12 @@ function renderResultDetail(result) {
   document.querySelector('#stat-model').textContent = state.llmConfigured ? '外部大模型' : '内置引擎';
   elements.insightExport.disabled = !result.document;
   const columns = (result.columns || []).slice(0, 12);
-  const rows = (result.rows || []).slice(0, 40);
   const primaryResultSet = result.primaryResultSet || result.input?.resultSets?.[0] || {};
   const schemaMap = new Map((primaryResultSet.schema || []).map(field => [field.name, field]));
   const timeZone = primaryResultSet.scope?.timeZone || result.input?.scope?.timeZone || 'Asia/Shanghai';
-  document.querySelector('#preview-range').textContent = `前 ${rows.length} 行${result.truncated ? ' · 已截断' : ''}`;
   document.querySelector('#insight-table-head').innerHTML = `<tr><th>#</th>${columns.map(column => `<th>${escapeHtml(column)}</th>`).join('')}</tr>`;
-  document.querySelector('#insight-table-body').innerHTML = rows.length
-    ? rows.map((row, index) => `<tr><td>${index + 1}</td>${columns.map(column => `<td title="${escapeHtml(typeof row[column] === 'object' ? JSON.stringify(row[column]) : String(row[column] ?? ''))}">${compactValue(row[column], schemaMap.get(column), timeZone)}</td>`).join('')}</tr>`).join('')
-    : `<tr><td colspan="${columns.length + 1}"><span class="null-value">结果集没有有效数据行</span></td></tr>`;
+  renderInsightPreviewTable(result, columns, schemaMap, timeZone);
   document.querySelector('#raw-data').textContent = JSON.stringify(result.rows || [], null, 2);
-  document.querySelector('#table-quality-note').textContent = result.completeness >= 80
-    ? `✓ 数据完整度 ${result.completeness}%，可进入数据洞察`
-    : `⚠ 数据完整度 ${result.completeness}%，洞察将优先提示质量风险`;
   if (result.document) renderPersistedInsightDocument(result.document, result.versions || []);
   else {
     elements.secondaryOutput.hidden = true;
@@ -2437,6 +2450,12 @@ document.querySelector('#toggle-raw-data').addEventListener('click', event => {
   raw.hidden = !raw.hidden;
   table.hidden = !table.hidden;
   event.currentTarget.textContent = raw.hidden ? '查看 JSON' : '查看表格';
+});
+document.querySelector('#insight-table-pagination').addEventListener('click', event => {
+  const button = event.target.closest('[data-insight-page-delta]');
+  if (!button || button.disabled || !state.activeResult) return;
+  state.insightPreviewPage += Number(button.dataset.insightPageDelta || 0);
+  renderResultDetail(state.activeResult);
 });
 elements.generateInsight.addEventListener('click', generateSecondaryInsight);
 document.querySelectorAll('[data-prompt]').forEach(button => {

@@ -1,8 +1,8 @@
 # 数据洞察阶段 B：统一 LLM Gateway 需求与设计
 
-> 版本：1.2
+> 版本：1.3
 > 日期：2026-08-28（Asia/Shanghai）  
-> 状态：阶段 B 已验收；平台化兼容迁移设计已补充，代码迁移待启动
+> 状态：阶段 B 与平台兼容迁移已验收；正式生产激活等待发布审批
 
 ## 1. 目标
 
@@ -77,6 +77,14 @@
 
 后续将 `createLlmGateway` 能力上收为 `Gateway Manager`，但不直接合并数据洞察和智能问数的业务策略。平台层统一 Provider、错误码、重试、熔断、缓存、诊断、审计和健康聚合；模块通过适配器保留操作级预算、Prompt 业务约束、编排顺序、失败语义和结果结构。
 
+阶段 2 已落地 `platform-gateway-manager.mjs` 并接入 `server.mjs`：两个模块的 LLM transport 经过治理门面，健康接口额外返回聚合平台快照；模块原有 Gateway 快照和操作策略继续保留。
+
+平台迁移状态通过 `GET /api/platform/migration` 暴露版本化观测结果，包含当前 `legacy/shadow/canary/platform` 模式、两个模块适配器版本、Gateway 聚合状态、LLM 健康状态和固定回滚模式。迁移模式只在进程启动时读取，回滚通过重启并设置 `PLATFORM_MIGRATION_MODE=legacy` 完成，避免运行时切换造成请求级不一致。
+
+阶段 4/5 增加候选业务编排边界 `platform-business-orchestrators.mjs`。它不替换模块既有 Planner/Critic/Narrator 或多轮会话策略，而是在候选路径建立独立的上下文审计、候选版本标识和结果装饰边界。数据洞察候选 profile 为 `data-insight-platform-candidate-v1`，智能问数候选 profile 为 `smart-query-platform-candidate-v1`；候选元数据只进入 trace/诊断，不进入用户可见答案。真实 LLM 成功双跑已在允许 DashScope 443 出站的服务上下文完成，并通过结构化差异门禁。
+
+平台迁移路由支持 `PLATFORM_MIGRATION_MODULE_MODES`、`PLATFORM_MIGRATION_PERCENTAGE`、`PLATFORM_MIGRATION_USERS` 和 `PLATFORM_MIGRATION_ORGANIZATIONS`。请求通过稳定哈希桶确定是否进入模块级 `shadow/canary/platform`，allow-list 优先于比例；未命中时强制使用 legacy。路由决策包含 `configuredMode`、`mode`、`bucket`、`percentage` 和 `reason`，写入 trace 与运行事件，状态接口只暴露是否配置名单，不暴露具体主体。
+
 迁移必须先冻结 Gateway、Context、Evidence、Skill 和 Run Lifecycle 契约，再以兼容门面接入，确保数据洞察旧输入输出不变；随后执行新旧链路双跑，比较数值、权限、证据、状态和耗时；通过 `legacy/shadow/canary/platform` 灰度切换，并保留一键回滚和按模块隔离的 Provider/预算策略。元数据、Skill、权限、原始问题、当前意图和核心证据必须无损传递；上下文预算不足时必须澄清或失败，禁止静默截断。
 
 ## 6. 配置
@@ -116,3 +124,14 @@ LLM Gateway 错误由数据洞察治理层映射为 `degraded` 或 `failed`。�
 - 备用 Provider 只有在部署环境配置凭据后才真正生效；专项测试使用 fake fetch 验证路由逻辑。
 - 当前 Gateway 为单进程状态，服务重启会清空缓存、熔断计数和 metrics；审计记录仍持久化。
 - 阶段 C 再评估异步任务、跨进程状态、SLO 仪表盘和供应商级配额。
+
+## 10. 本轮平台迁移验证补充（2026-08-31）
+
+- 元数据、Skill、权限范围、原始问题、Evidence 和多轮上下文继续按完整结构传递；Gateway 只治理传输、预算、重试和审计，不压缩业务语义上下文。
+- 8787 legacy 与隔离 8790 shadow 均完成真实 LLM 数据洞察生成；智能问数 shadow 结构化兼容比较通过。
+- 候选业务编排器是独立治理边界和上下文审计门面，业务执行器由模块注入复用。这符合平台层与模块层职责分离；平台目标不要求复制两套 Planner/Critic/Narrator 算法。若未来替换业务算法，必须另立版本化替换专项并继续使用本套结构化差异门禁。
+
+### Shadow 双跑可复现性约束（2026-08-31）
+
+Shadow 不是面向用户的低延迟路径，必须先完成 legacy 基线，再执行候选路径。这样相同请求可以复用同一进程 LLM Gateway 的短 TTL 缓存，避免并发竞态导致两次随机生成被误判为业务差异，也避免无必要的重复出站调用。候选提示、模型或业务算法实际发生变化时缓存键自然不同，仍会进入真实结构化差异比较；核心数值、公式、权限、Evidence、终态和答案语义差异继续阻断发布。该规则由 `platform-migration-runtime.mjs` 统一实现，模块不得自行并发 shadow 调用。
+- 连通性探针使用唯一运行目录和原子索引更新，Windows 文件锁只记录为证据索引告警，不改变真实调用结果。

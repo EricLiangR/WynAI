@@ -1,0 +1,33 @@
+{
+  "schema": "wynai.platform-migration-golden-baseline/v1",
+  "version": "1.0",
+  "createdAt": "2026-08-31T00:00:00+08:00",
+  "scope": "data-insight-protection",
+  "sourceDocuments": [
+    "DATA_INSIGHT_PLATFORM_RELIABILITY_UAT_REPORT_2026-08-30.md",
+    "DATA_INSIGHT_PLATFORM_COMPOSABLE_ROADMAP.md",
+    "PLATFORM_AND_MODULE_UAT_GOVERNANCE.md"
+  ],
+  "invariants": {
+    "numericResults": "must-not-change",
+    "filtersAndPermissions": "must-not-change",
+    "evidenceRelations": "must-not-change",
+    "terminalStatus": "must-not-regress",
+    "failureMustNotBecomeSuccess": true,
+    "rawRowsToLlm": false,
+    "coreEvidenceSilentSampling": false,
+    "userVisibleAnswer": "must-remain-visible"
+  },
+  "cases": [
+    {"id":"DI-GOLD-001","name":"普通销售洞察真实 LLM","risk":"critical","moduleUat":"M3","platformUat":"P2","evidence":["test/uat-artifacts/data-insight-reliability-2026-08-30/pc-complete-insight.png"],"assertions":["completed","真实 Planner/Critic/Narrator","正文可见","Evidence 可追溯"]},
+    {"id":"DI-GOLD-002","name":"高基数多维月度洞察","risk":"critical","moduleUat":"M3","platformUat":"P2","evidence":["DATA_INSIGHT_PLATFORM_RELIABILITY_UAT_REPORT_2026-08-30.md"],"assertions":["groupingsComplete=true","sourceTruncated=false","isSample=false","省略分组为0"]},
+    {"id":"DI-GOLD-003","name":"稀疏业务时间序列","risk":"high","moduleUat":"M3","platformUat":"P2","evidence":["DATA_INSIGHT_PLATFORM_RELIABILITY_UAT_REPORT_2026-08-30.md"],"assertions":["sparsityMode=observed-records-only","missingRowsAreZero=false","不误判为证据缺失"]},
+    {"id":"DI-GOLD-004","name":"核心成功扩展失败","risk":"critical","moduleUat":"M3","platformUat":"P2","evidence":["test/data-insight-platform-hardening.test.mjs"],"assertions":["completed-partial","核心结果保留","扩展失败原因可追溯"]},
+    {"id":"DI-GOLD-005","name":"LLM 超时、限流与 Provider 失败","risk":"critical","moduleUat":"M2","platformUat":"P3","evidence":["llm-gateway.test.mjs","LLM_EGRESS_STABILITY_GOAL_PLAN.md"],"assertions":["错误码准确","有限重试","熔断可恢复","失败不生成伪成功"]},
+    {"id":"DI-GOLD-006","name":"Evidence 超预算与可追溯分块","risk":"high","moduleUat":"M2","platformUat":"P2","evidence":["test/insight-llm-orchestrator.test.mjs","test/data-insights.test.mjs"],"assertions":["不静默截断","分块有来源","超预算进入受控失败或澄清"]},
+    {"id":"DI-GOLD-007","name":"Skill 版本与派生指标口径","risk":"critical","moduleUat":"M3","platformUat":"P2","evidence":["test/skill-governance.test.mjs","test/data-insights.test.mjs"],"assertions":["Skill 版本可追溯","公式按 Skill 口径","未审批 Skill 不参与生产"]},
+    {"id":"DI-GOLD-008","name":"权限、租户与行级过滤","risk":"critical","moduleUat":"M3","platformUat":"P3","evidence":["test/insight-governance.test.mjs","test/interaction-contract.test.mjs"],"assertions":["主体一致","越权拒绝","数据范围不扩大","审计完整"]},
+    {"id":"DI-GOLD-009","name":"PC 与移动端结果体验","risk":"high","moduleUat":"M3","platformUat":"P3","evidence":["test/uat-artifacts/data-insight-reliability-2026-08-30/pc-selected-input.png","test/uat-artifacts/data-insight-reliability-2026-08-30/pc-complete-insight.png"],"assertions":["答案正文可见","状态可理解","无横向溢出","控制台无未处理错误"]},
+    {"id":"DI-GOLD-010","name":"服务重启与运行恢复","risk":"high","moduleUat":"M2","platformUat":"P3","evidence":["test/insight-run-extra.test.mjs","INSIGHT_RUN_LIFECYCLE_DIAGNOSTIC_CONTRACT_V1.md"],"assertions":["非终态转 interrupted","重试产生独立 attempt","审计可恢复"]}
+  ]
+}
