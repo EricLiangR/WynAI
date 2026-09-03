@@ -19,7 +19,17 @@ if (await isPortInUse()) {
   process.exit(0);
 }
 
-const child = spawn(process.execPath, ['--watch', 'server.mjs'], { stdio: 'inherit', env: process.env });
+// Watch runtime inputs as well as imported modules so local configuration and
+// Skill JSON changes take effect without changing the development port.
+const child = spawn(process.execPath, [
+  '--watch',
+  '--watch-path=server.mjs',
+  '--watch-path=lib',
+  '--watch-path=skills',
+  '--watch-path=public',
+  '--watch-path=.env.local',
+  'server.mjs',
+], { stdio: 'inherit', env: process.env });
 child.once('exit', (code, signal) => process.exit(code ?? (signal ? 1 : 0)));
 child.once('error', error => { console.error(`无法启动 WynAI：${error.message}`); process.exit(1); });
 process.once('SIGINT', () => child.kill('SIGINT'));

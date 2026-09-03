@@ -404,7 +404,7 @@ function compactValue(value, field = {}, timeZone = 'Asia/Shanghai') {
       return escapeHtml(`${values.year}年${values.month}月${values.day}日`);
     }
   }
-  if (field.format === 'percentage' && Number.isFinite(Number(value))) {
+  if (value != null && value !== '' && field.format === 'percentage' && Number.isFinite(Number(value))) {
     return escapeHtml(new Intl.NumberFormat('zh-CN', { style: 'percent', maximumFractionDigits: 2 }).format(Number(value)));
   }
   if (typeof value === 'number') return escapeHtml(new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(value));
@@ -1461,9 +1461,12 @@ function smartChartOption(spec, result, selectedType = spec.type) {
   const data = smartChartSeriesData(spec, result, type);
   const palette = ['#5f4ac7', '#2388a2', '#1ca579', '#bd852e', '#c55c67', '#527780', '#806b4c', '#69749a'];
   const percentAxis = spec.encoding.measures.some(measure => measure.axis === 'right' && measure.format === 'percentage');
-  const valueFormatter = format => value => format === 'percentage'
-    ? new Intl.NumberFormat('zh-CN', { style: 'percent', maximumFractionDigits: 2 }).format(Number(value) || 0)
-    : new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(Number(value) || 0);
+  const valueFormatter = format => value => {
+    if (value == null || value === '') return '—';
+    return format === 'percentage'
+      ? new Intl.NumberFormat('zh-CN', { style: 'percent', maximumFractionDigits: 2 }).format(Number(value))
+      : new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(Number(value));
+  };
   if (type === 'pie' || type === 'donut') {
     const pieData = data.series[0]?.data || [];
     const pieTotal = pieData.reduce((sum, item) => {
@@ -1867,6 +1870,7 @@ function renderSmartDocument(document, resultSets = [], runtimeStatus = null, qu
     const cellValue = (row, column) => {
       const value = row[column];
       const schema = schemaMap.get(column);
+      if (value == null || value === '') return '—';
       if (schema?.type === 'date' || schema?.grain) return formatPeriod(value, schema, result);
       if (schema?.format === 'percentage' && Number.isFinite(Number(value))) return new Intl.NumberFormat('zh-CN', { style: 'percent', maximumFractionDigits: 2 }).format(Number(value));
       return /measure/.test(schema?.role || '') && Number.isFinite(Number(value))
@@ -1887,6 +1891,9 @@ function renderSmartDocument(document, resultSets = [], runtimeStatus = null, qu
     : '';
   const renderBlock = block => {
     const title = escapeHtml(block.title || block.id || '分析块');
+    // Keep LLM analysis details in the document/audit payload, but hide the
+    // current internal-style sections from the user-facing smart-query view.
+    if (['分析要点', '数据限制'].includes(String(block.title || '').trim())) return '';
     if (block.type === 'kpi') return `<article class="smart-query-block"><h4>${title}</h4><strong class="value">${escapeHtml(block.value ?? '—')}</strong></article>`;
     if (block.type === 'warning') return `<article class="smart-query-block warning wide"><h4>${title}</h4><p>${escapeHtml(block.message || block.content || '')}</p></article>`;
     return `<article class="smart-query-block wide"><h4>${title}</h4><p>${escapeHtml(block.content || block.message || '')}</p></article>`;

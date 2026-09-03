@@ -174,16 +174,15 @@ test('筛选追问继承全部复合指标，派生追问继承当前指标', ()
   assert.equal(yoy.status, 'supported');
   assert.deepEqual(yoy.intent.derivedMetrics.map(item => item.alias), ['profit_yoy']);
 });
-test('低风险且有已审批 Skill 的完整意图走快路径', async () => {
+test('低风险问题也必须调用 LLM，模型失败时不走旧快路径', async () => {
   let llmCalls = 0;
   const llm = {
     enabled: true,
     async planQueryIntent() {
       llmCalls += 1;
-      await new Promise(() => {});
+      throw Object.assign(new Error('模拟意图模型超时'), { code: 'LLM_TIMEOUT' });
     },
   };
-  const startedAt = Date.now();
   const plan = await planBusinessQuestionAsync({
     metadata,
     question: '2025年销售收入总额',
@@ -191,16 +190,14 @@ test('低风险且有已审批 Skill 的完整意图走快路径', async () => {
     now,
     llm,
   });
-  assert.equal(plan.status, 'supported');
-  assert.equal(plan.plannerMode, 'deterministic-fast-path');
-  assert.equal(plan.plannerDiagnostics.llmAttempted, false);
-  assert.equal(llmCalls, 0);
-  assert.ok(Date.now() - startedAt < 100);
-  assert.deepEqual(plan.intent.time.periods, [2025]);
-  assert.equal(plan.request.filters.find(item => item.operator === 'gte').value, '2025-01-01');
+  assert.equal(plan.status, 'needs_clarification');
+  assert.equal(plan.plannerMode, 'llm-clarification');
+  assert.equal(plan.plannerDiagnostics.llmAttempted, true);
+  assert.equal(llmCalls, 1);
+  assert.equal(plan.request, undefined);
 });
 
-test('意图大模型连续失败后触发短时熔断并保留确定性澄清', async () => {
+test('意图大模型失败不触发确定性熔断回退', async () => {
   let llmCalls = 0;
   const llm = {
     enabled: true,
@@ -219,13 +216,11 @@ test('意图大模型连续失败后触发短时熔断并保留确定性澄清',
   };
   const first = await planBusinessQuestionAsync(input);
   const second = await planBusinessQuestionAsync(input);
-  const third = await planBusinessQuestionAsync(input);
   assert.equal(first.plannerDiagnostics.llmAttempted, true);
-  assert.equal(second.plannerDiagnostics.circuitOpen, true);
-  assert.equal(third.plannerDiagnostics.reason, 'high-risk-intent-llm-circuit-open');
-  assert.equal(third.plannerDiagnostics.llmAttempted, false);
+  assert.equal(second.plannerDiagnostics.llmAttempted, true);
   assert.equal(llmCalls, 2);
-  assert.equal(third.status, 'needs_clarification');
+  assert.equal(first.status, 'needs_clarification');
+  assert.equal(second.status, 'needs_clarification');
 });
 
 const governedSalesSkill = {

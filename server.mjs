@@ -16,6 +16,7 @@ import { createPlatformGatewayManager } from './platform-gateway-manager.mjs';
 import { compilePlatformContextManifest, validatePlatformEvidenceTransport } from './platform-context-governance.mjs';
 import { createDataInsightCompatibilityAdapter } from './data-insight-compatibility-adapter.mjs';
 import { createSmartQueryCompatibilityAdapter } from './smart-query-compatibility-adapter.mjs';
+import { normalizeIndependentQueryInsightContract } from './independent-query-insight-contract.mjs';
 import { createMigrationRoutingPolicy, normalizeMigrationMode } from './platform-migration-policy.mjs';
 import { createPlatformMigrationRuntime } from './platform-migration-runtime.mjs';
 import { createCandidateInsightOrchestrator, createCandidateSmartQueryOrchestrator } from './platform-business-orchestrators.mjs';
@@ -124,7 +125,10 @@ const config = {
   llmBackupModel: process.env.LLM_BACKUP_MODEL || '',
   // Preserve the previously validated direct-client budget unless explicitly overridden.
   llmTimeoutMs: Math.max(10_000, Number(process.env.LLM_TIMEOUT_MS) || 180_000),
-  intentLlmTimeoutMs: Math.max(1_000, Number(process.env.INTENT_LLM_TIMEOUT_MS) || 10_000),
+  // Complex governed intents routinely need 15-20 seconds on the configured
+  // model. A 10-second default made healthy calls fail at the absolute retry
+  // budget, while the separate connect timeout still fails fast on outages.
+  intentLlmTimeoutMs: Math.max(1_000, Number(process.env.INTENT_LLM_TIMEOUT_MS) || 30_000),
   llmConnectTimeoutMs: Math.max(1_000, Number(process.env.LLM_CONNECT_TIMEOUT_MS) || 3_000),
   // Header wait is split into a non-destructive warning and a hard cap. Keep
   // the legacy timeout variable as an explicit hard-cap override; by default
@@ -257,7 +261,7 @@ const configuredDataDir = resolveRuntimePath(process.env.WYN_AI_DATA_DIR, join(r
 const runtimeData = await resolveWritableDataDirectory(configuredDataDir, join(tmpdir(), `WynAI-runtime-data-${config.port}`));
 const dataDir = runtimeData.path;
 const dataInsightStore = new DataInsightStore({ maxItems: 30, persistence: new JsonRunStore(join(dataDir, 'data-insights'), { maxItems: 30 }) });
-const platformMigrationMode = normalizeMigrationMode(process.env.PLATFORM_MIGRATION_MODE);
+const platformMigrationMode = normalizeMigrationMode(process.env.PLATFORM_MIGRATION_MODE || 'platform');
 function parseMigrationModuleModes(value) {
   if (!value) return {};
   try {
@@ -298,7 +302,7 @@ const wynQueryInsightAdapter = new WynQueryInsightAdapter({
 });
 const independentQueryInsightAdapter = new IndependentQueryInsightAdapter({
   register: input => {
-    const result = dataInsightStore.register(input);
+    const result = dataInsightStore.register(normalizeIndependentQueryInsightContract(input));
     void recordInsightDiagnostic(result.record.insightId, 'input.accepted', { input: result.record.input, created: result.created, adapter: 'independent-query' }, { actor: result.record.actor, organizationId: result.record.organizationId, source: result.record.input.source || null });
     return result.record;
   },
