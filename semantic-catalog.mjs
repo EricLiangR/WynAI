@@ -19,10 +19,14 @@ function skillEntry(skill) {
     id: text(skill?.id),
     version: text(skill?.version),
     name: text(skill?.name || skill?.id),
+    defaultCalendar: text(skill?.defaultCalendar),
+    calendarPolicy: skill?.calendarPolicy || null,
+    fieldSemantics: skill?.fieldSemantics || [],
     metrics: skill?.metrics || [],
     businessEntities: skill?.businessEntities || [],
     temporalSemantics: skill?.temporalSemantics || [],
     relativeTemporalSemantics: skill?.relativeTemporalSemantics || [],
+    valueMappings: skill?.valueMappings || [],
     workflows: skill?.workflows || [],
     assumptions: skill?.assumptions || [],
     forbidden: skill?.forbidden || [],
@@ -64,5 +68,14 @@ export function validateSemanticMapping({ intent = null, metadata = null, skills
     if (field && !fields.has(field)) errors.push(`映射字段不存在于 Wyn 返回字段：${field}`);
   }
   for (const ref of intent?.skillRefs || []) if (skillRefs.size && !skillRefs.has(ref)) errors.push(`Skill 引用未加载：${ref}`);
+  const mappings = skills.flatMap(skill => skill.valueMappings || []);
+  for (const filter of intent?.filters || []) {
+    const fieldMappings = mappings.filter(item => item.field === filter.field);
+    for (const value of Array.isArray(filter.value) ? filter.value : [filter.value]) {
+      if (value == null || fieldMappings.some(item => String(item.canonicalValue) === String(value))) continue;
+      const aliases = fieldMappings.filter(item => (item.synonyms || []).includes(String(value)));
+      if (aliases.length) errors.push(`筛选值未使用 Skill 源值：${filter.field}=${value}；候选源值：${[...new Set(aliases.map(item => item.canonicalValue))].join('、')}`);
+    }
+  }
   return { valid: errors.length === 0, errors };
 }

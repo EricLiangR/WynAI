@@ -101,7 +101,7 @@ test('会话问数记录 Skill 运行解析事件', async () => {
   assert.equal(events[0].userId, 'u1');
 });
 
-test('AI 规划降级显示为运行状态而不是数据范围警告', async () => {
+test('AI 规划降级不得作为成功的分析结果返回', async () => {
   const runAnalysis = async input => {
     const result = await fakeRunAnalysis(input);
     result.audit.warnings = ['AI Planner 降级：fetch failed'];
@@ -109,8 +109,6 @@ test('AI 规划降级显示为运行状态而不是数据范围警告', async ()
   };
   const store = new SmartQueryConversationStore({ loadMetadata: async () => metadata, runAnalysis });
   const conversation = await store.create({ datasetId: metadata.id });
-  const result = await store.ask(conversation.id, { question: '综合分析经营情况' });
-  assert.equal(result.response.runtimeStatus.level, 'warning');
-  assert.match(result.response.runtimeStatus.message, /受控确定性分析/);
-  assert.equal(result.response.document.blocks.some(block => block.type === 'warning'), false);
+  await assert.rejects(() => store.ask(conversation.id, { question: '综合分析经营情况' }), { code: 'BUSINESS_FALLBACK_FORBIDDEN' });
+  assert.equal(store.get(conversation.id).messages.some(message => message.role === 'assistant'), false);
 });

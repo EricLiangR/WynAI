@@ -659,11 +659,16 @@ kbd { font: inherit; border: 1px solid #e2e2e9; background: #f8f8fa; border-radi
 .smart-echart { width: 100%; height: 300px; min-height: 250px; }
 .smart-chart-warning { margin: 3px 0 0 !important; padding: 7px 9px; border-left: 3px solid #c08c34; color: #79663d !important; background: #fff9eb; font-size: 11px !important; line-height: 1.5 !important; white-space: normal !important; }
 .smart-query-table-wrap { max-width: 100%; margin-top: 8px; }
+.smart-empty-result { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; padding: 18px 20px; border: 1px solid #e3e9eb; border-radius: 8px; color: #6b7b81; background: #fbfcfc; font-size: 12px; }
+.smart-empty-result > strong { color: #3f5961; font-size: 14px; }
+.smart-empty-result-conditions { display: flex; flex-wrap: wrap; gap: 6px 10px; margin-top: 4px; padding-top: 8px; border-top: 1px solid #edf1f2; }
+.smart-empty-result-conditions span { color: #849298; }
+.smart-empty-result-conditions strong { color: #536b73; font-weight: 500; }
 .smart-table-scroll { max-height: 320px; overflow: auto; border: 1px solid #e7ebed; border-radius: 6px; scrollbar-gutter: stable; }
 .smart-table-scroll:focus-within { outline: 2px solid rgba(125,165,178,.25); outline-offset: 1px; }
 .smart-query-table { width: 100%; border-collapse: collapse; color: #607077; font-size: 11px; }
 .smart-query-table th, .smart-query-table td { padding: 6px 8px; border-bottom: 1px solid #e7ebed; text-align: left; white-space: nowrap; }
-.smart-query-table th { color: #334f59; background: #f3f6f6; font-weight: 650; }
+.smart-query-table th { position: sticky; top: 0; z-index: 2; color: #334f59; background: #f3f6f6; box-shadow: 0 1px 0 #dfe5e7; font-weight: 650; }
 .smart-table-range { display: none; }
 .smart-table-pagination button { min-height: 26px; display: inline-flex; align-items: center; gap: 4px; padding: 3px 8px; border: 1px solid #d9e1e3; border-radius: 4px; color: #4b6973; background: #fff; font-size: 10px; cursor: pointer; }
 .smart-table-pagination button:hover:not(:disabled) { border-color: #7da5b2; background: #f6fafb; }

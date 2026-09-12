@@ -1,0 +1,9 @@
+import '../skill-visible-scope.test.mjs';
+import '../filter-conservation.test.mjs';
+import '../narration-delivery.test.mjs';
+import '../presentation-output-contract.test.mjs';
+import '../analysis-delivery-contract.test.mjs';
+import '../fiscal-intent-consistency.test.mjs';
+import '../merged-result-contract.test.mjs';
+import '../visualization-no-fallback.test.mjs';
+import '../intent-repair-runtime.test.mjs';

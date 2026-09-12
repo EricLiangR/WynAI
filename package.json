@@ -1,6 +1,6 @@
 {
   "name": "wyn-ai-chat-demo",
-  "version": "1.0.5",
+  "version": "1.0.4",
   "private": true,
   "type": "module",
   "description": "Wyn AI 问数 API 前端集成演示",

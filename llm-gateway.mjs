@@ -88,6 +88,21 @@ function retryable(error) {
   if (['LLM_TIMEOUT', 'LLM_CONNECT_TIMEOUT', 'LLM_RESPONSE_HEADER_TIMEOUT', 'LLM_RESPONSE_BODY_TIMEOUT', 'LLM_REQUEST_FAILED', 'LLM_UPSTREAM_ERROR', 'LLM_RATE_LIMITED', 'LLM_EMPTY_RESPONSE', 'NARRATOR_SCHEMA_INVALID'].includes(code)) return true;
   return Number(error?.status) === 429 || Number(error?.status) >= 500;
 }
+function failureCategory(error) {
+  const code = errorCode(error);
+  const status = Number(error?.status);
+  if (code === 'REQUEST_ABORTED') return 'cancelled';
+  if (['LLM_TIMEOUT', 'LLM_CONNECT_TIMEOUT', 'LLM_RESPONSE_HEADER_TIMEOUT', 'LLM_RESPONSE_BODY_TIMEOUT'].includes(code)) return 'timeout';
+  if (code === 'LLM_RATE_LIMITED' || status === 429) return 'rate-limit';
+  if (code === 'LLM_UPSTREAM_ERROR' || status >= 500) return 'upstream';
+  if (code === 'LLM_REQUEST_FAILED' && !Number.isFinite(status)) return 'transport';
+  if (['LLM_EMPTY_RESPONSE', 'NARRATOR_SCHEMA_INVALID'].includes(code)) return 'model-output';
+  if (status >= 400 && status < 500) return 'request';
+  return 'unknown';
+}
+function countsTowardCircuit(error) {
+  return ['timeout', 'rate-limit', 'upstream', 'transport'].includes(failureCategory(error));
+}
 function timeoutError(provider, code, phase, timeoutMs, cause = null) {
   const labels = { total: '总请求', responseHeader: '响应头等待', responseBody: '响应体读取', connect: '连接' };
   const error = new Error(`大模型${labels[phase] || '请求'}超时 (${provider}; ${timeoutMs}ms)`);
@@ -330,7 +345,7 @@ export function createLlmGateway({ providers = [], fetchImpl = globalThis.fetch,
             responseHeaderWarned, timeoutClass: timedOut ? 'hard-deadline' : responseBodyTimedOut ? 'response-body-hard-timeout' : responseHeaderTimedOut ? 'response-header-hard-timeout' : responseHeaderWarned ? 'completed-after-soft-warning' : 'completed',
             // Kept as a read-only diagnostic alias for older log readers.
             firstByteTimedOut: responseHeaderTimedOut, cancelled,
-            error: outcomeError ? { code: errorCode(outcomeError) || 'LLM_REQUEST_FAILED', message: String(outcomeError.message || ''), details: serializeError(outcomeError) } : null,
+            error: outcomeError ? { code: errorCode(outcomeError) || 'LLM_REQUEST_FAILED', category: failureCategory(outcomeError), retryable: retryable(outcomeError), circuitCounted: countsTowardCircuit(outcomeError), message: String(outcomeError.message || ''), details: serializeError(outcomeError) } : null,
           });
         } catch { /* diagnostics must not change the request outcome */ }
       }
@@ -391,8 +406,11 @@ export function createLlmGateway({ providers = [], fetchImpl = globalThis.fetch,
         if (error.code === 'LLM_CONNECT_TIMEOUT') metrics.connectTimeouts += 1;
         if (error.code === 'LLM_RESPONSE_HEADER_TIMEOUT') metrics.responseHeaderTimeouts += 1;
         if (error.code === 'LLM_RESPONSE_BODY_TIMEOUT') { metrics.responseBodyTimeouts += 1; metrics.timeouts += 1; }
-        openCircuit(provider, error);
-        attempts.push({ provider: provider.id, model: provider.model, code: errorCode(error), durationMs: Date.now() - attemptStartedAt, phase: error.phase || null });
+        const category = failureCategory(error);
+        const circuitCounted = countsTowardCircuit(error);
+        if (circuitCounted) openCircuit(provider, error);
+        else closeCircuit(provider);
+        attempts.push({ provider: provider.id, model: provider.model, code: errorCode(error), category, retryable: retryable(error), circuitCounted, durationMs: Date.now() - attemptStartedAt, phase: error.phase || null });
         if (!retryable(error) || attemptCount >= max) break;
         metrics.retries += 1;
         retryDelayTotalMs += await waitBeforeRetry(attemptCount, policy, signal);

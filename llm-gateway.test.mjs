@@ -1,6 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createLlmGateway } from './llm-gateway.mjs';
+import { planBusinessQuestionAsync } from './lib/conversation/question-planner.mjs';
+import { normalizeBusinessQueryIntentV2 } from './lib/semantics/business-query-intent.mjs';
 
 const providers = [
   { id: 'primary', baseUrl: 'https://primary.test/v1', model: 'primary-model' },
@@ -97,6 +99,112 @@ test('连续失败触发熔断并返回 LLM_CIRCUIT_OPEN', async () => {
   await assert.rejects(gateway.completeJson([{ role: 'user', content: 'three' }]), error => error.code === 'LLM_CIRCUIT_OPEN');
   assert.equal(calls, 2);
   assert.equal(gateway.snapshot().metrics.circuitOpen, 1);
+});
+
+test('模型 JSON 结构错误可有限重试但不计入供应商熔断', async () => {
+  let calls = 0;
+  const gateway = createLlmGateway({
+    providers: [providers[0]],
+    maxAttempts: 1,
+    circuitFailureThreshold: 1,
+    cacheTtlMs: 0,
+    fetchImpl: async () => {
+      calls += 1;
+      return jsonResponse({ choices: [{ message: { content: 'not-json' } }] });
+    },
+  });
+  await assert.rejects(gateway.completeJson([{ role: 'user', content: 'one' }]), error => error.code === 'NARRATOR_SCHEMA_INVALID');
+  await assert.rejects(gateway.completeJson([{ role: 'user', content: 'two' }]), error => error.code === 'NARRATOR_SCHEMA_INVALID');
+  assert.equal(calls, 2);
+  assert.equal(gateway.snapshot().providers[0].open, false);
+  assert.equal(gateway.snapshot().providers[0].state.failures, 0);
+});
+
+test('模型标量列表字段可规范化且 Skill 字典校验可进入有限修复', async () => {
+  const metadata = {
+    id: 'llm-hardening', revision: 1, name: '销售商机',
+    fields: [
+      { name: '订单金额', role: 'measure', type: 'Number', rawType: 'Double' },
+      { name: 'pipelineName', role: 'dimension', type: 'String', rawType: 'String' },
+      { name: 'recurring', role: 'dimension', type: 'String', rawType: 'String' },
+    ],
+  };
+  const normalized = normalizeBusinessQueryIntentV2({
+    businessQuestion: '查看项目金额',
+    metrics: [{ field: '订单金额', aggregation: 'sum', alias: 'amount', concept: 'revenue' }],
+    dimensions: [{ field: 'pipelineName', alias: 'project', concept: 'projectName' }],
+    filters: [], constraints: [], time: { periods: '2025' },
+    expectedResult: { requiredPeriods: '2025', requiredMetrics: 'amount', requiredDimensions: 'project' },
+  }, { metadata });
+  assert.deepEqual(normalized.time.periods, ['2025']);
+  assert.deepEqual(normalized.expectedResult.requiredMetrics, ['amount']);
+  assert.deepEqual(normalized.expectedResult.requiredDimensions, ['project']);
+
+  let calls = 0;
+  let repairFeedback = '';
+  const llm = {
+    enabled: true,
+    async planQueryIntent(input) {
+      calls += 1;
+      repairFeedback = input.repairFeedback || repairFeedback;
+      return {
+        businessQuestion: 'recurring 的项目有哪些，请返回项目名称和订单金额',
+        metrics: [{ field: '订单金额', aggregation: 'sum', alias: 'amount', concept: 'revenue' }],
+        dimensions: [{ field: 'pipelineName', alias: 'project', concept: 'projectName', grain: null }],
+        filters: [{ field: 'recurring', operator: 'containsAny', value: [calls === 1 ? 'recurring' : 'Yes'] }],
+        time: { field: null, calendar: null, periods: [], range: null, grain: null },
+        ranking: null,
+        expectedResult: { shape: 'table', minimumRows: 0, maximumRows: 20000, requiredPeriods: [], requiredMetrics: 'amount', requiredDimensions: 'project' },
+        constraints: [], assumptions: [], skillRefs: [], mappingEvidence: [], ambiguities: [],
+      };
+    },
+  };
+  const skills = [{ id: 'dictionary-fixture', version: '1.0.0', valueMappings: [
+    { field: 'recurring', canonicalValue: 'Yes', synonyms: ['recurring'], matchMode: 'containsAny' },
+  ] }];
+  const plan = await planBusinessQuestionAsync({ metadata, skills, question: 'recurring 的项目有哪些，请返回项目名称和订单金额', llm });
+  assert.equal(plan.status, 'supported');
+  assert.equal(calls, 2);
+  assert.match(repairFeedback, /筛选值未使用 Skill 源值/);
+  assert.equal(plan.intent.filters[0].value[0], 'Yes');
+  assert.equal(plan.plannerDiagnostics.repairAttempted, true);
+});
+
+test('本地意图处理异常不会被误报为大模型服务不可用', async () => {
+  const metadata = { id: 'llm-local-failure', fields: [{ name: '订单金额', role: 'measure', type: 'Number' }] };
+  const llm = { enabled: true, async planQueryIntent() { throw new TypeError('local normalization failure'); } };
+  const plan = await planBusinessQuestionAsync({ metadata, question: '销售额是多少', llm });
+  assert.equal(plan.status, 'error');
+  assert.equal(plan.code, 'PLATFORM_INTENT_PROCESSING_FAILED');
+  assert.equal(plan.plannerDiagnostics.failureCategory, 'platform-processing');
+  assert.doesNotMatch(plan.message, /大模型服务暂时不可用/);
+});
+
+test('纯名单意图由平台补充内部执行计数且不要求 LLM 发明业务指标', async () => {
+  const metadata = {
+    id: 'llm-list-query',
+    fields: [
+      { name: 'pipelineCode', role: 'identifier', type: 'String' },
+      { name: 'pipelineName', role: 'dimension', type: 'String' },
+    ],
+  };
+  const llm = {
+    enabled: true,
+    async planQueryIntent() {
+      return {
+        businessQuestion: '列出项目名称', metrics: [],
+        dimensions: [{ field: 'pipelineName', alias: 'project', concept: 'projectName', grain: null }],
+        filters: [], time: { periods: [], range: null, grain: null }, ranking: null,
+        expectedResult: { shape: 'table', minimumRows: 0, maximumRows: 20000, requiredPeriods: [], requiredMetrics: [], requiredDimensions: ['project'] },
+        constraints: [], assumptions: [], skillRefs: [], mappingEvidence: [], ambiguities: [],
+      };
+    },
+  };
+  const plan = await planBusinessQuestionAsync({ metadata, question: '列出项目名称', llm });
+  assert.equal(plan.status, 'supported');
+  assert.deepEqual(plan.displayRequest.measures, []);
+  assert.equal(plan.request.measures[0].aggregation, 'distinctCount');
+  assert.equal(plan.request.measures[0].field, 'pipelineCode');
 });
 
 test('命中进程内缓存且不持久化调用结果', async () => {

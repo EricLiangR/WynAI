@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { composeQuestionDocument, planBusinessQuestion } from '../lib/conversation/question-planner.mjs';
 import { composeInsightDocument } from '../lib/report/insight-document.mjs';
+import { fiscalYearForDate } from '../lib/semantics/time-semantics.mjs';
 
 const metadata = {
   id: 'dataset-sales-v1', revision: 7, name: '销售数据', indexed: true,
@@ -35,8 +36,24 @@ test('绝对年份总额问题生成无分组的单值聚合查询', () => {
   assert.deepEqual(plan.request.select, []);
   assert.equal(plan.request.measures[0].field, '订单金额');
   assert.equal(plan.request.measures[0].aggregation, 'sum');
-  assert.equal(plan.request.limit, 1);
+  assert.equal(plan.request.limit, 20000);
   assert.equal(plan.request.filters.length, 2);
+});
+
+test('Skill 财年口径按配置起始日物化相对年份，并保留实际 FY 回显', () => {
+  const fiscalMetadata = { ...metadata, fields: [...metadata.fields, { name: '赢单财年', role: 'dimension', type: 'String', rawType: 'String' }] };
+  const skills = [{ status: 'approved', defaultCalendar: 'fiscal', calendarPolicy: { fiscalYearField: '赢单财年', dateField: '订购日期', fiscalYearStart: '06-01', displayAssumption: '未明确自然年时按赢单财年解释。' } }];
+  assert.equal(fiscalYearForDate(new Date('2026-09-11T08:00:00+08:00'), { fiscalYearStart: '06-01' }).value, '27');
+  assert.equal(fiscalYearForDate(new Date('2026-05-31T08:00:00+08:00'), { fiscalYearStart: '06-01' }).value, '26');
+  const current = planBusinessQuestion({ metadata: fiscalMetadata, skills, question: '今年销售额是多少', now: new Date('2026-09-11T08:00:00+08:00') });
+  assert.equal(current.status, 'supported');
+  assert.deepEqual(current.request.filters.map(item => [item.field, item.operator, item.value]), [['赢单财年', 'eq', '27']]);
+  assert.match(current.assumptions.join('；'), /FY27/);
+  const beforeBoundary = planBusinessQuestion({ metadata: fiscalMetadata, skills, question: '今年销售额是多少', now: new Date('2026-05-31T08:00:00+08:00') });
+  assert.equal(beforeBoundary.request.filters[0].value, '26');
+  const previous = planBusinessQuestion({ metadata: fiscalMetadata, skills, question: '去年销售额是多少', now: new Date('2026-09-11T08:00:00+08:00') });
+  assert.equal(previous.request.filters[0].value, '26');
+  assert.equal(current.request.limit, 20000);
 });
 
 test('多轮追问继承查询上下文并只修改用户明确提出的部分', () => {

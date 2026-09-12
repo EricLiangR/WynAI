@@ -121,7 +121,7 @@ test('Skill 派生指标自动注入内部依赖并统一可见字段契约', as
     expectedResult: { shape: 'table', maximumRows: 10000, requiredMetrics: ['revenue', 'profit', 'grossMarginRate', 'averageOrderValue'], requiredDimensions: ['year_month', 'region', 'province', 'city'] }, constraints: [], ambiguities: [],
   };
   const plan = await planBusinessQuestionAsync({ metadata: { ...metadata, fields: [...metadata.fields, { name: '客户地区', role: 'geography', type: 'String' }, { name: '客户省份', role: 'geography', type: 'String' }, { name: '客户城市', role: 'geography', type: 'String' }] }, question, skills: [skill], llm: { enabled: true, async planQueryIntent() { return modelIntent; } } });
-  assert.equal(plan.status, 'supported');
+  assert.equal(plan.status, 'supported', JSON.stringify(plan.plannerDiagnostics));
   assert.ok(plan.request.measures.some(item => item.alias === 'orderCount'));
   assert.equal(plan.request.expectedResult.requiredMetrics.includes('gross_margin_rate'), true);
   assert.equal(plan.request.expectedResult.requiredMetrics.includes('average_order_value'), true);

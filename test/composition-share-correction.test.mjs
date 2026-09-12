@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
-import { composeQuestionDocument, planBusinessQuestion } from '../lib/conversation/question-planner.mjs';
+import { composeQuestionDocument, planBusinessQuestion, planBusinessQuestionAsync } from '../lib/conversation/question-planner.mjs';
 import { SmartQueryConversationStore } from '../lib/conversation/session.mjs';
 import { applyQueryProgram } from '../lib/query/query-program.mjs';
 import { decideVisualization } from '../lib/visualization/visualization-spec.mjs';
@@ -78,6 +78,12 @@ test('明确纠正会替换待确认意图，并在一轮内完成占比饼图',
   const store = new SmartQueryConversationStore({
     loadMetadata: async () => metadata,
     runAnalysis: async () => { throw new Error('不应降级到旧分析'); },
+    intentLlm: {
+      enabled: true,
+      async planQueryIntent({ question }) {
+        return planBusinessQuestion({ metadata, question, now }).intent;
+      },
+    },
     executeQuery: async ({ requests }) => ({ resultSets: [rawResult(requests[0], [
       { region: '华东', revenue: 50 },
       { region: '华南', revenue: 30 },

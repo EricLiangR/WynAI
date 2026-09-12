@@ -44,6 +44,7 @@ test('智能问数回答区使用合并结果工具栏和低依赖导出方案',
   assert.match(css, /\.agent-workspace\.smart-query-mode \.smart-message \{ max-width: 1180px; \}/);
   assert.match(css, /\.smart-query-result\.is-maximized \{ position: fixed;/);
   assert.match(css, /\.smart-query-result\.is-maximized\.is-table-only-maximized \.smart-table-scroll \{ min-height: 0; flex: 1; max-height: none;/);
+  assert.match(css, /\.smart-query-table th \{ position: sticky; top: 0; z-index: 2;/);
   assert.match(css, /@keyframes smart-result-open/);
   assert.match(css, /@keyframes smart-result-close/);
   assert.match(css, /--dialog-open-animation: var\(--smart-dialog-open-animation\)/);

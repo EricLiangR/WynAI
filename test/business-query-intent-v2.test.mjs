@@ -4,6 +4,7 @@ import { readFile } from 'node:fs/promises';
 import {
   buildBusinessQueryIntent,
   compileBusinessQueryIntent,
+  normalizeBusinessQueryIntentV2,
   validateResultAgainstIntent,
 } from '../lib/semantics/business-query-intent.mjs';
 import { parseBusinessTimeSemantics } from '../lib/semantics/time-semantics.mjs';
@@ -114,4 +115,39 @@ test('地区 in 筛选的结果覆盖校验会拒绝静默缺失成员', () => {
   }, intent);
   assert.equal(validation.valid, false);
   assert.match(validation.errors.join('；'), /客户地区=华南/);
+});
+test('LLM Intent 的每个筛选都进入账本并守恒编译为 Canonical 筛选', () => {
+  const intent = normalizeBusinessQueryIntentV2({
+    businessQuestion: '筛选多个客户类型并统计销售额',
+    metrics: [{ field: '订单金额', aggregation: 'sum', alias: 'revenue', concept: 'revenue' }],
+    dimensions: [{ field: '客户地区', alias: 'region', concept: 'region' }],
+    filters: [
+      { field: '客户地区', operator: 'containsAny', value: ['华东', '华南'] },
+      { field: '订购日期', operator: 'gte', value: '2026-01-01' },
+    ],
+    time: { field: '订购日期', timeZone: 'Asia/Shanghai', periods: [], grain: null },
+    expectedResult: { shape: 'grouped-table', minimumRows: 1, maximumRows: 20000, requiredPeriods: [], requiredMetrics: ['revenue'], requiredDimensions: ['region'], timeZone: 'Asia/Shanghai' },
+  }, { metadata });
+  const ledger = intent.constraints.filter(item => item.id.startsWith('filter-ledger-'));
+  assert.deepEqual(ledger.map(item => item.normalized), [
+    { field: '客户地区', operator: 'containsAny', value: ['华东', '华南'], negated: false },
+    { field: '订购日期', operator: 'gte', value: '2026-01-01', negated: false },
+  ]);
+  const compiled = compileBusinessQueryIntent(metadata, intent);
+  assert.equal(compiled.status, 'supported');
+  assert.deepEqual(compiled.request.filters.map(({ field, operator, value }) => ({ field, operator, value })), intent.filters);
+});
+
+test('多值字符串成员结果校验会拒绝违反成员筛选的已投影记录', () => {
+  const intent = {
+    expectedResult: { minimumRows: 1, requiredMetrics: ['revenue'], requiredDimensions: ['region'], requiredPeriods: [] },
+    filters: [{ field: '客户地区', operator: 'containsAny', value: ['华东', '华南'] }],
+    dimensions: [{ field: '客户地区', alias: 'region' }],
+  };
+  const validation = validateResultAgainstIntent({
+    schema: [{ name: 'region' }, { name: 'revenue' }],
+    rows: [{ region: '华东', revenue: 100 }, { region: '华北', revenue: 80 }],
+  }, intent);
+  assert.equal(validation.valid, false);
+  assert.match(validation.errors.join('；'), /多值筛选条件/);
 });

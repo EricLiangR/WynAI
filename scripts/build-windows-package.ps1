@@ -78,7 +78,10 @@ Copy-Item -Path (Join-Path $PackageTemplate '*') -Destination $StageDir -Recurse
 
 $AppDir = Join-Path $StageDir 'app'
 New-Item -ItemType Directory -Path $AppDir -Force | Out-Null
-foreach ($file in @('server.mjs', 'llm-gateway.mjs', 'insight-document-export.mjs', 'business-fact-engine.mjs', 'insight-diagnostic-store.mjs', 'package.json', 'package-lock.json')) {
+Get-ChildItem -LiteralPath $ProjectRoot -File -Filter '*.mjs' |
+    Where-Object { $_.Name -notmatch '\.test\.mjs$' -and $_.Name -notlike 'uat-*' } |
+    ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination $AppDir -Force }
+foreach ($file in @('package.json', 'package-lock.json')) {
     Copy-Item -LiteralPath (Join-Path $ProjectRoot $file) -Destination $AppDir -Force
 }
 foreach ($directory in @('lib', 'public', 'skills')) {

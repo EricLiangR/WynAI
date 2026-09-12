@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { normalizeCanonicalQueryRequest } from '../lib/planning/query-request-schema.mjs';
+import { applyCanonicalFilters, normalizeCanonicalQueryRequest } from '../lib/planning/query-request-schema.mjs';
 import { ControlledWaxAdapter } from '../lib/query/adapters/controlled-wax.mjs';
 import { DatasetNoneAdapter } from '../lib/query/adapters/dataset-none.mjs';
 import { QueryRouter } from '../lib/query/router.mjs';
@@ -19,6 +19,7 @@ const metadata = {
     { name: '订购日期', type: 'Date', rawType: 'DateTime', role: 'time' },
     { name: '客户地区', type: 'String', rawType: 'String', role: 'geography' },
     { name: '类别名称', type: 'String', rawType: 'String', role: 'dimension' },
+    { name: '客户类型', type: 'String', rawType: 'String', role: 'dimension', multiValue: true },
     { name: '订单金额', type: 'Number', rawType: 'Double', role: 'measure' },
   ],
 };
@@ -94,7 +95,7 @@ test('Canonical 聚合结果筛选在服务端聚合后按指标别名执行', (
     select: [{ field: '类别名称', alias: 'category' }],
     measures: [{ field: '订单金额', aggregation: 'sum', alias: 'revenue' }],
     resultFilters: [{ field: 'revenue', operator: 'lt', value: 150 }],
-    orderBy: [{ field: 'revenue', direction: 'asc' }], limit: 2,
+    orderBy: [{ field: 'revenue', direction: 'asc' }], limit: 2, limitSource: "user-limit",
   });
   const adapter = new ControlledWaxAdapter();
   const executionPlan = adapter.compile(request, { metadata });
@@ -155,6 +156,40 @@ test('Canonical in 筛选逐值校验并编译为受控 WAX 集合', () => {
   }), /1 至 50/);
 });
 
+test('Canonical 多值字符串操作符与 WAX FIND 编译语义一致', () => {
+  const values = ['Multinational Corporation（MNC）', 'Private Entity（POE）'];
+  const rows = [
+    { 客户类型: '["Multinational Corporation（MNC）"]' },
+    { 客户类型: '["Private Entity（POE）", "Public Entity"]' },
+    { 客户类型: '["Multinational Corporation（MNC）", "Private Entity（POE）"]' },
+    { 客户类型: '["Public Entity"]' },
+  ];
+  const expectedRows = {
+    containsAny: 3,
+    containsAll: 1,
+    notContainsAny: 1,
+    notContainsAll: 3,
+  };
+  for (const [operator, rowCount] of Object.entries(expectedRows)) {
+    const request = normalizeCanonicalQueryRequest(metadata, {
+      id: `qry-customer-type-${operator}`, mode: 'aggregate', dataset: { id: metadata.id, revision: metadata.revision },
+      select: [{ field: '客户类型', alias: 'customer_type' }], measures: [{ aggregation: 'countRows', alias: 'records' }],
+      filters: [{ field: '客户类型', operator, value: values }],
+    });
+    assert.deepEqual(request.filters[0].value, values);
+    assert.equal(applyCanonicalFilters(rows, metadata, request.filters).length, rowCount);
+    const executionPlan = new ControlledWaxAdapter().compile(request, { metadata });
+    assert.match(executionPlan.compiled.query, /FIND\("Multinational Corporation（MNC）",'销售数据'\[客户类型\]\) (?:> 0|= 0)/);
+    assert.match(executionPlan.compiled.query, /FIND\("Private Entity（POE）",'销售数据'\[客户类型\]\) (?:> 0|= 0)/);
+    const expectedComparator = operator.startsWith('not') ? '= 0' : '> 0';
+    assert.match(executionPlan.compiled.query, new RegExp(`FIND\\("Multinational Corporation（MNC）",'销售数据'\\[客户类型\\]\\) ${expectedComparator}`));
+  }
+  assert.throws(() => normalizeCanonicalQueryRequest(metadata, {
+    id: 'qry-invalid-string-membership', mode: 'aggregate', dataset: { id: metadata.id, revision: metadata.revision },
+    measures: [{ aggregation: 'countRows', alias: 'records' }],
+    filters: [{ field: '订单金额', operator: 'containsAny', value: ['100'] }],
+  }), /仅支持字符串字段/);
+});
 test('Canonical 非空筛选保持本地与 WAX 语义一致并拒绝带字段的 countRows', () => {
   const request = normalizeCanonicalQueryRequest(metadata, {
     id: 'qry-non-null-region', mode: 'aggregate', dataset: { id: metadata.id, revision: metadata.revision },
@@ -190,7 +225,7 @@ test('时间粒度在结果截断前归并，月度查询不会退化为前若�
     id: 'qry-monthly', mode: 'compare', dataset: { id: metadata.id, revision: metadata.revision },
     select: [{ field: '订购日期', alias: 'period', grain: 'month' }],
     measures: [{ aggregation: 'countRows', alias: 'records' }],
-    orderBy: [{ field: 'period', direction: 'asc' }], limit: 2,
+    orderBy: [{ field: 'period', direction: 'asc' }], limit: 2, limitSource: "user-limit",
   });
   const adapter = new ControlledWaxAdapter();
   const executionPlan = adapter.compile(request, { metadata });
@@ -330,4 +365,24 @@ test('Bottom N 与前百分比均属于用户主动范围，百分比排名在�
   }, compiled.queryProgram);
   assert.equal(output.rows.length, 1);
   assert.equal(output.rows[0].category, 'A');
+});
+test('系统上限在 20001 行边界保留完整性标记，且不混同用户 TopN', () => {
+  const request = normalizeCanonicalQueryRequest(metadata, {
+    id: 'qry-system-row-cap', mode: 'aggregate', dataset: { id: metadata.id, revision: metadata.revision },
+    select: [{ field: '类别名称', alias: 'category' }],
+    measures: [{ field: '订单金额', aggregation: 'sum', alias: 'revenue' }],
+    limit: 20000, limitSource: 'default',
+  });
+  const rawRows = Array.from({ length: 20001 }, (_, index) => ({ group1: `C-${index}`, revenue: index + 1 }));
+  const result = normalizeCanonicalResultSet({
+    request,
+    executionPlan: { id: 'exec-system-row-cap', adapter: 'wyn-wax-controlled', adapterVersion: 'test', rowLimit: 20000 },
+    rawResult: { rows: rawRows, totalRows: 20001, limitReached: true, truncationConfidence: 'confirmed' },
+    metadata,
+  });
+  assert.equal(result.rows.length, 20000);
+  assert.equal(result.statistics.totalRowCount, 20001);
+  assert.equal(result.quality.isTruncated, true);
+  assert.equal(result.quality.limitSource, 'system-cap');
+  assert.match(result.quality.warnings.join('；'), /达到结果上限/);
 });

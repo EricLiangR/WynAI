@@ -40,6 +40,65 @@ function resultSet(request, rows) {
   };
 }
 
+// Conversation tests must still exercise the strict LLM-first path. This
+// fixture supplies a valid structured LLM response; it is never a production
+// fallback response.
+const strictTestIntentLlm = {
+  enabled: true,
+  async planQueryIntent({ metadata: planMetadata, question, skills, previousIntent, previousRequest }) {
+    // These three responses model a real LLM resolving the pending intent as a
+    // whole. A clarification reply alone is not a standalone business query,
+    // so routing it through the deterministic test helper would incorrectly
+    // fail strict validation. This fixture exists only in the test boundary;
+    // production still requires an LLM response and has no business fallback.
+    if (previousIntent && /销售经理/.test(question)) {
+      return planBusinessQuestion({
+        metadata: planMetadata,
+        question: '过去三年销售额累计排名前三的销售经理是谁',
+        skills,
+        now,
+      }).intent;
+    }
+    if (previousIntent && /三个都算/.test(question)) {
+      return planBusinessQuestion({
+        metadata: planMetadata,
+        question: '2023至2025年销售额、利润都做同比增长率',
+        skills,
+        now,
+      }).intent;
+    }
+    if (previousIntent && /销售额和利润都做同比增长率/.test(question)) {
+      return planBusinessQuestion({
+        metadata: planMetadata,
+        question: '过去两年每年销售额、利润和毛利率，销售额和利润都做同比增长率',
+        skills,
+        now,
+      }).intent;
+    }
+    const plan = planBusinessQuestion({
+      metadata: planMetadata,
+      question,
+      skills,
+      previousIntent,
+      previousRequest,
+      now,
+    });
+    if (!previousIntent && /过去三年销售额累计排名前三的是谁/.test(question)) {
+      return {
+        ...plan.intent,
+        ambiguities: [{
+          type: 'dimension',
+          blocking: true,
+          status: 'unresolved',
+          question: '请确认“是谁”需要按哪一个业务维度排名。',
+          options: [{ label: '销售经理', concepts: ['employee'] }],
+        }],
+      };
+    }
+    return plan.intent;
+  },
+};
+
 test('QueryProgram 按年份分别取销售额第一的省份', () => {
   const plan = planBusinessQuestion({ metadata, question: '2023、2024、2025年销售额排名第一的省份分别是哪个', now });
   assert.equal(plan.status, 'supported');
@@ -107,6 +166,7 @@ test('澄清状态机保留 pending，受控 IntentPatch 成功后再提交', as
     runAnalysis: async () => { throw new Error('不应降级'); },
     executeQuery,
     skillRegistry,
+    intentLlm: strictTestIntentLlm,
   });
   const conversation = await store.create({ datasetId: metadata.id });
   const first = await store.ask(conversation.id, { question: '过去三年销售额累计排名前三的是谁' });
@@ -122,7 +182,7 @@ test('澄清状态机保留 pending，受控 IntentPatch 成功后再提交', as
   assert.equal(second.conversation.pendingContext, null);
   assert.equal(second.conversation.conversationState, 'ready');
   assert.equal(second.conversation.committedContext.intent.dimensions[0].field, '员工姓名');
-  assert.deepEqual(second.conversation.committedContext.intent.time.periods, [2023, 2024, 2025]);
+  assert.deepEqual(second.conversation.committedContext.intent.time.periods, ['2023', '2024', '2025']);
 });
 
 test('月度环比使用上月基期并保留年度内月份', () => {
@@ -190,8 +250,9 @@ test('低风险问题也必须调用 LLM，模型失败时不走旧快路径', a
     now,
     llm,
   });
-  assert.equal(plan.status, 'needs_clarification');
-  assert.equal(plan.plannerMode, 'llm-clarification');
+  assert.equal(plan.status, 'error');
+  assert.equal(plan.plannerMode, 'llm-error');
+  assert.equal(plan.code, 'LLM_TIMEOUT');
   assert.equal(plan.plannerDiagnostics.llmAttempted, true);
   assert.equal(llmCalls, 1);
   assert.equal(plan.request, undefined);
@@ -219,8 +280,14 @@ test('意图大模型失败不触发确定性熔断回退', async () => {
   assert.equal(first.plannerDiagnostics.llmAttempted, true);
   assert.equal(second.plannerDiagnostics.llmAttempted, true);
   assert.equal(llmCalls, 2);
-  assert.equal(first.status, 'needs_clarification');
-  assert.equal(second.status, 'needs_clarification');
+  assert.equal(first.status, 'error');
+  assert.equal(second.status, 'error');
+  assert.equal(first.plannerMode, 'llm-error');
+  assert.equal(second.plannerMode, 'llm-error');
+  assert.equal(first.code, 'LLM_TIMEOUT');
+  assert.equal(second.code, 'LLM_TIMEOUT');
+  assert.equal(first.request, undefined);
+  assert.equal(second.request, undefined);
 });
 
 const governedSalesSkill = {
@@ -362,12 +429,25 @@ test('模型语义覆盖失败不会被计为供应商熔断故障', async () =>
   assert.equal(first.plannerDiagnostics.reason, 'INTENT_COVERAGE_INVALID');
   assert.equal(second.plannerDiagnostics.llmAttempted, true);
   assert.equal(second.plannerDiagnostics.circuitOpen, false);
-  assert.equal(calls, 2);
+  assert.equal(calls, 6);
+  assert.equal(first.status, 'error');
+  assert.equal(first.code, 'INTENT_VALIDATION_FAILED');
+  assert.equal(first.request, undefined);
+  assert.equal(second.status, 'error');
+  assert.equal(second.code, 'INTENT_VALIDATION_FAILED');
+  assert.equal(second.request, undefined);
 });
 test('模型不得把同比计算依赖扩张为用户可见时间维度', async () => {
+  const deterministicIntent = planBusinessQuestion({
+    metadata,
+    question: '去年各省份的销售额和同比增长率',
+    skills: [governedSalesSkill],
+    skillRefs: ['sales-baseline@1.1.0'],
+    now,
+  }).intent;
   const llm = {
     enabled: true,
-    async planQueryIntent({ deterministicIntent }) {
+    async planQueryIntent() {
       return {
         ...deterministicIntent,
         dimensions: deterministicIntent.dimensions.map(({ internal, ...item }) => item),
@@ -382,16 +462,23 @@ test('模型不得把同比计算依赖扩张为用户可见时间维度', async
     now,
     llm,
   });
-  assert.equal(plan.plannerMode, 'hybrid-llm-validated');
+  assert.equal(plan.plannerMode, 'llm-first');
   assert.equal(plan.intent.dimensions.find(item => item.grain)?.internal, true);
   assert.deepEqual(plan.displayRequest.select.map(item => item.field), ['客户省份']);
 });
 
-test('模型新增用户未要求的可见维度时回退到已校验计划且不触发熔断', async () => {
+test('模型新增用户未要求的可见维度时重试后失败且不生成查询', async () => {
   let calls = 0;
+  const deterministicIntent = planBusinessQuestion({
+    metadata,
+    question: '各省份销售额为什么不同',
+    skills: [governedSalesSkill],
+    skillRefs: ['sales-baseline@1.1.0'],
+    now,
+  }).intent;
   const llm = {
     enabled: true,
-    async planQueryIntent({ deterministicIntent }) {
+    async planQueryIntent() {
       calls += 1;
       return {
         ...deterministicIntent,
@@ -412,11 +499,15 @@ test('模型新增用户未要求的可见维度时回退到已校验计划且�
   };
   const first = await planBusinessQuestionAsync(input);
   const second = await planBusinessQuestionAsync(input);
-  assert.equal(first.plannerDiagnostics.reason, 'INTENT_SCOPE_EXPANSION_INVALID');
-  assert.deepEqual(first.displayRequest.select.map(item => item.field), ['客户省份']);
+  assert.equal(first.status, 'error');
+  assert.equal(first.code, 'INTENT_VALIDATION_FAILED');
+  assert.equal(first.request, undefined);
   assert.equal(second.plannerDiagnostics.llmAttempted, true);
   assert.equal(second.plannerDiagnostics.circuitOpen, false);
-  assert.equal(calls, 2);
+  assert.equal(second.status, 'error');
+  assert.equal(second.code, 'INTENT_VALIDATION_FAILED');
+  assert.equal(second.request, undefined);
+  assert.equal(calls, 6);
 });
 
 test('多指标未明确同比对象时必须澄清，不静默绑定最后一个指标', () => {
@@ -442,7 +533,7 @@ test('派生指标澄清支持自由文本全部选择并清除旧待决槽位',
     { period: '2024-01-01T00:00:00.000Z', revenue: 110, profit: 24, revenue_yoy: 0.1, profit_yoy: 0.2 },
     { period: '2025-01-01T00:00:00.000Z', revenue: 120, profit: 28, revenue_yoy: 0.09, profit_yoy: 0.16 },
   ])] });
-  const store = new SmartQueryConversationStore({ loadMetadata: async () => metadata, runAnalysis: async () => { throw new Error('不应降级'); }, executeQuery });
+  const store = new SmartQueryConversationStore({ loadMetadata: async () => metadata, runAnalysis: async () => { throw new Error('不应降级'); }, executeQuery, intentLlm: strictTestIntentLlm });
   const conversation = await store.create({ datasetId: metadata.id });
   const first = await store.ask(conversation.id, { question: '2023至2025年销售额、利润和同比增长率' });
   assert.equal(first.response.status, 'needs_clarification');
@@ -461,7 +552,7 @@ test('公式指标与泛化同比并存时澄清选择清除旧未决槽位', as
     { name: 'gross_margin_rate', role: 'measure', type: 'number', format: 'percentage' },
     { name: 'revenue_yoy', role: 'measure', type: 'number', format: 'percentage' }, { name: 'profit_yoy', role: 'measure', type: 'number', format: 'percentage' },
   ], rows: [{ period: '2024-01-01', revenue: 100, profit: 20, gross_margin_rate: 0.2, revenue_yoy: 0.1, profit_yoy: 0.2 }, { period: '2025-01-01', revenue: 110, profit: 24, gross_margin_rate: 0.218, revenue_yoy: 0.1, profit_yoy: 0.2 }], quality: { isSample: false, isTruncated: false, warnings: [] } }] });
-  const store = new SmartQueryConversationStore({ loadMetadata: async () => formulaMetadata, executeQuery, runAnalysis: async () => { throw new Error('不应走旧降级路径'); }, skillRegistry: formulaSkill });
+  const store = new SmartQueryConversationStore({ loadMetadata: async () => formulaMetadata, executeQuery, runAnalysis: async () => { throw new Error('不应走旧降级路径'); }, skillRegistry: formulaSkill, intentLlm: strictTestIntentLlm });
   const conversation = await store.create({ datasetId: formulaMetadata.id });
   const first = await store.ask(conversation.id, { question: '过去两年每年销售额、利润和毛利率，并比较同比变化' });
   assert.equal(first.response.status, 'needs_clarification');
@@ -477,7 +568,7 @@ test('澄清中的新问题不会继承旧的派生指标或筛选上下文', as
     { period: '2024-01-01T00:00:00.000Z', revenue: 110, profit: 24 },
     { period: '2025-01-01T00:00:00.000Z', revenue: 120, profit: 28 },
   ])] });
-  const store = new SmartQueryConversationStore({ loadMetadata: async () => metadata, executeQuery, runAnalysis: async () => { throw new Error('不应走旧降级路径'); } });
+  const store = new SmartQueryConversationStore({ loadMetadata: async () => metadata, executeQuery, runAnalysis: async () => { throw new Error('不应走旧降级路径'); }, intentLlm: strictTestIntentLlm });
   const conversation = await store.create({ datasetId: metadata.id });
   const first = await store.ask(conversation.id, { question: '销售额、利润和同比增长率' });
   assert.equal(first.response.status, 'needs_clarification');

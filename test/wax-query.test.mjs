@@ -97,6 +97,20 @@ test('筛选条件执行类型校验并可在回退样本中保持同一语义',
   }), /countRows.*不允许指定字段/);
 });
 
+test('多值字符串成员操作符与 WAX 编译语义一致', () => {
+  const rows = [
+    { 客户地区: 'Multinational Corporation（MNC）' },
+    { 客户地区: 'Private Entity（POE）' },
+    { 客户地区: 'Multinational Corporation（MNC） / Private Entity（POE）' },
+    { 客户地区: 'Public Entity' },
+  ];
+  const mnc = 'Multinational Corporation（MNC）';
+  const poe = 'Private Entity（POE）';
+  assert.equal(applyLocalFilters(rows, metadata, [{ field: '客户地区', operator: 'containsAny', value: [mnc, poe] }]).length, 3);
+  assert.equal(applyLocalFilters(rows, metadata, [{ field: '客户地区', operator: 'containsAll', value: [mnc, poe] }]).length, 1);
+  assert.equal(applyLocalFilters(rows, metadata, [{ field: '客户地区', operator: 'notContainsAny', value: [mnc, poe] }]).length, 1);
+  assert.equal(applyLocalFilters(rows, metadata, [{ field: '客户地区', operator: 'notContainsAll', value: [mnc, poe] }]).length, 3);
+});
 test('分析查询包覆盖概览、趋势、类别、区域和客户', () => {
   const bundle = buildAnalysisQueryBundle(metadata, [{ field: '客户地区', operator: 'eq', value: '华东' }]);
   assert.equal(bundle.version, 'wyn-query-bundle/v1');

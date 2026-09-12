@@ -63,9 +63,9 @@ LLM_ENABLE_THINKING=false
 
 - `ai-planner`：AI 给出完整 Canonical 查询需求，校验通过后执行。
 - `ai-guided-planner`：AI 选择假设和分析方法，确定性编译器生成并校验 Canonical 查询需求。
-- `deterministic-fallback`：LLM 不可用或计划无效时，由语义能力和问题意图选择受控降级路径。
+- `deterministic-fallback`：仅供非严格探索体验使用的受控降级路径；它不是严格智能问数的业务答案路径。
 
-`deterministic-fallback` 仅用于非严格体验。开发和严格 UAT 中，Planner、Critic、查询或 AI 报告失败都必须使 run 失败；`fallback`、`partial`、warning 和空 AI 报告均不计通过。
+`deterministic-fallback` 仅用于非严格体验。开发、严格智能问数和严格 UAT 中，Planner、Critic、查询或 AI 报告失败都必须使 run 失败或要求澄清；必要字段、指标、筛选和时间约束不得被静默遗漏。`fallback`、`partial`、warning 和空 AI 报告均不计通过，也不得伪装为业务查询结果。该规则是项目级永久约束：确定性组件只负责校验、编译、执行和证据检查，不得推断业务含义或返回替代业务答案。
 
 当前项目自动化回归为 `108/108`。独立智能问数的真实 UAT 已覆盖 Phase 0 查询矩阵 `11/11`、Phase 0 多数据集 `4/4`、Phase 2 `4/4`、Phase 3/4 `4/4`、模板报告 `5/5`，Skill 治理 UAT `9/9`。DashScope 固定文本连通 UAT `1/1` 和严格外部 LLM UAT `14/14` 均已通过；严格 UAT 的 Planner、Critic 和报告均调用真实模型 `deepseek-v4-flash-0731`，9 个持久化运行全部完成且未使用确定性回退。完整阶段记录见 `DEVELOPMENT_PROGRESS_REPORT.md`。
 

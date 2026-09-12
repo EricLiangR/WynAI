@@ -54,16 +54,14 @@ test('构成问题在完整非负低基数数据上选择环形图', () => {
   assert.ok(spec.decision.allowedTypes.includes('pie'));
 });
 
-test('饼图遇到样本、负值或不可加指标时降级为类别图', () => {
+test('用户指定饼图遇到样本、负值或不可加指标时必须确认，不自动替换', () => {
   const input = fixture({
     dimensions: [{ field: '客户地区', alias: 'region' }],
     measures: [{ field: '订单利润', alias: 'profit', aggregation: 'average' }],
     rows: [{ region: '华东', profit: 5 }, { region: '华南', profit: -2 }],
     quality: { isSample: true },
   });
-  const spec = decideVisualization({ question: '用饼图展示各地区平均利润', ...input }).spec;
-  assert.equal(spec.type, 'column');
-  assert.match(spec.decision.warnings.join('；'), /饼图要求/);
+  assert.throws(() => decideVisualization({ question: '用饼图展示各地区平均利润', ...input }), { code: 'VISUALIZATION_CONFIRMATION_REQUIRED' });
 });
 
 test('数值和百分比多指标时间序列自动选择双轴组合图', () => {

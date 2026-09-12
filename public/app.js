@@ -792,6 +792,10 @@ const filterOperatorLabels = {
   gte: '大于等于',
   lt: '小于',
   lte: '小于等于',
+  containsAny: '包含任一',
+  containsAll: '同时包含全部',
+  notContainsAny: '不包含任何',
+  notContainsAll: '未同时包含全部',
 };
 
 function renderAgentFilters() {
@@ -1300,9 +1304,10 @@ function smartAggregationLabel(value) {
 }
 
 function smartFilterLabel(filter) {
-  const operator = ({ eq: '=', neq: '≠', gt: '>', gte: '≥', lt: '<', lte: '≤', contains: '包含', in: '属于' })[filter?.operator] || filter?.operator || '';
+  const operator = ({ eq: '=', neq: '≠', gt: '>', gte: '≥', lt: '<', lte: '≤', contains: '包含', in: '属于', ...filterOperatorLabels })[filter?.operator] || filter?.operator || '';
   const value = Array.isArray(filter?.value) ? filter.value.join('、') : filter?.value;
-  return `${filter?.field || '字段'} ${operator} ${value ?? '—'}`.trim();
+  const separator = ['containsAny', 'containsAll', 'notContainsAny', 'notContainsAll'].includes(filter?.operator) ? '：' : ' ';
+  return `${filter?.field || '字段'} ${operator}${separator}${value ?? '—'}`.trim();
 }
 
 function renderSmartAnalysisDetails(queryRequests = [], scope = {}) {
@@ -1865,7 +1870,20 @@ function renderSmartDocument(document, resultSets = [], runtimeStatus = null, qu
     const result = resultMap.get(block.dataRef);
     const rows = result?.rows || [];
     const columns = (block.columns || result?.schema?.map(column => column.name) || Object.keys(rows[0] || {})).slice(0, 12);
-    if (!rows.length || !columns.length) return { html: `<p>暂无表格数据 · 结果集 ${escapeHtml(block.dataRef || '—')}</p>`, tableKey: null };
+    if (!rows.length || !columns.length) {
+      const request = queryRequests.find(item => item?.id === result?.requestId || item?.id === result?.id) || queryRequests[0] || {};
+      const filters = [...new Set((request.filters || []).map(smartFilterLabel).filter(Boolean))];
+      const periods = request.expectedResult?.requiredPeriods || request.time?.periods || [];
+      const periodText = Array.isArray(periods) ? periods.filter(Boolean).join('、') : String(periods || '');
+      const conditions = [...filters, ...(periodText ? [`时间口径：${periodText}`] : [])];
+      const conditionMarkup = conditions.length
+        ? `<div class="smart-empty-result-conditions"><span>筛选条件</span><strong>${escapeHtml(conditions.join('；'))}</strong></div>`
+        : '';
+      return {
+        html: `<div class="smart-empty-result" role="status"><strong>未找到匹配数据</strong><span>当前查询返回 0 行结果。</span>${conditionMarkup}</div>`,
+        tableKey: null,
+      };
+    }
     const schemaMap = new Map((result?.schema || []).map(column => [column.name, column]));
     const cellValue = (row, column) => {
       const value = row[column];
@@ -2038,7 +2056,7 @@ function updateSmartContext(payload) {
   const filters = refs.filters || payload.conversation?.activeFilters || [];
   elements.smartContextMetrics.textContent = [...new Set([...(refs.metrics || []), ...pendingMetrics, ...pendingDerived])].join('、') || '未指定';
   elements.smartContextDimensions.textContent = [...new Set([...(refs.dimensions || []), ...pendingDimensions, ...pendingTime])].join('、') || '未指定';
-  elements.smartContextFilters.textContent = filters.length ? filters.map(item => `${item.field} ${item.operator} ${item.value}`).join('；') : '全部数据';
+  elements.smartContextFilters.textContent = filters.length ? filters.map(smartFilterLabel).join('；') : '全部数据';
   elements.smartContextSkills.textContent = (payload.response?.diagnostics?.skillRefs || payload.conversation?.loadedSkillRefs || []).join('、') || '未匹配';
   state.smartTurns += 1;
   elements.smartTurnCount.textContent = `${state.smartTurns} 轮`;
@@ -2091,7 +2109,15 @@ async function askSmartQuery() {
     const response = await fetch(`/api/smart-query/conversations/${encodeURIComponent(state.smartConversationId)}/messages`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ question, clarificationSelection: state.smartClarificationSelection || null }), signal: abortController.signal });
     state.smartClarificationSelection = null;
     const payload = await response.json();
-    if (!response.ok) throw new Error(payload.message || '智能问数失败');
+    if (!response.ok) {
+      const message = payload.traceId
+        ? `${payload.message || '智能问数失败'}（跟踪编号：${payload.traceId}）`
+        : payload.message || '智能问数失败';
+      const requestError = new Error(message);
+      requestError.code = payload.code || null;
+      requestError.traceId = payload.traceId || null;
+      throw requestError;
+    }
     document.querySelector('#smart-message-loading')?.remove();
     if (payload.response?.status === 'needs_clarification') {
       const clarification = payload.response.clarification?.question || '需要进一步确认';

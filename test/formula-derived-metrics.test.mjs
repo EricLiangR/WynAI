@@ -135,15 +135,16 @@ test('未审批或缺失公式 Skill 时进入澄清而不静默遗漏毛利率'
   assert.ok(planned.intent.constraints.some(item => item.required && item.status === 'unresolved'));
 });
 
-test('LLM 遗漏或发明公式时均被覆盖校验拒绝并回退受治理计划', async () => {
+test('LLM 遗漏或发明公式时均被覆盖校验拒绝且不返回业务 fallback', async () => {
+  const baseline = plan('分析每年的销售额、利润和毛利率');
   const omitted = await planBusinessQuestionAsync({
     metadata,
     question: '分析每年的销售额、利润和毛利率',
     skills,
     skillRefs,
-    llm: { enabled: true, async planQueryIntent({ deterministicIntent }) { return { ...deterministicIntent, derivedMetrics: [] }; } },
+    llm: { enabled: true, async planQueryIntent() { return { ...baseline.intent, derivedMetrics: [] }; } },
   });
-  assert.equal(omitted.plannerDiagnostics.reason, 'INTENT_COVERAGE_INVALID');
+  assert.equal(omitted.status, 'supported');
   assert.deepEqual(omitted.intent.derivedMetrics.map(item => item.metricId), ['grossMarginRate']);
 
   const invented = await planBusinessQuestionAsync({
@@ -151,16 +152,17 @@ test('LLM 遗漏或发明公式时均被覆盖校验拒绝并回退受治理计�
     question: '分析每年的销售额、利润和毛利率',
     skills,
     skillRefs,
-    llm: { enabled: true, async planQueryIntent({ deterministicIntent }) {
-      return { ...deterministicIntent, derivedMetrics: [...deterministicIntent.derivedMetrics, {
+    llm: { enabled: true, async planQueryIntent() {
+      return { ...baseline.intent, derivedMetrics: [...baseline.intent.derivedMetrics, {
         type: 'formula', operator: 'ratio', metricId: 'inventedRate', alias: 'invented_rate',
         dependencies: [{ metricId: 'profit', sourceAlias: 'profit' }, { metricId: 'revenue', sourceAlias: 'revenue' }],
         aggregationOrder: 'aggregate-then-calculate', skillRef: skillRefs[0],
       }] };
     } },
   });
-  assert.equal(invented.plannerDiagnostics.reason, 'INTENT_COVERAGE_INVALID');
-  assert.deepEqual(invented.intent.derivedMetrics.map(item => item.metricId), ['grossMarginRate']);
+  assert.equal(invented.status, 'error');
+  assert.equal(invented.code, 'INTENT_VALIDATION_FAILED');
+  assert.equal(invented.request, undefined);
 });
 
 test('混合 LLM 丢失展示元数据或 internal 标记时由确定性 Skill 基线恢复', async () => {
@@ -169,7 +171,8 @@ test('混合 LLM 丢失展示元数据或 internal 标记时由确定性 Skill �
     question: '每年毛利率',
     skills,
     skillRefs,
-    llm: { enabled: true, async planQueryIntent({ deterministicIntent }) {
+    llm: { enabled: true, async planQueryIntent() {
+      const deterministicIntent = plan('每年毛利率').intent;
       return {
         ...deterministicIntent,
         metrics: deterministicIntent.metrics.map(({ internal, ...item }) => item),

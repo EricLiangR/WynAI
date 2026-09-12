@@ -1275,6 +1275,7 @@ async function handleConversationMessage(request, response, conversationId) {
         attempts: error?.attempts || [],
       },
     });
+    error.traceId = traceId;
     throw error;
   } finally {
     request.removeListener('aborted', abort);
@@ -2429,7 +2430,10 @@ const server = http.createServer(async (request, response) => {
     console.error(error);
     if (!response.headersSent) {
       sendJson(response, error.status || 500, {
+        code: error.code || 'INTERNAL_ERROR',
         message: error.name === 'AbortError' ? 'Wyn 响应超时，请稍后重试' : error.message,
+        traceId: error.traceId || null,
+        retryable: String(error.code || '').startsWith('LLM_'),
       });
     } else {
       response.end();

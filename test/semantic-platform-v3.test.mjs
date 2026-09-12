@@ -98,7 +98,7 @@ test('50 条差异化业务问法保留指标、层级、时间和排名约束',
 test('三个用户失败案例生成正确查询结构', () => {
   const category = planBusinessQuestion({ metadata, question: '去年每类产品销售额是多少', now });
   assert.equal(category.request.select[0].field, '类别名称');
-  assert.equal(category.request.limit, 100);
+  assert.equal(category.request.limit, 20000);
 
   const cities = planBusinessQuestion({ metadata, question: '过去五年累计销售排名前五的城市，城市名称和销售额', now });
   assert.equal(cities.request.select[0].field, '客户城市');
