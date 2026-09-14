@@ -33,6 +33,7 @@ import { composeDocxTemplate } from './lib/template/docx-composer.mjs';
 import { loadSkillsFromDirectory } from './lib/skills/skill-registry.mjs';
 import { SkillGovernanceService } from './lib/skills/skill-governance.mjs';
 import { OperationalEventLog, createTraceId } from './lib/observability/operational-event-log.mjs';
+import { buildQualityDetails, summarizeQueryQuality } from './query-quality.mjs';
 import { FeedbackLearningService } from './lib/learning/feedback-learning.mjs';
 import { RequestAuditLog, SlidingWindowRateLimiter, requestIdentity } from './lib/security/request-governance.mjs';
 import { TemplatePackageRepository } from './lib/template/template-model.mjs';
@@ -1240,7 +1241,7 @@ async function handleConversationMessage(request, response, conversationId) {
   }
   const controller = new AbortController();
   const traceId = createTraceId();
-  operationalEventLog.record({ traceId, conversationId, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, event: 'request.accepted', phase: 'transport', details: { method: request.method, path: request.url } });
+  operationalEventLog.record({ traceId, conversationId, datasetId: conversationInput?.dataset?.id, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, event: 'request.accepted', phase: 'transport', details: { method: request.method, path: request.url } });
 
   const abort = () => {
     if (!controller.signal.aborted) controller.abort(new Error('客户端已取消智能问数请求'));
@@ -1269,6 +1270,7 @@ async function handleConversationMessage(request, response, conversationId) {
       outcome: 'failed',
       durationMs: Date.now() - startedAt,
       details: {
+        ...buildQualityDetails({}, error),
         code: error?.code || null,
         status: error?.status || 500,
         message: error?.message || '智能问数请求失败',
@@ -1319,7 +1321,7 @@ async function handleConversationMessage(request, response, conversationId) {
     }
   }
   operationalEventLog.record({ traceId, conversationId, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, event: 'platform.migration.run', phase: 'migration', outcome: migrationRun.comparison ? (migrationRun.comparison.passed ? 'matched' : 'blocked') : (migrationRun.fallback ? 'fallback' : 'selected'), details: { module: migrationRun.module, mode: migrationRun.mode, routing: migrationRun.routing || null, comparison: migrationRun.comparison, fallback: migrationRun.fallback, candidateMetadata: migrationRun.candidateMetadata || null, schema: migrationRun.schema } });
-  operationalEventLog.record({ traceId, conversationId, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, event: 'request.completed', phase: 'transport', outcome: result.response.status || 'ok', durationMs: Date.now() - startedAt, details: { plannerMode: planning.route, risk: planning.riskAssessment } });
+  operationalEventLog.record({ traceId, conversationId, datasetId: conversationInput?.dataset?.id, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, event: 'request.completed', phase: 'transport', outcome: result.response.status || 'ok', durationMs: Date.now() - startedAt, details: { ...buildQualityDetails(result.response), plannerMode: planning.route, risk: planning.riskAssessment } });
   requestAudit.record({ method: request.method, path: request.url, status: 200, durationMs: Date.now() - startedAt, actor: identity.actor, organizationId: identity.organizationId, userId: identity.userId, requestId: traceId, plannerMode: planning.route, planningDurationMs: planning.planningDurationMs, llmAttempted: planning.llmAttempted, llmDurationMs: planning.llmDurationMs });
   sendJson(response, 200, { ...result, conversation: publicConversation(result.conversation) });
 }
@@ -1654,6 +1656,24 @@ function dataInsightListItem(detail) {
     versions: detail.versions || [],
     ...summary,
   };
+}
+
+function handleQueryQuality(request, response) {
+  if (!requireSkillAdmin(request, response)) return;
+  const params = new URL(request.url, 'http://localhost').searchParams;
+  const items = operationalEventLog.list({ limit: 10000 });
+  response.setHeader('Cache-Control', 'no-store');
+  const report = summarizeQueryQuality(items, Object.fromEntries(params));
+  if (params.get('traceId')) {
+    const record = report.records.find(item => item.traceId === params.get('traceId'));
+    return sendJson(response, record ? 200 : 404, record || { message: '记录不存在或已超过保留范围' });
+  }
+  const page = Math.max(1, Number(params.get('page')) || 1);
+  if (params.get('format') === 'json') {
+    response.setHeader('Content-Disposition', 'attachment; filename="query-quality-report.json"');
+    return sendJson(response, 200, report);
+  }
+  return sendJson(response, 200, { ...report, page, pageSize: 50, records: report.records.slice((page - 1) * 50, page * 50).map(({ events, ...record }) => record) });
 }
 
 function handleDataInsights(pathname, requestUrl, request, response) {
@@ -2247,6 +2267,7 @@ const server = http.createServer(async (request, response) => {
     if (request.method === 'GET' && pathname === '/api/smart-query/feedback') return handleFeedbackList(request, response);
     if (request.method === 'GET' && pathname === '/api/smart-query/learning-candidates') return handleLearningCandidateList(request, response);
     if (request.method === 'GET' && pathname === '/api/smart-query/operation-events') return handleOperationEvents(request, response);
+    if (request.method === 'GET' && pathname === '/api/smart-query/query-quality') return handleQueryQuality(request, response);
     const operationTraceRoute = pathname.match(/^\/api\/smart-query\/operation-events\/(trace-[a-zA-Z0-9-]{8,100})$/);
     if (request.method === 'GET' && operationTraceRoute) return handleOperationEvents(request, response, operationTraceRoute[1]);
     const learningReviewRoute = pathname.match(/^\/api\/smart-query\/learning-candidates\/(learning-candidate-[a-zA-Z0-9-]{8,100})\/(approve|reject)$/);
