@@ -5,7 +5,7 @@ import { extname, isAbsolute, join, normalize, resolve } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 import { analyzeDataset, normalizeDatasetMetadata } from './lib/analysis-core.mjs';
-import { applyLocalFilters, buildAnalysisQueryBundle, compileFilteredDetailQuery } from './lib/wax-query.mjs';
+import { buildAnalysisQueryBundle, compileFilteredDetailQuery } from './lib/wax-query.mjs';
 import { JsonRunStore } from './lib/run-store.mjs';
 import { buildReportExport } from './lib/report-export.mjs';
 import { buildInsightDocumentExport } from './insight-document-export.mjs';
@@ -1006,19 +1006,7 @@ async function handleCreateAgentRun(request, response) {
     const metadata = await loadDatasetMetadata(datasetId);
     const queryBundle = buildAnalysisQueryBundle(metadata, body.filters || []);
     const queryWarnings = [];
-    let queryResult;
-    try {
-      queryResult = await loadQualitySample(datasetId, metadata, body.rowLimit, queryBundle.filters);
-    } catch (error) {
-      if (!queryBundle.filters.length) throw error;
-      const unfiltered = await loadDatasetRows(datasetId, body.rowLimit);
-      queryResult = {
-        ...unfiltered,
-        rows: applyLocalFilters(unfiltered.rows, metadata, queryBundle.filters),
-        queryType: 'NONE_LOCAL_FILTER_FALLBACK',
-      };
-      queryWarnings.push(`筛选范围的质量样本改为本地受控回退：${error.message}`);
-    }
+    const queryResult = await loadQualitySample(datasetId, metadata, body.rowLimit, queryBundle.filters);
 
     let aggregateResults = null;
     if (metadata.indexed) {

@@ -174,12 +174,16 @@ test('结构化歧义可通过同一会话选项继续执行', async () => {
   let calls = 0;
   const complete = {
     schema: 'wynai.business-query-intent/v2', businessQuestion: '按销售顾问比较去年和前年销售额同比',
-    metrics: [{ field: '订单金额', aggregation: 'sum', alias: 'revenue', concept: 'revenue' }],
+    metrics: [
+      { field: '订单金额', aggregation: 'sum', alias: 'revenue', concept: 'revenue' },
+      { field: '订单利润', aggregation: 'sum', alias: 'profit', concept: 'profit' },
+      { field: '订单编号', aggregation: 'distinctCount', alias: 'orderCount', concept: 'orderCount' },
+    ],
     derivedMetrics: [{ type: 'yoy', source: '销售额同比增长率', sourceAlias: 'revenue', sourceConcept: 'revenue', alias: 'revenue_yoy', offset: 1, resultType: 'percentage' }],
     dimensions: [{ field: '员工姓名', alias: 'employee', concept: 'employee' }, { field: '订购日期', alias: 'period', concept: 'time', grain: 'year' }],
     filters: [{ field: '订购日期', operator: 'gte', value: '2024-01-01' }, { field: '订购日期', operator: 'lt', value: '2026-01-01' }],
     time: { field: '订购日期', periods: ['2024', '2025'], range: { start: '2024-01-01', endExclusive: '2026-01-01' }, grain: 'year', grouping: 'year', explicit: true }, ranking: null,
-    expectedResult: { shape: 'table', minimumRows: 1, maximumRows: 100, requiredPeriods: [], requiredMetrics: ['revenue', 'revenue_yoy'], requiredDimensions: ['employee', 'period'] }, constraints: [], ambiguities: [],
+    expectedResult: { shape: 'table', minimumRows: 1, maximumRows: 100, requiredPeriods: [], requiredMetrics: ['revenue', 'profit', 'orderCount', 'revenue_yoy'], requiredDimensions: ['employee', 'period'] }, constraints: [], ambiguities: [],
   };
   const intentLlm = { enabled: true, async planQueryIntent() {
     calls += 1;
@@ -189,7 +193,7 @@ test('结构化歧义可通过同一会话选项继续执行', async () => {
   const store = new SmartQueryConversationStore({
     loadMetadata: async () => metadata,
     runAnalysis: async () => { throw new Error('不应进入洞察降级'); },
-    executeQuery: async ({ requests }) => ({ resultSets: [{ id: 'rs-clarified', requestId: requests[0].id, schema: [{ name: 'employee', role: 'dimension', type: 'string' }, { name: 'period', role: 'dimension', type: 'date', grain: 'year' }, { name: 'revenue', role: 'measure', type: 'number' }], rows: [{ employee: 'A', period: '2024-01-01', revenue: 100 }, { employee: 'A', period: '2025-01-01', revenue: 120 }], quality: {}, statistics: {} }] }),
+    executeQuery: async ({ requests }) => ({ resultSets: [{ id: 'rs-clarified', requestId: requests[0].id, schema: [{ name: 'employee', role: 'dimension', type: 'string' }, { name: 'period', role: 'dimension', type: 'date', grain: 'year' }, { name: 'revenue', role: 'measure', type: 'number' }, { name: 'profit', role: 'measure', type: 'number' }, { name: 'orderCount', role: 'measure', type: 'number' }], rows: [{ employee: 'A', period: '2024-01-01', revenue: 100, profit: 20, orderCount: 10 }, { employee: 'A', period: '2025-01-01', revenue: 120, profit: 25, orderCount: 12 }], quality: {}, statistics: {} }] }),
     intentLlm,
   });
   const conversation = await store.create({ datasetId: metadata.id });

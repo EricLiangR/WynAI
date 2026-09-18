@@ -9,7 +9,7 @@
     "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,79}$" },
     "hypothesisId": { "anyOf": [{ "type": "string" }, { "type": "null" }] },
     "purpose": { "type": "string", "maxLength": 500 },
-    "mode": { "enum": ["profile", "aggregate", "detail", "compare", "mining", "verify"] },
+    "mode": { "enum": ["profile", "aggregate", "projection", "compare", "mining", "verify"] },
     "topic": { "enum": ["baseline", "quality", "profitability", "customer", "product", "anomaly", "open"] },
     "dataset": { "type": "object", "required": ["id", "revision"], "properties": { "id": { "type": "string" }, "revision": {} } },
     "select": { "type": "array", "maxItems": 64 },

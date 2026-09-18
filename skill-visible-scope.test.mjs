@@ -49,17 +49,19 @@ test('Skill aliases absent from the provisional baseline remain valid LLM output
   assert.equal(result.plannerDiagnostics.llmAttempted, true);
 });
 
-test('Loaded but unrequested Skill fields fail after bounded LLM repair', async () => {
+test('Loaded and dataset-bound Skill fields may be returned as business context', async () => {
   const { result, calls } = await plan([...dimensions, { field: 'private_note', alias: 'note' }]);
-  assert.equal(result.status, 'error');
-  assert.equal(calls, 3);
-  assert.match(result.message, /private_note/);
-  assert.equal(result.request, undefined);
+  assert.equal(result.status, 'supported', result.message);
+  assert.equal(calls, 1);
+  assert.ok(result.request);
 });
 
-test('A model alias cannot authorize an unbound field', async () => {
-  const { result } = await plan(dimensions, []);
-  assert.equal(result.status, 'error');
+test('A model alias cannot authorize a field absent from the dataset', async () => {
+  const { result, calls } = await plan([...dimensions, { field: 'missing_field', alias: 'missing' }], []);
+  assert.equal(result.status, 'needs_clarification', result.message);
+  assert.equal(calls, 3);
+  assert.match(result.clarification, /当前数据集不包含/);
+  assert.equal(result.plannerDiagnostics.llmAttempted, true);
   assert.equal(result.request, undefined);
 });
 

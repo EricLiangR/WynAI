@@ -5,6 +5,7 @@ import {
   buildBusinessQueryIntent,
   compileBusinessQueryIntent,
   normalizeBusinessQueryIntentV2,
+  validateIntentCoverage,
   validateResultAgainstIntent,
 } from '../lib/semantics/business-query-intent.mjs';
 import { parseBusinessTimeSemantics } from '../lib/semantics/time-semantics.mjs';
@@ -26,6 +27,38 @@ test('BusinessQueryIntent v2 JSON Schema 是持久化的版本契约', async () 
   assert.equal(schema.$id, 'wynai.business-query-intent/v2');
   assert.ok(schema.required.includes('constraints'));
   assert.ok(schema.required.includes('expectedResult'));
+  assert.ok(schema.required.includes('resultFilters'));
+});
+
+test('聚合结果筛选使用指标别名并完整编译到 Canonical 请求', () => {
+  const intent = normalizeBusinessQueryIntentV2({
+    businessQuestion: '按类别统计总金额并筛选总金额大于1000万',
+    metrics: [{ field: '订单金额', aggregation: 'sum', alias: 'revenue', concept: 'revenue' }],
+    dimensions: [{ field: '类别名称', alias: 'category', concept: 'category' }],
+    filters: [],
+    resultFilters: [{ field: 'revenue', operator: 'gt', value: 10000000 }],
+    time: { field: null, periods: [], grain: null },
+    expectedResult: { shape: 'grouped-table', minimumRows: 1, maximumRows: 20000, requiredPeriods: [], requiredMetrics: ['revenue'], requiredDimensions: ['category'], timeZone: 'Asia/Shanghai' },
+    constraints: [{ id: 'having-1', type: 'aggregate-result-filter', source: '总金额大于1000万', normalized: { scope: 'aggregate-result', field: 'revenue', operator: 'gt', value: 10000000 }, required: true, status: 'resolved' }],
+  }, { metadata });
+  assert.equal(validateIntentCoverage(intent).valid, true);
+  const compiled = compileBusinessQueryIntent(metadata, intent);
+  assert.equal(compiled.status, 'supported');
+  assert.deepEqual(compiled.request.resultFilters, [{ field: 'revenue', operator: 'gt', value: 10000000 }]);
+});
+
+test('聚合筛选账本不能在 resultFilters 缺失或引用错误别名时静默通过', () => {
+  const base = normalizeBusinessQueryIntentV2({
+    businessQuestion: '按类别统计总金额并筛选总金额大于1000万',
+    metrics: [{ field: '订单金额', aggregation: 'sum', alias: 'revenue', concept: 'revenue' }],
+    dimensions: [{ field: '类别名称', alias: 'category', concept: 'category' }],
+    filters: [], resultFilters: [], time: { field: null, periods: [], grain: null },
+    expectedResult: { shape: 'grouped-table', minimumRows: 1, maximumRows: 20000, requiredPeriods: [], requiredMetrics: ['revenue'], requiredDimensions: ['category'], timeZone: 'Asia/Shanghai' },
+    constraints: [{ id: 'having-1', type: 'aggregate-result-filter', source: '总金额大于1000万', normalized: { scope: 'aggregate-result', field: 'revenue', operator: 'gt', value: 10000000 }, required: true, status: 'resolved' }],
+  }, { metadata });
+  assert.match(validateIntentCoverage(base).errors.join('；'), /未进入可执行查询/);
+  const wrong = { ...base, resultFilters: [{ field: 'unknown_metric', operator: 'gt', value: 10000000 }] };
+  assert.match(validateIntentCoverage(wrong).errors.join('；'), /未引用实际指标别名/);
 });
 
 test('多年份表达统一生成按年意图、连续时间范围和必需期间', () => {

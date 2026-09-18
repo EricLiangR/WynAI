@@ -37,7 +37,7 @@ test('回答生成器明确区分全量结果概要和截断预览', async () =>
   assert.deepEqual(evidence.preview, { returnedRows: 2, totalRows: 3, isPartial: true });
   assert.deepEqual(evidence.fullResultProfile.dimensions.month, {
     cardinality: 3,
-    minimum: '2023-01-01T00:00:00Z',
-    maximum: '2025-01-01T00:00:00Z',
+    minimum: '2023-01-01',
+    maximum: '2025-01-01',
   });
 });

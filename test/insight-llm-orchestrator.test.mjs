@@ -52,6 +52,22 @@ test('编排结果披露缺失请求能力并返回 completed-partial', async ()
   assert.equal(result.capabilityCoverage.unavailable[0].id, 'product');
 });
 
+test('Critic 可以引用平台能力覆盖证据而不被错误拒绝', async () => {
+  const input = buildEvidencePack({
+    resultSets: [{ id: 'rs-sales', schema: [{ name: '销售额', type: 'number', role: 'measure' }], rows: [{ 销售额: 100 }] }],
+  });
+  input.capabilityCoverage = assessCapabilityCoverage({ question: '按地区分析销售额', schema: [{ name: '销售额', type: 'number', role: 'measure' }] });
+  const result = await runInsightLlmOrchestration({
+    llm: llm([
+      { schema: 'wynai.insight-planner/v1', hypotheses: [], toolRequests: [] },
+      { schema: 'wynai.insight-critic/v1', verdict: 'insufficient', assessments: [{ hypothesisId: 'h-region', status: 'rejected', reason: '地区字段不可用', evidenceIds: ['capabilityCoverage'] }], followUps: [{ question: '请提供地区数据', reason: '缺少地区字段', evidenceIds: ['capabilityCoverage'] }] },
+      { schema: 'wynai.insight-narrator/v1', managementSummary: [{ text: '当前缺少地区字段。', evidenceIds: ['capabilityCoverage'], verificationRequired: true }], keyFindings: [{ text: '无法完成地区分析。', evidenceIds: ['capabilityCoverage'], verificationRequired: true }], risks: [{ text: '请补充地区字段。', evidenceIds: ['capabilityCoverage'], verificationRequired: true }], actions: [{ text: '补充地区字段后重试。', evidenceIds: ['capabilityCoverage'] }] },
+    ]), prompt: '按地区分析销售额', input,
+  });
+  assert.equal(result.critic.assessments[0].evidenceIds[0], 'capabilityCoverage');
+  assert.equal(result.diagnostics.reasonCode, 'CORE_EVIDENCE_INSUFFICIENT');
+});
+
 test('数据洞察通过 Planner/Critic/Narrator 编排并只允许证据引用', async () => {
   const evidenceId = 'ev-sales-total';
   const result = await runInsightLlmOrchestration({

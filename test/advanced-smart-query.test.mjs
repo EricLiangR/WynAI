@@ -467,7 +467,7 @@ test('模型不得把同比计算依赖扩张为用户可见时间维度', async
   assert.deepEqual(plan.displayRequest.select.map(item => item.field), ['客户省份']);
 });
 
-test('模型新增用户未要求的可见维度时重试后失败且不生成查询', async () => {
+test('模型增加数据集真实业务维度时允许继续执行', async () => {
   let calls = 0;
   const deterministicIntent = planBusinessQuestion({
     metadata,
@@ -497,17 +497,10 @@ test('模型新增用户未要求的可见维度时重试后失败且不生成�
     now,
     llm,
   };
-  const first = await planBusinessQuestionAsync(input);
-  const second = await planBusinessQuestionAsync(input);
-  assert.equal(first.status, 'error');
-  assert.equal(first.code, 'INTENT_VALIDATION_FAILED');
-  assert.equal(first.request, undefined);
-  assert.equal(second.plannerDiagnostics.llmAttempted, true);
-  assert.equal(second.plannerDiagnostics.circuitOpen, false);
-  assert.equal(second.status, 'error');
-  assert.equal(second.code, 'INTENT_VALIDATION_FAILED');
-  assert.equal(second.request, undefined);
-  assert.equal(calls, 6);
+  const result = await planBusinessQuestionAsync(input);
+  assert.equal(result.status, 'supported');
+  assert.ok(result.request);
+  assert.equal(calls, 1);
 });
 
 test('多指标未明确同比对象时必须澄清，不静默绑定最后一个指标', () => {

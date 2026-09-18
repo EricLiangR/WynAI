@@ -21,6 +21,6 @@
   },
   "$defs": {
     "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,99}$" },
-    "canonicalQuery": { "type": "object", "required": ["id", "mode", "dataset", "select", "measures", "filters", "limit"], "not": { "anyOf": [{ "required": ["sql"] }, { "required": ["wax"] }, { "required": ["payload"] }, { "required": ["query"] }] }, "properties": { "id": { "$ref": "#/$defs/id" }, "mode": { "enum": ["profile", "aggregate", "detail", "compare", "mining", "verify"] }, "dataset": { "type": "object" }, "select": { "type": "array" }, "measures": { "type": "array" }, "filters": { "type": "array" }, "limit": { "type": "integer", "minimum": 1, "maximum": 20000 } } }
+    "canonicalQuery": { "type": "object", "required": ["id", "mode", "dataset", "select", "measures", "filters", "limit"], "not": { "anyOf": [{ "required": ["sql"] }, { "required": ["wax"] }, { "required": ["payload"] }, { "required": ["query"] }] }, "properties": { "id": { "$ref": "#/$defs/id" }, "mode": { "enum": ["profile", "aggregate", "projection", "compare", "mining", "verify"] }, "dataset": { "type": "object" }, "select": { "type": "array" }, "measures": { "type": "array" }, "filters": { "type": "array" }, "limit": { "type": "integer", "minimum": 1, "maximum": 20000 } } }
   }
 }

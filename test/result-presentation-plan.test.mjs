@@ -38,6 +38,21 @@ test('ResultPresentationPlan 对高基数结果只保留表格', () => {
   assert.equal(presentation.table.preserveAllReturnedRows, true);
 });
 
+test('投影中的数值字段即使保留 measure 角色也只展示一次', () => {
+  const request = {
+    mode: 'projection',
+    select: [
+      { field: '客户地区', alias: 'region', role: 'geography' },
+      { field: '订单金额', alias: 'revenue', role: 'measure' },
+    ],
+    measures: [],
+    expectedResult: { requiredDimensions: ['region', 'revenue'] },
+  };
+  const resultSet = result('rs-projection-measure', [{ region: '华东', revenue: 300 }]);
+  const presentation = buildResultPresentationPlan({ metadata, question: '返回客户地区和订单金额', request, resultSet });
+  assert.deepEqual(presentation.table.columns, ['region', 'revenue']);
+});
+
 test('产品销量不扩展为商品名称维度，时间和地理维度按用户顺序与层级展示', () => {
   const salesMetadata = { id: 'dataset-order', revision: 1, fields: [
     { name: '订购日期', role: 'time', type: 'Date' },

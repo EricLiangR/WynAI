@@ -1310,24 +1310,58 @@ function smartFilterLabel(filter) {
   return `${filter?.field || '字段'} ${operator}${separator}${value ?? '—'}`.trim();
 }
 
-function renderSmartAnalysisDetails(queryRequests = [], scope = {}) {
+function smartUserFacingMessage(value, fallback = '') {
+  return String(value || fallback)
+    .replace(/queryMode\s*=\s*[\w-]+/gi, '查询执行方式')
+    .replace(/\bdetail-table\b/gi, '字段明细结果')
+    .replace(/\bprojection\b/gi, '字段明细查询')
+    .replace(/\baggregate\b/gi, '统计查询');
+}
+
+function renderSmartAnalysisDetails(queryRequests = [], scope = {}, resultSets = [], responseContext = {}) {
   const requests = (Array.isArray(queryRequests) ? queryRequests : []).filter(request => request && typeof request === 'object');
-  const metrics = [...new Set(requests.flatMap(request => (request.measures || []).map(measure => `${measure.field || '指标'}（${smartAggregationLabel(measure.aggregation)}）`)))];
-  const dimensions = [...new Set(requests.flatMap(request => (request.select || []).map(select => `${select.field || '维度'}${select.grain ? `（按${({ year: '年', quarter: '季度', month: '月', week: '周', day: '日' })[select.grain] || select.grain}）` : ''}`)))];
+  const schemaByAlias = new Map(resultSets.flatMap(result => (result?.schema || []).map(column => [column.name, column])));
+  const displayField = item => item?.displayName || schemaByAlias.get(item?.alias)?.displayName || item?.field || item?.alias || '字段';
+  const technicalField = item => {
+    const business = displayField(item);
+    const source = item?.field || schemaByAlias.get(item?.alias)?.sourceField || item?.alias;
+    return source && source !== business ? `${business}（源字段：${source}）` : business;
+  };
+  const metrics = [...new Set(requests.flatMap(request => (request.measures || []).map(measure => `${technicalField(measure)}，${smartAggregationLabel(measure.aggregation)}`)))];
+  const projections = [...new Set(requests.flatMap(request => (request.select || []).map(select => `${technicalField(select)}${select.grain ? `（按${({ year: '年', quarter: '季度', month: '月', week: '周', day: '日' })[select.grain] || select.grain}）` : ''}`)))];
+  const groupings = [...new Set(requests.flatMap(request => request.mode === 'projection' ? [] : (request.select || []).map(select => displayField(select))))];
   const filters = [...new Set((requests.length ? requests.flatMap(request => request.filters || []) : (scope.filters || [])).map(smartFilterLabel))];
+  const resultFilters = [...new Set(requests.flatMap(request => (request.resultFilters || []).map(filter => `${filter.field || '指标'} ${({ eq: '=', neq: '≠', gt: '>', gte: '≥', lt: '<', lte: '≤' })[filter.operator] || filter.operator || ''} ${filter.value ?? '—'}`)))];
   const ranking = requests.flatMap(request => (request.orderBy || []).map(item => {
     const candidate = [...(request.measures || []), ...(request.select || [])].find(value => value.alias === item.field);
-    const field = candidate?.field || item.field || '结果';
+    const field = candidate ? displayField(candidate) : item.field || '结果';
     const basis = candidate?.aggregation ? `${field}（${smartAggregationLabel(candidate.aggregation)}）` : field;
-    return `按${basis}${item.direction === 'asc' ? '升序' : '降序'}`;
+    const topN = ['user-ranking', 'user-limit'].includes(request.limitSource) ? `，取 ${request.limit} 项` : '';
+    return `按${basis}${item.direction === 'asc' ? '升序' : '降序'}${topN}`;
   }));
+  const returnedRows = resultSets.reduce((total, result) => total + Number(result?.statistics?.returnedRowCount ?? result?.rows?.length ?? 0), 0);
+  const incomplete = resultSets.some(result => result?.quality?.isSample || result?.quality?.isTruncated || result?.quality?.isComplete === false);
+  const sampleUsed = resultSets.some(result => result?.quality?.isSample);
+  const datasetIds = [...new Set(requests.map(request => request?.dataset?.id).filter(Boolean).concat(scope?.datasets || [], scope?.datasetId || []).filter(Boolean))];
+  const skillRefs = responseContext?.diagnostics?.skillRefs || [];
+  const purposes = [...new Set(requests.map(request => request.purpose).filter(Boolean))];
   const rows = [
-    ['指标', metrics.join('、') || '未指定'],
-    ['维度', dimensions.join('、') || '未分组'],
-    ['筛选', filters.join('；') || '全部数据'],
+    ['业务理解', purposes.join('；') || '按当前问题执行受控查询'],
+    ['指标', metrics.join('、') || '未使用聚合指标'],
+    ['返回字段', projections.join('、') || '未指定'],
+    ['分组维度', groupings.join('、') || '未分组'],
+    ['源端筛选', filters.join('；') || '全部数据'],
+    ['聚合后筛选', resultFilters.join('；') || '无'],
     ['排序', [...new Set(ranking)].join('；') || '未排序'],
+    ['结果范围', `${returnedRows} 行；${incomplete ? '完整性受限' : '完整结果'}`],
+    ['执行说明', `筛选由 Wyn 执行；样本：${sampleUsed ? '是' : '否'}；替代结果：未使用`],
+    ['数据集', datasetIds.join('、') || '未记录'],
+    ['Skill', skillRefs.join('、') || '未绑定'],
+    ['Trace', responseContext?.trace?.traceId || '未记录'],
   ];
-  return `<section class="smart-analysis-details" aria-label="本轮查询条件"><dl>${rows.map(([label, value]) => `<div class="smart-analysis-detail-item"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl></section>`;
+  const canonical = requests.length ? escapeHtml(JSON.stringify(requests, null, 2)) : '';
+  const advanced = canonical ? `<details class="smart-analysis-advanced"><summary>高级诊断</summary><pre>${canonical}</pre></details>` : '';
+  return `<details class="smart-analysis-details"><summary>详情</summary><div class="smart-analysis-details-body" aria-label="本轮查询技术详情"><dl>${rows.map(([label, value]) => `<div class="smart-analysis-detail-item"><dt>${escapeHtml(label)}</dt><dd>${escapeHtml(value)}</dd></div>`).join('')}</dl>${advanced}</div></details>`;
 }
 
 const SMART_CHART_TYPE_LABELS = {
@@ -1833,7 +1867,7 @@ function toggleSmartResultMaximize(panel) {
   button?.focus();
 }
 
-function renderSmartDocument(document, resultSets = [], runtimeStatus = null, queryRequests = [], feedbackContext = null, dataInsight = null) {
+function renderSmartDocument(document, resultSets = [], runtimeStatus = null, queryRequests = [], feedbackContext = null, dataInsight = null, responseContext = {}) {
   if (!document) return '';
   const blocks = Array.isArray(document.blocks) ? document.blocks : [];
   const resultMap = new Map(resultSets.map(result => [result.id, result]));
@@ -1902,7 +1936,7 @@ function renderSmartDocument(document, resultSets = [], runtimeStatus = null, qu
   const datasets = document.scope?.datasets || (document.scope?.datasetId ? [document.scope.datasetId] : []);
   const accuracy = document.scope?.accuracy === 'exact' ? '精确结果' : document.scope?.accuracy === 'sample' ? '样本结果' : '范围待确认';
   elements.smartScope.innerHTML = `<i></i>${datasets.length || 0} 个数据集 · ${accuracy}`;
-  const analysisDetails = renderSmartAnalysisDetails(queryRequests, document.scope || {});
+  const analysisDetails = renderSmartAnalysisDetails(queryRequests, document.scope || {}, resultSets, responseContext);
   const answerBlock = blocks.find(block => block.id === 'answer-summary' || block.title === '回答');
   const insightAction = dataInsight?.insightId
     ? `<button class="smart-insight-action" type="button" data-action="open-smart-insight" data-insight-id="${escapeHtml(dataInsight.insightId)}" title="使用当前回答的结构化结果进入数据洞察"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2"/></svg><span>数据洞察</span></button>`
@@ -2110,9 +2144,10 @@ async function askSmartQuery() {
     state.smartClarificationSelection = null;
     const payload = await response.json();
     if (!response.ok) {
+      const safeMessage = smartUserFacingMessage(payload.message, '智能问数失败');
       const message = payload.traceId
-        ? `${payload.message || '智能问数失败'}（跟踪编号：${payload.traceId}）`
-        : payload.message || '智能问数失败';
+        ? `${safeMessage}（跟踪编号：${payload.traceId}）`
+        : safeMessage;
       const requestError = new Error(message);
       requestError.code = payload.code || null;
       requestError.traceId = payload.traceId || null;
@@ -2120,7 +2155,7 @@ async function askSmartQuery() {
     }
     document.querySelector('#smart-message-loading')?.remove();
     if (payload.response?.status === 'needs_clarification') {
-      const clarification = payload.response.clarification?.question || '需要进一步确认';
+      const clarification = smartUserFacingMessage(payload.response.clarification?.question, '需要进一步确认');
       const options = (payload.response.clarification?.options || []).map(option => {
         const label = typeof option === 'string' ? option : option.label;
         const selection = typeof option === 'object' ? ` data-smart-selection='${escapeHtml(JSON.stringify({ slotId: option.slotId, concepts: option.concepts, mode: option.mode }))}'` : '';
@@ -2130,7 +2165,7 @@ async function askSmartQuery() {
       elements.smartStatus.textContent = '等待你补充信息';
       updateSmartContext(payload);
     } else {
-      elements.smartMessages.insertAdjacentHTML('beforeend', renderSmartDocument(payload.response?.document, payload.response?.resultSets || [], payload.response?.runtimeStatus, payload.response?.queryRequests || [], payload.response?.trace || null, payload.response?.dataInsight || null));
+      elements.smartMessages.insertAdjacentHTML('beforeend', renderSmartDocument(payload.response?.document, payload.response?.resultSets || [], payload.response?.runtimeStatus, payload.response?.queryRequests || [], payload.response?.trace || null, payload.response?.dataInsight || null, payload.response || {}));
       hydrateSmartCharts(elements.smartMessages.lastElementChild, payload.response?.document, payload.response?.resultSets || []);
       elements.smartStatus.textContent = '已完成，可以继续追问';
       updateSmartContext(payload);
@@ -2139,9 +2174,9 @@ async function askSmartQuery() {
   } catch (error) {
     document.querySelector('#smart-message-loading')?.remove();
     const cancelled = error.name === 'AbortError';
-    const message = cancelled ? '本轮已取消，问题已保留，可以修改后重试。' : error.message;
+    const message = cancelled ? '本轮已取消，问题已保留，可以修改后重试。' : smartUserFacingMessage(error.message, '智能问数失败');
     elements.smartMessages.insertAdjacentHTML('beforeend', `<article class="smart-message smart-message-assistant"><div class="smart-assistant-avatar">问</div><div class="${cancelled ? 'smart-message-cancelled' : 'smart-message-error'}"><strong>${cancelled ? '已取消' : '本轮未完成'}</strong><p>${escapeHtml(message)}</p></div></article>`);
-    elements.smartStatus.textContent = cancelled ? '本轮已取消' : error.message;
+    elements.smartStatus.textContent = cancelled ? '本轮已取消' : message;
     if (!elements.smartQuestion.value) elements.smartQuestion.value = question;
   } finally {
     window.clearInterval(loadingTimer);

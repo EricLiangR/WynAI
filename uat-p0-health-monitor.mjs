@@ -3,6 +3,10 @@ import { writeFile } from 'node:fs/promises';
 const baseUrl = (process.env.UVT_BASE_URL || 'http://127.0.0.1:8787').replace(/\/$/, '');
 const durationMs = Number(process.env.UAT_HEALTH_DURATION_MS || 30 * 60 * 1000);
 const intervalMs = Number(process.env.UAT_HEALTH_INTERVAL_MS || 30 * 1000);
+const requestedSampleCount = Number(process.env.UAT_HEALTH_SAMPLE_COUNT || 0);
+const sampleCountTarget = Number.isSafeInteger(requestedSampleCount) && requestedSampleCount > 0
+  ? Math.min(requestedSampleCount, 1000)
+  : null;
 const startedAt = new Date().toISOString();
 const deadline = Date.now() + durationMs;
 const samples = [];
@@ -47,15 +51,16 @@ async function probe() {
   await writeFile('uat-p0-health-monitor.json', JSON.stringify({ schema: 'wynai.uat-health-monitor/v1', baseUrl, startedAt, durationMs, intervalMs, completedAt: null, samples }, null, 2));
 }
 
-while (Date.now() <= deadline) {
+while (sampleCountTarget ? samples.length < sampleCountTarget : Date.now() <= deadline) {
   await probe();
+  if (sampleCountTarget && samples.length >= sampleCountTarget) break;
   const remaining = deadline - Date.now();
-  if (remaining <= 0) break;
-  await new Promise(resolve => setTimeout(resolve, Math.min(intervalMs, remaining)));
+  if (!sampleCountTarget && remaining <= 0) break;
+  await new Promise(resolve => setTimeout(resolve, sampleCountTarget ? intervalMs : Math.min(intervalMs, remaining)));
 }
 
 const completedAt = new Date().toISOString();
 const passed = samples.length > 0 && samples.every(item => item.ok);
-await writeFile('uat-p0-health-monitor.json', JSON.stringify({ schema: 'wynai.uat-health-monitor/v1', baseUrl, startedAt, durationMs, intervalMs, completedAt, passed, samples }, null, 2));
+await writeFile('uat-p0-health-monitor.json', JSON.stringify({ schema: 'wynai.uat-health-monitor/v1', baseUrl, startedAt, durationMs, intervalMs, sampleCountTarget, completedAt, passed, samples }, null, 2));
 console.log(JSON.stringify({ status: passed ? 'passed' : 'failed', baseUrl, startedAt, completedAt, sampleCount: samples.length, failures: samples.filter(item => !item.ok).length }, null, 2));
 if (!passed) process.exitCode = 1;

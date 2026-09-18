@@ -112,7 +112,7 @@ test('非时间分类的混合单位组合图说明与实际图表类型一致',
   });
   const spec = decideVisualization({ question: '各地区销售额和同比增长率', ...input }).spec;
   assert.equal(spec.type, 'combo');
-  assert.match(spec.decision.reason, /双轴柱线组合图/);
+  assert.match(spec.decision.reason, /业务语义分组/);
   assert.doesNotMatch(spec.decision.reason, /柱形图适合/);
 });
 
@@ -218,6 +218,54 @@ test('货币与计数指标在时间轴上自动使用双轴组合图', () => {
   assert.equal(spec.encoding.measures.find(item => item.field === 'profit').axis, 'left');
   assert.equal(spec.encoding.measures.find(item => item.field === 'order_count').axis, 'right');
   assert.equal(spec.encoding.measures.find(item => item.field === 'order_count').mark, 'line');
+});
+
+test('组合图先按业务语义分组，不能因订单量数值更大而挤走金额组', () => {
+  const input = fixture({
+    measures: [
+      { field: '订单金额', alias: 'revenue', aggregation: 'sum', semanticGroup: 'financial' },
+      { field: '订单利润', alias: 'profit', aggregation: 'sum', semanticGroup: 'financial' },
+      { field: '订单编号', alias: 'order_count', aggregation: 'distinctCount', semanticGroup: 'volume' },
+    ],
+    rows: monthRows.map(row => ({ ...row, revenue: 10, profit: 2, order_count: 100000 })),
+  });
+  const spec = decideVisualization({ question: '按月分析收入、利润和订单量', ...input }).spec;
+  assert.equal(spec.type, 'combo');
+  assert.equal(spec.encoding.measures.find(item => item.field === 'revenue').axis, 'left');
+  assert.equal(spec.encoding.measures.find(item => item.field === 'profit').axis, 'left');
+  assert.equal(spec.encoding.measures.find(item => item.field === 'order_count').axis, 'right');
+  assert.match(spec.decision.reason, /业务语义分组/);
+});
+
+test('用户明确指定左右轴时优先于自动业务分组', () => {
+  const input = fixture({
+    measures: [
+      { field: '订单金额', alias: 'revenue', aggregation: 'sum', semanticGroup: 'financial' },
+      { field: '订单利润', alias: 'profit', aggregation: 'sum', semanticGroup: 'financial' },
+      { field: '订单编号', alias: 'order_count', aggregation: 'distinctCount', semanticGroup: 'volume' },
+    ],
+    rows: monthRows.map(row => ({ ...row, revenue: 10, profit: 2, order_count: 100 })),
+  });
+  const spec = decideVisualization({ question: '组合图，订单金额放右轴，订单编号放左轴', ...input }).spec;
+  assert.equal(spec.encoding.measures.find(item => item.field === 'revenue').axis, 'right');
+  assert.equal(spec.encoding.measures.find(item => item.field === 'order_count').axis, 'left');
+  assert.match(spec.decision.reason, /用户明确要求组合图及左右轴分配/);
+});
+
+test('非销售领域使用数据集提供的语义组而非销售专用规则', () => {
+  const input = fixture({
+    measures: [
+      { field: '治疗费用', alias: 'cost', aggregation: 'sum', semanticGroup: 'clinical-finance' },
+      { field: '医保支付额', alias: 'coverage', aggregation: 'sum', semanticGroup: 'clinical-finance' },
+      { field: '平均住院天数', alias: 'los', aggregation: 'average', semanticGroup: 'clinical-duration' },
+    ],
+    rows: monthRows.map(row => ({ ...row, cost: 100, coverage: 80, los: 99999 })),
+  });
+  const spec = decideVisualization({ question: '按月分析治疗费用、医保支付额和平均住院天数', ...input }).spec;
+  assert.equal(spec.type, 'combo');
+  assert.equal(spec.encoding.measures.find(item => item.field === 'cost').axis, 'left');
+  assert.equal(spec.encoding.measures.find(item => item.field === 'coverage').axis, 'left');
+  assert.equal(spec.encoding.measures.find(item => item.field === 'los').axis, 'right');
 });
 
 test('混合量纲在存在地区系列时仍使用双轴组合图并保留指标编码', () => {

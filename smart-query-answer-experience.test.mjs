@@ -12,6 +12,11 @@ test('智能问数回答区使用合并结果工具栏和低依赖导出方案',
   ]);
   const packageData = JSON.parse(packageJson);
   assert.match(app, /data-smart-copy-answer=/);
+  assert.match(app, /<summary>详情<\/summary>/);
+  assert.match(app, /业务理解/);
+  assert.match(app, /聚合后筛选/);
+  assert.match(app, /高级诊断/);
+  assert.match(app, /payload\.response \|\| \{\}/);
   assert.match(app, /copy: '<rect x="9" y="9" width="11" height="11" rx="2"\/><path d="M15 9V6/);
   assert.doesNotMatch(app, /const answerHead =|smart-analysis-details-head/);
   assert.match(app, /const key = block\.dataRef \|\| block\.id/);

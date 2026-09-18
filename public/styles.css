@@ -601,10 +601,15 @@ kbd { font: inherit; border: 1px solid #e2e2e9; background: #f8f8fa; border-radi
 .smart-runtime-note.warning { color: #8b784f; }
 .smart-runtime-note.warning i { background: #b88936; box-shadow: 0 0 0 3px rgba(184,137,54,.1); }
 .smart-analysis-details { margin-top: 9px; padding-top: 8px; border-top: 1px dashed #e2e9eb; }
-.smart-analysis-details dl { margin: 0; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 2px 16px; }
-.smart-analysis-detail-item { min-width: 0; display: grid; grid-template-columns: 42px minmax(0,1fr); gap: 8px; color: #6f777d; font-size: 12px; line-height: 1.55; }
+.smart-analysis-details > summary { width: max-content; color: #506a74; font-size: 12px; cursor: pointer; user-select: none; }
+.smart-analysis-details-body { margin-top: 9px; padding: 10px 12px; border: 1px solid #e4e8ea; border-radius: 6px; background: #f8fafb; }
+.smart-analysis-details dl { margin: 0; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 5px 20px; }
+.smart-analysis-detail-item { min-width: 0; display: grid; grid-template-columns: 78px minmax(0,1fr); gap: 8px; color: #6f777d; font-size: 12px; line-height: 1.55; }
 .smart-analysis-detail-item dt { color: #88959a; font-size: 12px; }
 .smart-analysis-detail-item dd { margin: 0; color: #6f777d; font-size: 12px; overflow-wrap: anywhere; }
+.smart-analysis-advanced { margin-top: 9px; padding-top: 8px; border-top: 1px solid #e4e8ea; }
+.smart-analysis-advanced summary { width: max-content; color: #6a7680; font-size: 12px; cursor: pointer; }
+.smart-analysis-advanced pre { max-height: 280px; margin: 8px 0 0; padding: 10px; overflow: auto; border-radius: 5px; color: #42525a; background: #eef2f4; font: 11px/1.55 Consolas, monospace; white-space: pre-wrap; overflow-wrap: anywhere; }
 .smart-clarification, .smart-message-error { padding: 14px; border: 1px solid #dfe4e6; border-radius: 7px; background: #fff; }
 .smart-clarification p, .smart-message-error p { margin: 7px 0 0; color: #66737a; line-height: 1.6; }
 .smart-message-error { border-color: #ead7d7; background: #fffafa; }

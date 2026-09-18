@@ -9,6 +9,7 @@
     "metrics",
     "dimensions",
     "filters",
+    "resultFilters",
     "time",
     "expectedResult",
     "constraints"
@@ -235,6 +236,20 @@
     "filters": {
       "type": "array",
       "maxItems": 8
+    },
+    "resultFilters": {
+      "type": "array",
+      "maxItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["field", "operator", "value"],
+        "properties": {
+          "field": { "type": "string" },
+          "operator": { "enum": ["eq", "neq", "gt", "gte", "lt", "lte"] },
+          "value": { "type": "number" }
+        },
+        "additionalProperties": false
+      }
     },
     "time": {
       "type": "object",

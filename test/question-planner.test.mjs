@@ -54,6 +54,53 @@ test('Skill 财年口径按配置起始日物化相对年份，并保留实际 F
   const previous = planBusinessQuestion({ metadata: fiscalMetadata, skills, question: '去年销售额是多少', now: new Date('2026-09-11T08:00:00+08:00') });
   assert.equal(previous.request.filters[0].value, '26');
   assert.equal(current.request.limit, 20000);
+
+  const fiscalDocument = composeQuestionDocument({
+    metadata: fiscalMetadata,
+    question: '去年销售额是多少',
+    plan: previous,
+    resultSet: {
+      id: 'rs-fiscal-scope',
+      rows: [{ revenue: 100 }],
+      schema: [{ name: 'revenue', role: 'measure', type: 'number' }],
+      quality: {},
+    },
+  });
+  assert.equal(fiscalDocument.scope.timeRange, null);
+  assert.deepEqual(fiscalDocument.scope.filters, previous.request.filters);
+});
+
+test('文档范围只把四位公历年物化为日期范围', () => {
+  const plan = planBusinessQuestion({ metadata, question: '2025年收入总额是多少' });
+  const document = composeQuestionDocument({
+    metadata,
+    question: '2025年收入总额是多少',
+    plan,
+    resultSet: {
+      id: 'rs-calendar-scope',
+      rows: [{ revenue: 100 }],
+      schema: [{ name: 'revenue', role: 'measure', type: 'number' }],
+      quality: {},
+    },
+  });
+  assert.deepEqual(document.scope.timeRange, { start: '2025-01-01', end: '2026-01-01' });
+});
+
+test('单值指标卡优先显示结果契约中的业务标签而不是源字段名', () => {
+  const plan = planBusinessQuestion({ metadata, question: '2025年收入总额是多少' });
+  const metricAlias = plan.request.measures[0].alias;
+  const document = composeQuestionDocument({
+    metadata,
+    question: '2025年收入总额是多少',
+    plan,
+    resultSet: {
+      id: 'rs-business-metric-label',
+      rows: [{ [metricAlias]: 123 }],
+      schema: [{ name: metricAlias, sourceField: '订单金额', displayName: '收入', role: 'measure', type: 'number', aggregation: 'sum' }],
+      quality: {},
+    },
+  });
+  assert.equal(document.blocks.find(block => block.id === 'answer-kpi')?.title, '收入');
 });
 
 test('多轮追问继承查询上下文并只修改用户明确提出的部分', () => {

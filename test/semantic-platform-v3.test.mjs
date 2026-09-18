@@ -127,6 +127,15 @@ test('商品类别与商品名称并列出现时保留两个产品层级维度',
   assert.deepEqual(frame.dimensions.map(item => item.concept), ['category', 'product']);
 });
 
+test('明确按某维度统计时把其它范围实体标为 scope 而非强制输出', () => {
+  const frame = extractQuestionSemanticFrame('MNC 和 POE 客户的项目，按产品统计销售额和订单数量');
+  const product = frame.dimensions.find(item => item.concept === 'product');
+  const customer = frame.dimensions.find(item => item.concept === 'customer');
+  assert.equal(product.outputRole, 'grouping');
+  assert.equal(customer.outputRole, 'scope');
+  assert.deepEqual(frame.requestedOutputs.filter(item => item.kind === 'entity').map(item => item.concept), ['product']);
+});
+
 test('过去五年累计是过滤窗口，不自动创建年份分组', () => {
   const frame = extractQuestionSemanticFrame('过去五年累计销售排名前五的城市', {
     time: buildBusinessQueryIntent({ metadata, question: '过去五年累计销售排名前五的城市', now }).time,

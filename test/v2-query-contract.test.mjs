@@ -38,7 +38,7 @@ test('CanonicalQueryRequest 拒绝 WAX、SQL 与越权字段', () => {
   assert.throws(() => normalizeCanonicalQueryRequest(metadata, { ...base, wax: 'EVALUATE ROW("x",1)' }), /禁止包含/);
   assert.throws(() => normalizeCanonicalQueryRequest(metadata, { ...base, sql: 'select * from sales' }), /禁止包含/);
   assert.throws(() => normalizeCanonicalQueryRequest(metadata, { ...base, select: [{ field: '密码', alias: 'secret' }] }), /语义目录/);
-  assert.throws(() => normalizeCanonicalQueryRequest(metadata, { ...base, select: [{ field: '订单金额', alias: 'amount' }] }), /不允许.*直接作为分组维度/);
+  assert.throws(() => normalizeCanonicalQueryRequest(metadata, { ...base, select: [{ field: '订单金额', alias: 'amount' }] }), /属于明细字段，不能直接作为统计分组/);
 });
 
 test('Canonical 允许数值布尔标志分组但继续拒绝连续数值分组', () => {
@@ -58,7 +58,7 @@ test('Canonical 允许数值布尔标志分组但继续拒绝连续数值分组'
   assert.equal(request.select[0].role, 'measure');
   assert.throws(() => normalizeCanonicalQueryRequest(operationalMetadata, {
     ...request, id: 'qry-amount-groups', select: [{ field: '订单金额', alias: 'amount' }],
-  }), /不允许.*直接作为分组维度/);
+  }), /属于明细字段，不能直接作为统计分组/);
 });
 
 test('Canonical 仅允许业务标识在 verify 模式下受控定位', () => {
@@ -73,7 +73,7 @@ test('Canonical 仅允许业务标识在 verify 模式下受控定位', () => {
   assert.equal(request.select[0].field, '订单编号');
   assert.throws(() => normalizeCanonicalQueryRequest(identifierMetadata, {
     ...request, id: 'qry-order-ranking', mode: 'aggregate',
-  }), /不允许.*直接作为分组维度/);
+  }), /属于明细字段，不能直接作为统计分组/);
 });
 
 test('Canonical 聚合与验证查询支持适配器允许的多维分组', () => {
@@ -240,12 +240,13 @@ test('时间粒度在结果截断前归并，月度查询不会退化为前若�
   assert.deepEqual(result.rows.map(row => row.period.slice(0, 7)), ['2026-01', '2026-02']);
 });
 
-test('查询路由按需求选择 WAX 聚合与 NONE 明细并统一结果结构', async () => {
+test('查询路由按需求选择 WAX 聚合与服务端筛选投影并统一结果结构', async () => {
   const calls = [];
   const executeDatasetQuery = async (datasetId, options) => {
     calls.push({ datasetId, ...options });
-    if (options.queryType === 'WAX') return { rows: [{ group1: '华东', revenue: 300 }], truncated: false };
-    return { rows: [{ 订购日期: '2026-02-01', 客户地区: '华东', 类别名称: '饮料', 订单金额: 300 }], truncated: false };
+    if (options.query.includes('COUNTROWS(')) return { rows: [{ total_rows: 1 }] };
+    if (options.query.includes('SELECTCOLUMNS(FILTER(')) return { rows: [{ region: '华东', revenue: 300 }] };
+    return { rows: [{ group1: '华东', revenue: 300 }], truncated: false };
   };
   const router = new QueryRouter([new ControlledWaxAdapter(), new DatasetNoneAdapter()]);
   const aggregate = await router.execute({
@@ -259,7 +260,7 @@ test('查询路由按需求选择 WAX 聚合与 NONE 明细并统一结果结构
   }, { metadata, executeDatasetQuery });
   const detail = await router.execute({
     id: 'qry-order-detail',
-    mode: 'detail',
+    mode: 'projection',
     purpose: '订单明细样本',
     dataset: { id: metadata.id, revision: metadata.revision },
     select: [{ field: '客户地区', alias: 'region' }, { field: '订单金额', alias: 'revenue' }],
@@ -269,15 +270,19 @@ test('查询路由按需求选择 WAX 聚合与 NONE 明细并统一结果结构
   }, { metadata, executeDatasetQuery });
 
   assert.equal(aggregate.executionPlan.adapter, 'wyn-wax-controlled');
-  assert.equal(detail.executionPlan.adapter, 'wyn-dataset-none-json');
+  assert.equal(detail.executionPlan.adapter, 'wyn-wax-controlled');
   assert.equal(aggregate.resultSet.rows[0].region, '华东');
   assert.equal(aggregate.resultSet.rows[0].revenue, 300);
   assert.deepEqual(detail.resultSet.rows[0], { region: '华东', revenue: 300 });
+  assert.equal(detail.resultSet.schema.find(column => column.name === 'revenue')?.role, 'measure');
   assert.ok(aggregate.resultSet.statistics);
   assert.ok(detail.resultSet.scope);
-  assert.ok(detail.resultSet.quality.isSample);
+  assert.equal(detail.resultSet.quality.isSample, false);
+  assert.equal(detail.resultSet.quality.isComplete, true);
+  assert.equal(detail.resultSet.scope.sourceFiltering, 'wyn');
   assert.equal(calls[0].queryType, 'WAX');
-  assert.equal(calls[1].queryType, 'NONE');
+  assert.ok(calls.slice(1).every(call => call.queryType === 'WAX'));
+  assert.match(calls.at(-1).query, /SELECTCOLUMNS\(FILTER\(/);
   assert.equal('compiled' in aggregate.executionPlan, false);
 });
 
@@ -354,7 +359,8 @@ test('Bottom N 与前百分比均属于用户主动范围，百分比排名在�
   const percentage = buildBusinessQueryIntent({ metadata, question: '去年销售额排名前20%的商品类别' });
   assert.equal(percentage.ranking.percentage, 20);
   const compiled = compileBusinessQueryIntent(metadata, percentage);
-  assert.equal(compiled.request.limitSource, 'user-ranking');
+  assert.equal(compiled.displayRequest.limitSource, 'user-ranking');
+  assert.equal(compiled.request.limitSource, 'internal-calculation');
   const output = applyQueryProgram({
     rows: [
       { category: 'A', revenue: 500 }, { category: 'B', revenue: 400 }, { category: 'C', revenue: 300 },
