@@ -79,6 +79,7 @@ for (const [description, accepted] of [
   ['当前财年为FY27，去年为FY26。', true],
   ['今年为FY27，因此去年为FY26。', true],
   ['当前日期 2026-09-11 属于 FY27，因此去年为 FY26。', true],
+  ["未明确自然年时，'去年'按赢单财年解释，即上一赢单财年 FY26。", true],
   ['去年为FY27。', false],
   ['当前财年为FY25，因此去年为FY26。', false],
 ]) {

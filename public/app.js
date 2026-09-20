@@ -1342,6 +1342,17 @@ function renderSmartAnalysisDetails(queryRequests = [], scope = {}, resultSets =
   const returnedRows = resultSets.reduce((total, result) => total + Number(result?.statistics?.returnedRowCount ?? result?.rows?.length ?? 0), 0);
   const incomplete = resultSets.some(result => result?.quality?.isSample || result?.quality?.isTruncated || result?.quality?.isComplete === false);
   const sampleUsed = resultSets.some(result => result?.quality?.isSample);
+  const executionLedger = resultSets.flatMap(result => Array.isArray(result?.executionLedger) ? result.executionLedger : []);
+  const executionOwners = [...new Set(executionLedger.map(entry => {
+    if (entry.executionOwner === 'wyn') return 'Wyn';
+    if (entry.executionOwner === 'platform-derived') return '平台派生（受治理）';
+    return entry.executionOwner || '未记录';
+  }))];
+  const ledgerSummary = executionLedger.map(entry => {
+    const owner = entry.executionOwner === 'wyn' ? 'Wyn' : entry.executionOwner === 'platform-derived' ? '平台派生' : entry.executionOwner || '未知';
+    const operation = entry.operationId ? String(entry.operationId) + '@' + String(entry.operationVersion || 1) : '查询';
+    return owner + '：' + operation;
+  });
   const datasetIds = [...new Set(requests.map(request => request?.dataset?.id).filter(Boolean).concat(scope?.datasets || [], scope?.datasetId || []).filter(Boolean))];
   const skillRefs = responseContext?.diagnostics?.skillRefs || [];
   const purposes = [...new Set(requests.map(request => request.purpose).filter(Boolean))];
@@ -1354,7 +1365,9 @@ function renderSmartAnalysisDetails(queryRequests = [], scope = {}, resultSets =
     ['聚合后筛选', resultFilters.join('；') || '无'],
     ['排序', [...new Set(ranking)].join('；') || '未排序'],
     ['结果范围', `${returnedRows} 行；${incomplete ? '完整性受限' : '完整结果'}`],
-    ['执行说明', `筛选由 Wyn 执行；样本：${sampleUsed ? '是' : '否'}；替代结果：未使用`],
+    ['执行归属', executionOwners.join('；') || '未记录'],
+    ['执行账本', ledgerSummary.join('；') || '未记录'],
+    ['执行说明', `筛选、分组、聚合、排序由 Wyn 执行；样本：${sampleUsed ? '是' : '否'}；替代结果：未使用`],
     ['数据集', datasetIds.join('、') || '未记录'],
     ['Skill', skillRefs.join('、') || '未绑定'],
     ['Trace', responseContext?.trace?.traceId || '未记录'],

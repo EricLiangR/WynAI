@@ -25,6 +25,24 @@ test('历年、按年度和按年份统一形成年度分组而不是累计结�
   }
 });
 
+test('截止目前统一为 Wyn 执行的开放起点累计区间而不是当天区间', () => {
+  const now = new Date('2026-09-20T12:00:00+08:00');
+  for (const question of ['截止目前销售额', '截至目前销售额', '到目前为止销售额', '迄今销售额', '至今销售额']) {
+    const time = parseBusinessTimeSemantics(question, { now, timeZone: 'Asia/Shanghai' });
+    assert.equal(time.scopePolicy, 'cumulative-to-date', question);
+    assert.equal(time.boundaryMode, 'to-date', question);
+    assert.equal(time.scopeExplicit, true, question);
+    assert.deepEqual(time.range, { start: null, endExclusive: '2026-09-21' }, question);
+  }
+  const intent = buildBusinessQueryIntent({ metadata, question: '截止目前销售额', now, timeZone: 'Asia/Shanghai' });
+  assert.deepEqual(intent.filters, [{ field: '订购日期', operator: 'lt', value: '2026-09-21' }]);
+  const compiled = compileBusinessQueryIntent(metadata, intent);
+  assert.equal(compiled.status, 'supported');
+  assert.deepEqual(compiled.request.filters.map(item => ({ field: item.field, operator: item.operator, value: item.value })), [
+    { field: '订购日期', operator: 'lt', value: '2026-09-21' },
+  ]);
+});
+
 test('运行事件日志可记录查询计划、编译和执行失败并按 trace 回放', () => {
   const log = new OperationalEventLog();
   const traceId = 'trace-regression-001';

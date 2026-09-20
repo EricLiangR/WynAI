@@ -84,7 +84,7 @@ test('查询协议和 WAX 编译器支持 20000 行上限并生成总数统计�
   assert.match(compiled.countWax, /COUNTROWS\(SUMMARIZECOLUMNS/);
 });
 
-test('结果质量保留总行数、返回行数并提示超过上限', () => {
+test('结果超过 20,000 行直接阻断，不截取后继续生成答案', () => {
   const request = {
     id: 'qry-large-result', mode: 'aggregate', dataset: { id: metadata.id, revision: metadata.revision },
     select: [{ field: '客户地区', alias: 'region' }],
@@ -92,17 +92,12 @@ test('结果质量保留总行数、返回行数并提示超过上限', () => {
     filters: [], resultFilters: [], fieldComparisons: [], orderBy: [], limit: 20000,
     expectedResult: { timeZone: 'Asia/Shanghai' },
   };
-  const result = normalizeCanonicalResultSet({
+  assert.throws(() => normalizeCanonicalResultSet({
     request,
     executionPlan: { id: 'xp-large', adapter: 'wyn-wax-controlled', adapterVersion: 'canonical-v1', warnings: [] },
     rawResult: { rows: [{ group1: '华东', revenue: 1 }], rowLimit: 20000, limitReached: true, totalRows: 25000, truncationConfidence: 'confirmed' },
     metadata,
-  });
-  assert.equal(result.statistics.totalRowCount, 25000);
-  assert.equal(result.statistics.returnedRowCount, 1);
-  assert.equal(result.quality.totalRowCount, 25000);
-  assert.equal(result.quality.returnedRowCount, 1);
-  assert.match(result.quality.warnings.at(-1), /总数据 25000 行.*实际返回 1 行/);
+  }), error => error.code === 'QUERY_RESULT_EXCEEDS_LIMIT' && error.details.totalRowCount === 25000);
 });
 
 test('独立问数前端不再固定截断 30 行并提供分页复制控件', async () => {

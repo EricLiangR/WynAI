@@ -36,6 +36,12 @@ function resultSet(request, rows) {
     ],
     rows,
     statistics: {},
+    resultContract: {
+      schema: 'wynai.query-result-contract/v1', version: 1, type: 'wyn-complete-aggregate-result',
+      issuedBy: 'wyn-query-adapter', aggregate: true, isComplete: true, isSample: false,
+      isTruncated: false, isEstimated: false, userLimitApplied: false,
+      totalRowCount: rows.length, returnedRowCount: rows.length, countVerified: true,
+    },
     quality: { isSample: false, isTruncated: false, warnings: [] },
   };
 }
@@ -101,19 +107,8 @@ const strictTestIntentLlm = {
 
 test('QueryProgram 按年份分别取销售额第一的省份', () => {
   const plan = planBusinessQuestion({ metadata, question: '2023、2024、2025年销售额排名第一的省份分别是哪个', now });
-  assert.equal(plan.status, 'supported');
-  const raw = resultSet(plan.request, [
-    { province: 'A', period: '2023-01-01T00:00:00.000Z', revenue: 10 },
-    { province: 'B', period: '2023-01-01T00:00:00.000Z', revenue: 30 },
-    { province: 'A', period: '2024-01-01T00:00:00.000Z', revenue: 50 },
-    { province: 'B', period: '2024-01-01T00:00:00.000Z', revenue: 20 },
-    { province: 'A', period: '2025-01-01T00:00:00.000Z', revenue: 40 },
-    { province: 'B', period: '2025-01-01T00:00:00.000Z', revenue: 60 },
-  ]);
-  const output = applyQueryProgram(raw, plan.queryProgram);
-  assert.deepEqual(output.rows.map(row => [row.period.slice(0, 4), row.province, row.revenue]), [
-    ['2023', 'B', 30], ['2024', 'A', 50], ['2025', 'B', 60],
-  ]);
+  assert.equal(plan.status, 'needs_clarification');
+  assert.equal(plan.request, undefined);
 });
 
 test('同比查询自动扩大基期并只投影用户要求期间', () => {
@@ -309,24 +304,8 @@ const governedSalesSkill = {
 
 test('开放式每年排名按时间分区而不是退化为全局 TopN', () => {
   const plan = planBusinessQuestion({ metadata, question: '统计每年，销售排名前三的城市和销售额', now });
-  assert.equal(plan.status, 'supported');
-  assert.deepEqual(plan.intent.ranking.partitionBy, ['period']);
-  assert.equal(plan.request.limit, 20000);
-  const raw = resultSet(plan.request, [
-    { city: 'A', period: '2024-01-01', revenue: 10 },
-    { city: 'B', period: '2024-01-01', revenue: 40 },
-    { city: 'C', period: '2024-01-01', revenue: 30 },
-    { city: 'D', period: '2024-01-01', revenue: 20 },
-    { city: 'A', period: '2025-01-01', revenue: 70 },
-    { city: 'B', period: '2025-01-01', revenue: 50 },
-    { city: 'C', period: '2025-01-01', revenue: 60 },
-    { city: 'D', period: '2025-01-01', revenue: 5 },
-  ]);
-  const output = applyQueryProgram(raw, plan.queryProgram);
-  assert.deepEqual(output.rows.map(row => [row.period.slice(0, 4), row.city]), [
-    ['2024', 'B'], ['2024', 'C'], ['2024', 'D'],
-    ['2025', 'A'], ['2025', 'C'], ['2025', 'B'],
-  ]);
+  assert.equal(plan.status, 'needs_clarification');
+  assert.equal(plan.request, undefined);
 });
 
 test('Skill 指标口径优先于数量字段泛化并支持订单数去重计数', () => {
@@ -544,7 +523,7 @@ test('公式指标与泛化同比并存时澄清选择清除旧未决槽位', as
     { name: 'revenue', role: 'measure', type: 'number' }, { name: 'profit', role: 'measure', type: 'number' },
     { name: 'gross_margin_rate', role: 'measure', type: 'number', format: 'percentage' },
     { name: 'revenue_yoy', role: 'measure', type: 'number', format: 'percentage' }, { name: 'profit_yoy', role: 'measure', type: 'number', format: 'percentage' },
-  ], rows: [{ period: '2024-01-01', revenue: 100, profit: 20, gross_margin_rate: 0.2, revenue_yoy: 0.1, profit_yoy: 0.2 }, { period: '2025-01-01', revenue: 110, profit: 24, gross_margin_rate: 0.218, revenue_yoy: 0.1, profit_yoy: 0.2 }], quality: { isSample: false, isTruncated: false, warnings: [] } }] });
+  ], rows: [{ period: '2024-01-01', revenue: 100, profit: 20, gross_margin_rate: 0.2, revenue_yoy: 0.1, profit_yoy: 0.2 }, { period: '2025-01-01', revenue: 110, profit: 24, gross_margin_rate: 0.218, revenue_yoy: 0.1, profit_yoy: 0.2 }], statistics: { totalRowCount: 2, returnedRowCount: 2 }, resultContract: { schema: 'wynai.query-result-contract/v1', version: 1, type: 'wyn-complete-aggregate-result', issuedBy: 'wyn-query-adapter', aggregate: true, isComplete: true, isSample: false, isTruncated: false, isEstimated: false, userLimitApplied: false, totalRowCount: 2, returnedRowCount: 2, countVerified: true }, quality: { isSample: false, isTruncated: false, warnings: [] } }] });
   const store = new SmartQueryConversationStore({ loadMetadata: async () => formulaMetadata, executeQuery, runAnalysis: async () => { throw new Error('不应走旧降级路径'); }, skillRegistry: formulaSkill, intentLlm: strictTestIntentLlm });
   const conversation = await store.create({ datasetId: formulaMetadata.id });
   const first = await store.ask(conversation.id, { question: '过去两年每年销售额、利润和毛利率，并比较同比变化' });

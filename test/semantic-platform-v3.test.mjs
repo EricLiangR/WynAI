@@ -144,11 +144,10 @@ test('过去五年累计是过滤窗口，不自动创建年份分组', () => {
   assert.equal(frame.accumulation.mode, 'cumulative-window');
 });
 
-test('分区排名编译为每个分组内部 TopN，不退化成全局 Top1', () => {
+test('分区排名无法由当前 Wyn 适配器完整表达时必须明确不可用', () => {
   const plan = planBusinessQuestion({ metadata, question: '去年每个城市利润最高的产品', now });
-  assert.equal(plan.status, 'supported');
-  assert.deepEqual(plan.intent.ranking.partitionBy, ['city']);
-  assert.equal(plan.queryProgram.steps.some(step => step.type === 'partition-rank'), true);
+  assert.equal(plan.status, 'needs_clarification');
+  assert.equal(plan.request, undefined);
 });
 
 test('QuestionSemanticFrame v2 是独立持久化的版本契约', async () => {

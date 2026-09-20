@@ -26,6 +26,12 @@ function rawResult(request, rows) {
     ],
     rows,
     statistics: { rowCount: rows.length, totalRowCount: rows.length },
+    resultContract: {
+      schema: 'wynai.query-result-contract/v1', version: 1, type: 'wyn-complete-aggregate-result',
+      issuedBy: 'wyn-query-adapter', aggregate: true, isComplete: true, isSample: false,
+      isTruncated: false, isEstimated: false, userLimitApplied: false,
+      totalRowCount: rows.length, returnedRowCount: rows.length, countVerified: true,
+    },
     quality: { isSample: false, isTruncated: false, warnings: [] },
   };
 }

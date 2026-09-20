@@ -1,0 +1,112 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wynai.query-program/v2",
+  "title": "WynAI QueryProgram v2",
+  "type": "object",
+  "required": ["schema", "version", "intentId", "baseQuery", "steps", "output"],
+  "properties": {
+    "schema": { "const": "wynai.query-program/v2" },
+    "version": { "const": 2 },
+    "intentId": { "type": "string" },
+    "baseQuery": { "type": "object" },
+    "stagedQuery": {
+      "anyOf": [
+        { "type": "null" },
+        {
+          "type": "object",
+          "required": ["type", "rankingRequest", "drilldownRequestTemplate"],
+          "properties": {
+            "type": { "const": "wyn-rank-then-drilldown" },
+            "rankingRequest": { "type": "object" },
+            "drilldownRequestTemplate": { "type": "object" },
+            "rankingDimension": { "type": "object" },
+            "drilldownDimensions": { "type": "array" }
+          },
+          "additionalProperties": false
+        }
+      ]
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "object",
+            "required": ["type", "operationId", "operationVersion", "executionOwner", "requiresCompleteAggregate"],
+            "properties": {
+              "type": { "enum": ["derive-period-growth", "derive-formula", "derive-share-of-total"] },
+              "operationId": { "type": "string" },
+              "operationVersion": { "type": "integer", "minimum": 1 },
+              "executionOwner": { "const": "platform-derived" },
+              "requiresCompleteAggregate": { "const": true },
+              "changesBusinessScope": { "type": "boolean" },
+              "sourceAlias": { "type": "string" },
+              "outputAlias": { "type": "string" },
+              "inputAliases": { "type": "array", "items": { "type": "string" } },
+              "dimensionAliases": { "type": "array", "items": { "type": "string" } },
+              "partitionBy": { "type": "array", "items": { "type": "string" } },
+              "shareDimensionAlias": { "type": ["string", "null"] },
+              "selectedValues": { "type": "array" },
+              "grain": { "type": ["string", "null"] },
+              "derivation": { "type": "string" },
+              "operator": { "type": "string" },
+              "label": { "type": "string" },
+              "metricId": { "type": "string" },
+              "resultType": { "type": "string" },
+              "unitFamily": { "type": ["string", "null"] },
+              "zeroDivision": { "type": "string" },
+              "skillRef": { "type": ["string", "null"] }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["type", "executionOwner", "changesBusinessScope", "aliases"],
+            "properties": {
+              "type": { "enum": ["drop-internal-dimensions", "drop-internal-metrics"] },
+              "executionOwner": { "const": "presentation" },
+              "changesBusinessScope": { "const": false },
+              "aliases": { "type": "array", "items": { "type": "string" } }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["type", "executionOwner", "changesBusinessScope", "expectedResult"],
+            "properties": {
+              "type": { "const": "validate" },
+              "executionOwner": { "const": "platform-validation" },
+              "changesBusinessScope": { "const": false },
+              "expectedResult": { "type": "object" }
+            },
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "required": ["type", "executionOwner", "changesBusinessScope", "periodAlias", "periods", "grain"],
+            "properties": {
+              "type": { "const": "project-periods" },
+              "executionOwner": { "const": "presentation" },
+              "changesBusinessScope": { "const": false },
+              "periodAlias": { "type": "string" },
+              "periods": { "type": "array", "items": { "type": "string" } },
+              "grain": { "type": ["string", "null"] }
+            },
+            "additionalProperties": false
+          }
+        ]
+      }
+    },
+    "output": {
+      "type": "object",
+      "required": ["schema", "requiredMetrics", "requiredDimensions"],
+      "properties": {
+        "schema": { "const": "wynai.canonical-result-set/v1" },
+        "requiredMetrics": { "type": "array", "items": { "type": "string" } },
+        "requiredDimensions": { "type": "array", "items": { "type": "string" } }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

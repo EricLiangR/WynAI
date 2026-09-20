@@ -10,7 +10,7 @@ const metadata = { id: 'dataset-presentation', revision: 1, indexed: true, field
   { name: '订单利润', role: 'measure', type: 'Number' },
   { name: '客户地区', role: 'geography', type: 'String' },
 ] };
-function result(id, rows, schema = [{ name: 'region', role: 'dimension', type: 'string' }, { name: 'revenue', role: 'measure', type: 'number', aggregation: 'sum' }]) { return { id, schema, rows, quality: { isSample: false, isTruncated: false }, statistics: { totalRowCount: rows.length } }; }
+function result(id, rows, schema = [{ name: 'region', role: 'dimension', type: 'string' }, { name: 'revenue', role: 'measure', type: 'number', aggregation: 'sum' }]) { return { id, schema, rows, quality: { isSample: false, isTruncated: false, isEstimated: false, userLimitApplied: false }, statistics: { totalRowCount: rows.length, returnedRowCount: rows.length }, resultContract: { schema: 'wynai.query-result-contract/v1', version: 1, type: 'wyn-complete-aggregate-result', issuedBy: 'wyn-query-adapter', aggregate: true, isComplete: true, isSample: false, isTruncated: false, isEstimated: false, userLimitApplied: false, totalRowCount: rows.length, returnedRowCount: rows.length, countVerified: true } }; }
 
 test('ResultPresentationPlan v1 将单值时间筛选从可见维度中排除', () => {
   const plan = planBusinessQuestion({ metadata, question: '去年各地区销售额', now: new Date('2026-08-27') });

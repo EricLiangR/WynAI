@@ -41,3 +41,31 @@ test('回答生成器明确区分全量结果概要和截断预览', async () =>
     maximum: '2025-01-01',
   });
 });
+
+test('枚举全称已包含简称时拒绝摘要重复嵌套并有限修复', async () => {
+  let calls = 0;
+  const outputs = [
+    { summary: 'POE（Private Entity（POE））客户共1个。', keyPoints: [], limitations: [] },
+    { summary: 'Private Entity（POE）客户共1个。', keyPoints: [], limitations: [] },
+  ];
+  const llm = createExplorationLlm({
+    baseUrl: 'https://example.test/v1',
+    model: 'test-model',
+    fetchImpl: async () => {
+      const output = outputs[Math.min(calls, outputs.length - 1)];
+      calls += 1;
+      return new Response(JSON.stringify({ choices: [{ message: { content: JSON.stringify(output) } }] }), { status: 200 });
+    },
+  });
+  const result = await llm.narrateQueryResult({
+    question: '我的POE客户名单',
+    request: { id: 'query-enum-label', filters: [{ field: '客户类型', operator: 'containsAny', value: ['Private Entity（POE）'] }] },
+    resultSet: {
+      schema: [{ name: 'customer', sourceField: '客户名称', displayName: '客户', role: 'dimension', type: 'string' }],
+      rows: [{ customer: '客户1' }],
+      statistics: { rowCount: 1 },
+    },
+  });
+  assert.equal(calls, 2);
+  assert.equal(result.summary, 'Private Entity（POE）客户共1个。');
+});

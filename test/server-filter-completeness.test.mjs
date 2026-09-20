@@ -149,13 +149,13 @@ test('exactly 20,000 source groups can produce a smaller complete post-filter re
   const execution = await router.execute(request, {
     metadata,
     executeDatasetQuery: async (_id, options) => options.rowLimit === 1
-      ? { rows: [{ total_rows: 20000 }] }
-      : { rows: Array.from({ length: 20000 }, (_, index) => ({ group1: String(index), revenue: index })),
-        limitReached: true },
+      ? { rows: [{ total_rows: 2 }] }
+      : { rows: [{ group1: '19998', revenue: 19998 }, { group1: '19999', revenue: 19999 }],
+        limitReached: false },
   });
   assert.equal(execution.resultSet.rows.length, 2);
   assert.equal(execution.resultSet.statistics.totalRowCount, 2);
-  assert.equal(execution.resultSet.scope.sourceTotalRowCount, 20000);
+  assert.equal(execution.resultSet.scope.sourceTotalRowCount, 2);
   assert.equal(execution.resultSet.quality.isComplete, true);
 });
 

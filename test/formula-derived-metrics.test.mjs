@@ -36,6 +36,12 @@ function rawResult(request, rows) {
       ...request.measures.map(item => ({ name: item.alias, sourceField: item.field, displayName: item.field, type: 'number', role: 'measure', aggregation: item.aggregation })),
     ],
     rows,
+    resultContract: {
+      schema: 'wynai.query-result-contract/v1', version: 1, type: 'wyn-complete-aggregate-result',
+      issuedBy: 'wyn-query-adapter', aggregate: true, isComplete: true, isSample: false,
+      isTruncated: false, isEstimated: false, userLimitApplied: false,
+      totalRowCount: rows.length, returnedRowCount: rows.length, countVerified: true,
+    },
     quality: { isSample: false, isTruncated: false, warnings: [] },
   };
 }
@@ -95,18 +101,10 @@ test('按地区计算毛利率使用各组利润合计除以收入合计', () =>
   ]);
 });
 
-test('派生指标排名在公式计算后执行，不按利润依赖误取 TopN', () => {
+test('派生指标排名在 Wyn 无法完整表达时明确不可用，不在平台本地执行 TopN', () => {
   const planned = plan('毛利率最高的地区');
-  assert.equal(planned.status, 'supported');
-  assert.equal(planned.intent.ranking.orderBy, 'gross_margin_rate');
-  assert.equal(planned.request.limit, 20000);
-  assert.deepEqual(planned.request.orderBy, []);
-  const output = applyQueryProgram(rawResult(planned.request, [
-    { region: '利润高但收入更高', profit: 100, revenue: 1000 },
-    { region: '毛利率最高', profit: 60, revenue: 100 },
-    { region: '普通地区', profit: 40, revenue: 200 },
-  ]), planned.queryProgram);
-  assert.deepEqual(output.rows, [{ region: '毛利率最高', gross_margin_rate: 0.6 }]);
+  assert.equal(planned.status, 'needs_clarification');
+  assert.equal(planned.request, undefined);
 });
 
 test('追加毛利率继承多轮时间上下文并保留已公开指标', () => {

@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { planBusinessQuestion, planBusinessQuestionAsync } from './lib/conversation/question-planner.mjs';
+import { normalizeBusinessQueryIntentV2, validateIntentCoverage } from './lib/semantics/business-query-intent.mjs';
 import { SmartQueryConversationStore } from './lib/conversation/session.mjs';
 
 const metadata = {
@@ -34,6 +35,46 @@ function twoYearSalespersonIntent(question = '去年和前年相比，每个销�
   };
 }
 
+function completeAggregateContract(rows) {
+  return {
+    schema: 'wynai.query-result-contract/v1', version: 1, type: 'wyn-complete-aggregate-result',
+    issuedBy: 'wyn-query-adapter', aggregate: true, isComplete: true, isSample: false,
+    isTruncated: false, isEstimated: false, userLimitApplied: false,
+    totalRowCount: rows.length, returnedRowCount: rows.length, countVerified: true,
+  };
+}
+
+test('非阈值派生指标误标 aggregate-result 时按结构化声明归一化', () => {
+  const intent = normalizeBusinessQueryIntentV2({
+    businessQuestion: '产品占比和金额',
+    metrics: [{ field: '订单金额', aggregation: 'sum', alias: 'revenue', concept: 'revenue' }],
+    dimensions: [{ field: '产品类别', alias: 'category', concept: 'category' }],
+    derivedMetrics: [{ type: 'share-of-total', source: '产品类别占比', sourceConcept: 'revenue', sourceAlias: 'revenue', alias: 'revenue_share' }],
+    filters: [], resultFilters: [], time: { field: null, periods: [], grain: null },
+    expectedResult: { shape: 'grouped-table', maximumRows: 20000, requiredMetrics: ['revenue', 'revenue_share'], requiredDimensions: ['category'] },
+    constraints: [{ id: 'share', type: 'aggregate-result-filter', source: '占比', normalized: { scope: 'aggregate-result', field: '占比' }, required: true, status: 'resolved' }],
+  }, { metadata: { fields: [
+    { name: '订单金额', role: 'measure', type: 'Number' },
+    { name: '产品类别', role: 'dimension', type: 'String' },
+  ] } });
+  assert.equal(validateIntentCoverage(intent).valid, true);
+});
+
+test('真正的聚合结果阈值没有 resultFilters 时仍然阻断', () => {
+  const intent = normalizeBusinessQueryIntentV2({
+    businessQuestion: '按类别筛选总金额大于1000万',
+    metrics: [{ field: '订单金额', aggregation: 'sum', alias: 'revenue', concept: 'revenue' }],
+    dimensions: [{ field: '产品类别', alias: 'category', concept: 'category' }],
+    filters: [], resultFilters: [], time: { field: null, periods: [], grain: null },
+    expectedResult: { shape: 'grouped-table', maximumRows: 20000, requiredMetrics: ['revenue'], requiredDimensions: ['category'] },
+    constraints: [{ id: 'having', type: 'aggregate-result-filter', source: '总金额大于1000万', normalized: { scope: 'aggregate-result', field: 'revenue', operator: 'gt' }, required: true, status: 'resolved' }],
+  }, { metadata: { fields: [
+    { name: '订单金额', role: 'measure', type: 'Number' },
+    { name: '产品类别', role: 'dimension', type: 'String' },
+  ] } });
+  assert.equal(validateIntentCoverage(intent).valid, false);
+});
+
 test('LLM 仅返回默认假设时不应阻断完整查询', async () => {
   const modelIntent = twoYearSalespersonIntent();
   const plan = await planBusinessQuestionAsync({
@@ -44,6 +85,38 @@ test('LLM 仅返回默认假设时不应阻断完整查询', async () => {
   assert.equal(plan.status, 'supported');
   assert.equal(plan.request.measures.length, 3);
   assert.equal(plan.intent.ambiguities[0].blocking, false);
+});
+
+test('LLM 把截止目前误写为当天时由通用时间协议修正为累计上界', async () => {
+  const question = '截止目前销售额是多少';
+  const now = new Date('2026-09-20T12:00:00+08:00');
+  const alternateMetadata = {
+    ...metadata,
+    fields: [...metadata.fields, { name: '预计交付日期', role: 'time', type: 'Date', rawType: 'DateTime' }],
+  };
+  const modelIntent = planBusinessQuestion({ metadata: alternateMetadata, question, now }).intent;
+  modelIntent.time = {
+    ...modelIntent.time,
+    field: '预计交付日期', calendar: 'gregorian', periods: [],
+    range: { start: '2026-09-20', endExclusive: '2026-09-21' },
+    grain: null, grouping: null, modifier: 'as-of',
+  };
+  modelIntent.filters = [
+    { field: '预计交付日期', operator: 'gte', value: '2026-09-20' },
+    { field: '预计交付日期', operator: 'lt', value: '2026-09-21' },
+  ];
+  modelIntent.ambiguities = [];
+  const plan = await planBusinessQuestionAsync({
+    metadata: alternateMetadata, question, now,
+    llm: { enabled: true, async planQueryIntent() { return modelIntent; } },
+  });
+  assert.equal(plan.status, 'supported', JSON.stringify(plan.plannerDiagnostics));
+  assert.equal(plan.intent.time.scopePolicy, 'cumulative-to-date');
+  assert.equal(plan.intent.time.field, '预计交付日期');
+  assert.deepEqual(plan.intent.time.range, { start: null, endExclusive: '2026-09-21' });
+  assert.deepEqual(plan.request.filters.map(item => ({ field: item.field, operator: item.operator, value: item.value })), [
+    { field: '预计交付日期', operator: 'lt', value: '2026-09-21' },
+  ]);
 });
 
 test('同比对象歧义生成可交互确认选项', async () => {
@@ -193,7 +266,7 @@ test('结构化歧义可通过同一会话选项继续执行', async () => {
   const store = new SmartQueryConversationStore({
     loadMetadata: async () => metadata,
     runAnalysis: async () => { throw new Error('不应进入洞察降级'); },
-    executeQuery: async ({ requests }) => ({ resultSets: [{ id: 'rs-clarified', requestId: requests[0].id, schema: [{ name: 'employee', role: 'dimension', type: 'string' }, { name: 'period', role: 'dimension', type: 'date', grain: 'year' }, { name: 'revenue', role: 'measure', type: 'number' }, { name: 'profit', role: 'measure', type: 'number' }, { name: 'orderCount', role: 'measure', type: 'number' }], rows: [{ employee: 'A', period: '2024-01-01', revenue: 100, profit: 20, orderCount: 10 }, { employee: 'A', period: '2025-01-01', revenue: 120, profit: 25, orderCount: 12 }], quality: {}, statistics: {} }] }),
+    executeQuery: async ({ requests }) => { const rows = [{ employee: 'A', period: '2024-01-01', revenue: 100, profit: 20, orderCount: 10 }, { employee: 'A', period: '2025-01-01', revenue: 120, profit: 25, orderCount: 12 }]; return { resultSets: [{ id: 'rs-clarified', requestId: requests[0].id, schema: [{ name: 'employee', role: 'dimension', type: 'string' }, { name: 'period', role: 'dimension', type: 'date', grain: 'year' }, { name: 'revenue', role: 'measure', type: 'number' }, { name: 'profit', role: 'measure', type: 'number' }, { name: 'orderCount', role: 'measure', type: 'number' }], rows, quality: { isSample: false, isTruncated: false, isEstimated: false, userLimitApplied: false }, statistics: { totalRowCount: rows.length, returnedRowCount: rows.length }, resultContract: completeAggregateContract(rows) }] }; },
     intentLlm,
   });
   const conversation = await store.create({ datasetId: metadata.id });
@@ -234,7 +307,11 @@ test('澄清确认是强约束：模型把同比误写为 ratio 时仍编译为�
       ambiguities: [],
     };
   } };
-  const executeQuery = async ({ requests }) => ({ resultSets: [{
+  const executeQuery = async ({ requests }) => { const rows = [
+    { salesperson: 'A', year: '2023-01-01', revenue: 80, profit: 16, orderCount: 8 },
+    { salesperson: 'A', year: '2024-01-01', revenue: 100, profit: 20, orderCount: 10 },
+    { salesperson: 'A', year: '2025-01-01', revenue: 120, profit: 25, orderCount: 15 },
+  ]; return { resultSets: [{
     id: 'rs-clarified-growth', requestId: requests[0].id,
     schema: [
       { name: 'salesperson', role: 'dimension', type: 'string' },
@@ -243,12 +320,10 @@ test('澄清确认是强约束：模型把同比误写为 ratio 时仍编译为�
       { name: 'profit', role: 'measure', type: 'number' },
       { name: 'orderCount', role: 'measure', type: 'number' },
     ],
-    rows: [
-      { salesperson: 'A', year: '2023-01-01', revenue: 80, profit: 16, orderCount: 8 },
-      { salesperson: 'A', year: '2024-01-01', revenue: 100, profit: 20, orderCount: 10 },
-      { salesperson: 'A', year: '2025-01-01', revenue: 120, profit: 25, orderCount: 15 },
-    ], quality: {}, statistics: {},
-  }] });
+    rows, quality: { isSample: false, isTruncated: false, isEstimated: false, userLimitApplied: false },
+    statistics: { totalRowCount: rows.length, returnedRowCount: rows.length },
+    resultContract: completeAggregateContract(rows),
+  }] }; };
   const store = new SmartQueryConversationStore({ loadMetadata: async () => metadata, executeQuery, runAnalysis: async () => { throw new Error('不应降级'); }, intentLlm });
   const conversation = await store.create({ datasetId: metadata.id });
   const first = await store.ask(conversation.id, { question: base.businessQuestion });

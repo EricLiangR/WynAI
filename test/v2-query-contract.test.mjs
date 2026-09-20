@@ -89,7 +89,7 @@ test('Canonical 聚合与验证查询支持适配器允许的多维分组', () =
   assert.equal(request.select.length, 3);
 });
 
-test('Canonical 聚合结果筛选在服务端聚合后按指标别名执行', () => {
+test('Canonical 聚合结果筛选不在结果规范化层本地执行，而由 WAX 负责', () => {
   const request = normalizeCanonicalQueryRequest(metadata, {
     id: 'qry-low-revenue-categories', mode: 'aggregate', dataset: { id: metadata.id, revision: metadata.revision },
     select: [{ field: '类别名称', alias: 'category' }],
@@ -104,7 +104,8 @@ test('Canonical 聚合结果筛选在服务端聚合后按指标别名执行', (
     request, executionPlan, metadata,
     rawResult: { rows: [{ group1: 'A', revenue: 300 }, { group1: 'B', revenue: 100 }, { group1: 'C', revenue: 50 }], truncated: false },
   });
-  assert.deepEqual(result.rows, [{ category: 'C', revenue: 50 }, { category: 'B', revenue: 100 }]);
+  assert.deepEqual(result.rows, [{ category: 'A', revenue: 300 }, { category: 'B', revenue: 100 }, { category: 'C', revenue: 50 }]);
+  assert.match(executionPlan.compiled.query, /FILTER\(SUMMARIZECOLUMNS/);
   assert.deepEqual(result.scope.resultFilters, [{ field: 'revenue', operator: 'lt', value: 150 }]);
 });
 
@@ -220,7 +221,7 @@ test('Canonical 非空筛选保持本地与 WAX 语义一致并拒绝带字段�
   }), /重复聚合口径/);
 });
 
-test('时间粒度在结果截断前归并，月度查询不会退化为前若干日', () => {
+test('未确认 Wyn 时间粒度表达时阻断，不在平台本地归并', () => {
   const request = normalizeCanonicalQueryRequest(metadata, {
     id: 'qry-monthly', mode: 'compare', dataset: { id: metadata.id, revision: metadata.revision },
     select: [{ field: '订购日期', alias: 'period', grain: 'month' }],
@@ -234,10 +235,7 @@ test('时间粒度在结果截断前归并，月度查询不会退化为前若�
   for (let month = 0; month < 4; month += 1) {
     for (let day = 1; day <= 20; day += 1) rawRows.push({ group1: new Date(Date.UTC(2026, month, day)).toISOString(), records: 1 });
   }
-  const result = normalizeCanonicalResultSet({ request, executionPlan, rawResult: { rows: rawRows, truncated: false }, metadata });
-  assert.equal(result.rows.length, 2);
-  assert.deepEqual(result.rows.map(row => row.records), [20, 20]);
-  assert.deepEqual(result.rows.map(row => row.period.slice(0, 7)), ['2026-01', '2026-02']);
+  assert.throws(() => normalizeCanonicalResultSet({ request, executionPlan, rawResult: { rows: rawRows, truncated: false }, metadata }), /不会在返回明细后本地归并/);
 });
 
 test('查询路由按需求选择 WAX 聚合与服务端筛选投影并统一结果结构', async () => {
@@ -351,28 +349,16 @@ test('用户主动排名范围不被误报为系统截断，并保留底层范�
   assert.equal(result.statistics.totalRowCount, 76);
 });
 
-test('Bottom N 与前百分比均属于用户主动范围，百分比排名在查询程序中按组数计算', () => {
+test('Bottom N 可由 Wyn 执行，百分比排名暂时不可用且不走本地计算', () => {
   const bottom = buildBusinessQueryIntent({ metadata, question: '去年销售额排名后两的商品类别' });
   assert.equal(bottom.ranking.direction, 'asc');
   assert.equal(bottom.ranking.limit, 2);
   assert.equal(compileBusinessQueryIntent(metadata, bottom).request.limitSource, 'user-ranking');
   const percentage = buildBusinessQueryIntent({ metadata, question: '去年销售额排名前20%的商品类别' });
   assert.equal(percentage.ranking.percentage, 20);
-  const compiled = compileBusinessQueryIntent(metadata, percentage);
-  assert.equal(compiled.displayRequest.limitSource, 'user-ranking');
-  assert.equal(compiled.request.limitSource, 'internal-calculation');
-  const output = applyQueryProgram({
-    rows: [
-      { category: 'A', revenue: 500 }, { category: 'B', revenue: 400 }, { category: 'C', revenue: 300 },
-      { category: 'D', revenue: 200 }, { category: 'E', revenue: 100 },
-    ], schema: [{ name: 'category' }, { name: 'revenue', role: 'measure', type: 'number' }],
-    quality: { userLimitApplied: true, limitSource: 'user-ranking', isTruncated: false, limitReached: false },
-    statistics: { totalRowCount: 5 },
-  }, compiled.queryProgram);
-  assert.equal(output.rows.length, 1);
-  assert.equal(output.rows[0].category, 'A');
+  assert.equal(compileBusinessQueryIntent(metadata, percentage).status, 'needs_clarification');
 });
-test('系统上限在 20001 行边界保留完整性标记，且不混同用户 TopN', () => {
+test('系统上限在 20001 行边界直接阻断，不截取后继续生成答案', () => {
   const request = normalizeCanonicalQueryRequest(metadata, {
     id: 'qry-system-row-cap', mode: 'aggregate', dataset: { id: metadata.id, revision: metadata.revision },
     select: [{ field: '类别名称', alias: 'category' }],
@@ -380,15 +366,10 @@ test('系统上限在 20001 行边界保留完整性标记，且不混同用户 
     limit: 20000, limitSource: 'default',
   });
   const rawRows = Array.from({ length: 20001 }, (_, index) => ({ group1: `C-${index}`, revenue: index + 1 }));
-  const result = normalizeCanonicalResultSet({
+  assert.throws(() => normalizeCanonicalResultSet({
     request,
     executionPlan: { id: 'exec-system-row-cap', adapter: 'wyn-wax-controlled', adapterVersion: 'test', rowLimit: 20000 },
     rawResult: { rows: rawRows, totalRows: 20001, limitReached: true, truncationConfidence: 'confirmed' },
     metadata,
-  });
-  assert.equal(result.rows.length, 20000);
-  assert.equal(result.statistics.totalRowCount, 20001);
-  assert.equal(result.quality.isTruncated, true);
-  assert.equal(result.quality.limitSource, 'system-cap');
-  assert.match(result.quality.warnings.join('；'), /达到结果上限/);
+  }), /不会截取部分数据继续计算/);
 });

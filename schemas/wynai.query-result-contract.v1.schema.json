@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "wynai.query-result-contract/v1",
+  "title": "WynAI Query Result Contract v1",
+  "type": "object",
+  "required": [
+    "schema",
+    "version",
+    "type",
+    "issuedBy",
+    "aggregate",
+    "isComplete",
+    "isSample",
+    "isTruncated",
+    "isEstimated",
+    "userLimitApplied",
+    "totalRowCount",
+    "returnedRowCount",
+    "countVerified"
+  ],
+  "properties": {
+    "schema": { "const": "wynai.query-result-contract/v1" },
+    "version": { "const": 1 },
+    "type": { "enum": ["wyn-detail-result", "wyn-complete-aggregate-result", "wyn-limited-result", "platform-derived-result"] },
+    "issuedBy": { "type": "string" },
+    "requestId": { "type": ["string", "null"] },
+    "aggregate": { "type": "boolean" },
+    "isComplete": { "type": "boolean" },
+    "isSample": { "type": "boolean" },
+    "isTruncated": { "type": "boolean" },
+    "isEstimated": { "type": "boolean" },
+    "userLimitApplied": { "type": "boolean" },
+    "totalRowCount": { "type": ["integer", "null"], "minimum": 0 },
+    "returnedRowCount": { "type": ["integer", "null"], "minimum": 0 },
+    "countVerified": { "type": "boolean" },
+    "derivedFrom": { "type": ["string", "null"] },
+    "operationId": { "type": ["string", "null"] },
+    "operationVersion": { "type": ["integer", "null"], "minimum": 1 }
+  },
+  "additionalProperties": false
+}

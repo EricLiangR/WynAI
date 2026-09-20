@@ -93,10 +93,10 @@ test('两位年份和修改式时间粒度继承同一约束账本', () => {
   assert.equal(replaced.transition.mode, 'replace');
 });
 
-test('业务时区在 Wyn UTC 序列化边界上按本地年份归并', () => {
+test('未确认 Wyn 时间粒度表达时阻断，不在平台本地按业务时区归并', () => {
   const intent = buildBusinessQueryIntent({ metadata, question: '2025年按年看销售额' });
   const { request } = compileBusinessQueryIntent(metadata, intent);
-  const result = normalizeCanonicalResultSet({
+  assert.throws(() => normalizeCanonicalResultSet({
     request,
     metadata,
     executionPlan: { id: 'exec-timezone', adapter: 'controlled-wax', adapterVersion: '1', warnings: [] },
@@ -105,12 +105,7 @@ test('业务时区在 Wyn UTC 序列化边界上按本地年份归并', () => {
       { period: '2025-12-31T15:59:59.000Z', revenue: 50 },
       { period: '2025-12-31T16:00:00.000Z', revenue: 999 },
     ] },
-  });
-  assert.deepEqual(result.rows.map(row => [row.period, row.revenue]), [
-    ['2025-01-01T00:00:00.000Z', 150],
-    ['2026-01-01T00:00:00.000Z', 999],
-  ]);
-  assert.equal(result.scope.timeZone, 'Asia/Shanghai');
+  }), error => error.code === 'QUERY_CAPABILITY_UNAVAILABLE' && error.details.operation === 'time-grain');
 });
 
 test('结果覆盖校验会拒绝缺失用户明确要求的年份', () => {
