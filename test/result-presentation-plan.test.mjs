@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import { buildResultPresentationPlan } from '../lib/result-presentation-plan.mjs';
 import { planBusinessQuestion } from '../lib/conversation/question-planner.mjs';
+import { requestForResultPresentation } from '../lib/conversation/session.mjs';
 import { applyQueryProgram } from '../lib/query/query-program.mjs';
 
 const metadata = { id: 'dataset-presentation', revision: 1, indexed: true, fields: [
@@ -51,6 +52,44 @@ test('投影中的数值字段即使保留 measure 角色也只展示一次', ()
   const resultSet = result('rs-projection-measure', [{ region: '华东', revenue: 300 }]);
   const presentation = buildResultPresentationPlan({ metadata, question: '返回客户地区和订单金额', request, resultSet });
   assert.deepEqual(presentation.table.columns, ['region', 'revenue']);
+});
+
+test('会话展示请求严格采用 displayRequest 白名单且不泄漏内部粒度字段', () => {
+  const executedRequest = {
+    id: 'qry-internal-grain',
+    mode: 'projection',
+    select: [
+      { field: '客户地区', alias: 'region', role: 'dimension' },
+      { field: '订单编号', alias: 'entity_grain_1', role: 'dimension' },
+      { field: '订单金额', alias: 'amount', role: 'measure' },
+    ],
+    measures: [{ field: '订单编号', alias: 'record_count', aggregation: 'distinctCount' }],
+    orderBy: [{ field: 'record_count', direction: 'desc' }],
+    expectedResult: { requiredDimensions: ['region', 'amount', 'entity_grain_1'], requiredMetrics: ['record_count'] },
+  };
+  const displayRequest = {
+    ...executedRequest,
+    select: [
+      { field: '客户地区', alias: 'region', role: 'dimension', displayName: '地区' },
+      { field: '订单金额', alias: 'amount', role: 'measure', displayName: '金额' },
+    ],
+    measures: [],
+    orderBy: [],
+    expectedResult: { requiredDimensions: ['region', 'amount'], requiredMetrics: [] },
+  };
+  const presentationRequest = requestForResultPresentation(executedRequest, displayRequest);
+  assert.deepEqual(presentationRequest.select.map(item => item.alias), ['region', 'amount']);
+  assert.deepEqual(presentationRequest.measures, []);
+  assert.deepEqual(presentationRequest.orderBy, []);
+  assert.deepEqual(presentationRequest.expectedResult.requiredDimensions, ['region', 'amount']);
+
+  const resultSet = result('rs-no-internal-grain', [{ region: '华东', amount: 300 }], [
+    { name: 'region', role: 'dimension', type: 'string' },
+    { name: 'amount', role: 'measure', type: 'number' },
+  ]);
+  const presentation = buildResultPresentationPlan({ metadata, question: '返回客户地区和金额', request: presentationRequest, resultSet });
+  assert.deepEqual(presentation.table.columns, ['region', 'amount']);
+  assert.equal(presentation.table.columns.some(column => /^entity_grain_/.test(column)), false);
 });
 
 test('产品销量不扩展为商品名称维度，时间和地理维度按用户顺序与层级展示', () => {
