@@ -394,6 +394,7 @@ const smartQueryRateLimiter = new SlidingWindowRateLimiter({
 const multiDatasetQueries = new MultiDatasetQueryService({
   loadMetadata: datasetId => loadDatasetMetadata(datasetId),
   executeDatasetQuery,
+  executionPolicy: 'smart-query',
 });
 const conversations = new SmartQueryConversationStore({
   loadMetadata: datasetId => loadDatasetMetadata(datasetId),
@@ -414,6 +415,7 @@ const conversations = new SmartQueryConversationStore({
       explorationAgent: explorationLlm,
       skills,
       strictMode,
+      executionPolicy: 'smart-query',
     });
   },
 });
@@ -736,13 +738,17 @@ async function loadDatasetMetadata(datasetId, { force = false } = {}) {
   return metadata;
 }
 
-async function executeDatasetQuery(datasetId, { queryType = 'NONE', query = '', rowLimit = MAX_DATASET_ROWS } = {}) {
+async function executeDatasetQuery(datasetId, { queryType, query = '', rowLimit = MAX_DATASET_ROWS } = {}) {
+  const normalizedQueryType = String(queryType || '').trim().toUpperCase();
+  if (!['WAX', 'NONE'].includes(normalizedQueryType)) {
+    throw httpError(500, '必须显式声明 Wyn 查询类型（WAX 或 NONE）');
+  }
   await findAnalysisDataset(datasetId);
   const safeLimit = Math.max(1, Math.min(MAX_QUERY_ROWS, Number(rowLimit) || MAX_DATASET_ROWS));
   const upstream = await wynFetch(`/api/v2/data/datasets/${datasetId}/query`, {
     method: 'POST',
     body: JSON.stringify({
-      QueryType: queryType,
+      QueryType: normalizedQueryType,
       Query: query,
       Format: 'Json',
       Options: {
@@ -772,17 +778,17 @@ async function executeDatasetQuery(datasetId, { queryType = 'NONE', query = '', 
     truncated: false,
     limitReached,
     truncationConfidence: limitReached ? 'possible' : 'none',
-    queryType,
+    queryType: normalizedQueryType,
   };
 }
 
-async function loadDatasetRows(datasetId, rowLimit) {
+async function loadDataInsightQualitySampleRows(datasetId, rowLimit) {
   return executeDatasetQuery(datasetId, { queryType: 'NONE', query: '', rowLimit });
 }
 
-async function loadQualitySample(datasetId, metadata, rowLimit, filters) {
+async function loadDataInsightQualitySample(datasetId, metadata, rowLimit, filters) {
   const detailPlan = compileFilteredDetailQuery(metadata, filters);
-  if (!detailPlan) return loadDatasetRows(datasetId, rowLimit);
+  if (!detailPlan) return loadDataInsightQualitySampleRows(datasetId, rowLimit);
   const result = await executeDatasetQuery(datasetId, {
     queryType: 'WAX',
     query: detailPlan.wax,
@@ -951,7 +957,7 @@ function agentRunSummary(run) {
     completedAt: run.completedAt,
     rowCount: run.analysis?.profile?.rowCount || 0,
     evidenceCoverage: run.analysis?.validation?.evidenceCoverage ?? 0,
-    queryMode: run.analysis?.validation?.queryMode || null,
+    executionStrategy: run.analysis?.validation?.executionStrategy || null,
     filterCount: run.analysis?.execution?.filters?.length || 0,
   };
 }
@@ -1006,7 +1012,7 @@ async function handleCreateAgentRun(request, response) {
     const metadata = await loadDatasetMetadata(datasetId);
     const queryBundle = buildAnalysisQueryBundle(metadata, body.filters || []);
     const queryWarnings = [];
-    const queryResult = await loadQualitySample(datasetId, metadata, body.rowLimit, queryBundle.filters);
+    const queryResult = await loadDataInsightQualitySample(datasetId, metadata, body.rowLimit, queryBundle.filters);
 
     let aggregateResults = null;
     if (metadata.indexed) {
@@ -1122,6 +1128,7 @@ async function handleCreateV2AgentRun(request, response) {
       analyzeDataset,
       explorationAgent: explorationLlm,
       strictMode,
+      executionPolicy: 'data-insight',
     });
     const { analysis } = result;
     result.audit.warnings.forEach(message => appendReportWarning(analysis, `查询降级：${message}`));
@@ -1758,6 +1765,7 @@ async function executeExploreInsightRun(run) {
       explorationAgent: explorationLlm,
       skills,
       strictMode: true,
+      executionPolicy: 'data-insight',
     });
     const report = await callAgentReportLlm(result.analysis, metadata);
     if (!report?.markdown) throw Object.assign(new Error('Explore 未生成 LLM 报告'), { code: 'INSIGHT_LLM_INVALID_OUTPUT', status: 502 });

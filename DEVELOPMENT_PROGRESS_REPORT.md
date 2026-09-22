@@ -791,4 +791,37 @@
 
 2026-09-21 复验补充：发现上一轮门禁对 UAT-AY-003 的日期上界使用了固定值，跨日后将合法的 `赢单日期 < 2026-09-22` 误报为失败。已将发布门禁改为统一业务日期锚点 + 排他上界的版本化表达式，并增加自动化回归；最新 API 门禁与 Codex 内置浏览器门禁均为 52/52、`releaseReady=true`，52 张截图已全部重建，控制台 error/warn、内部字段泄漏和业务 fallback 均为 0。该修复只调整评测契约的动态日期解析，不改变 Wyn 源端查询责任，也不引入业务 fallback。
 
-本基线成为后续修改时间语义、Skill 日历策略、结果展示角色和 LLM 意图校验时的发布门禁。`queryMode/NONE` 架构清理、权限穿透、非索引数据集和 Wyn 原生分页不属于本轮范围。
+本基线成为后续修改时间语义、Skill 日历策略、结果展示角色和 LLM 意图校验时的发布门禁。该批次未实施 `queryMode/NONE` 架构清理；权限穿透、非索引数据集和 Wyn 原生分页不属于后续范围。
+
+## 2026-09-21 queryMode/NONE 架构清理（已完成）
+
+本阶段已将 Smart Query 业务执行边界从“默认使用 WAX”提升为运行时强制策略：新增 `smart-query` 与 `data-insight` 执行策略。`smart-query` 只允许 `wyn-wax-controlled`，拒绝 `wyn-dataset-none-json` 和样本结果；`data-insight` 保留独立数据洞察的明确质量采样能力。单数据集、多数据集和开放分析入口统一透传策略，并在适配器注册、单次执行、缓存命中和会话交付四个边界校验。底层 Wyn 查询函数也不再把缺失的 `queryType` 默认成 NONE；调用方必须显式声明 WAX 或 NONE，否则立即失败。
+
+BusinessQueryIntent 新链路不生成或依赖 `queryMode`；Canonical 执行模式由指标、维度和时间粒度结构推导，`expectedResult.shape` 只负责展示。数据洞察、页面和导出报告的新审计字段改为 `executionStrategy`，历史数据仅做只读兼容。平台的 `detail -> NONE` 路由已移除，Wyn 原生 `QueryType=NONE` 仍保留为独立数据洞察的受治理质量采样能力，不属于 Smart Query 业务查询路径。
+
+### 完成证据
+
+- 定向架构测试：`33/33` 通过。
+- 全量自动化测试：`533/533` 通过。
+- `npm run check`：通过。
+- `git diff --check`：通过。
+- 真实浏览器验收：`http://127.0.0.1:8787/`，使用数据集 `18b86197-65e3-4682-8501-6e7125afad02`，页面显示筛选、分组、聚合、排序均由 Wyn 执行，样本为否，替代结果未使用；高级诊断不再输出 `queryMode`。
+- 本次最终真实验收 Trace：`trace-4ce49aca-727f-4d6f-af00-c5e3ac7ca113`，页面技术详情确认由 Wyn 执行源端筛选和求和，结果为 1 行完整结果、非样本、未使用替代结果；操作事件中的查询计划保留 `pipelineName = 订单名称15247`、`Opportunity_amount_CNY sum` 和 `limit=20000`。
+- 完整 UAT 截图与 API 门禁证据：`UAT-AY/querymode-none-cleanup-2026-09-21/FINAL_UAT_REPORT.md`，以及该目录下的 `final-browser-after-fix/` 和 `final-api-after-skill-synonym/`。
+
+后续涉及查询执行器、结果契约、会话交付或缓存的修改，必须继续通过 `test/execution-policy.test.mjs`、Smart Query 全量测试和真实浏览器门禁；不得以关键词、固定问句、平台本地重建结果或业务 fallback 重新引入 NONE 路径。
+
+## 2026-09-22 最新代码 AY/B 全量 UAT 截图复验
+
+在 queryMode/NONE 架构清理完成后，重新执行冻结发布包 `sales-ay-release@1.0.0` 的全部 52 条 AY、B 组、解释型、语义边界和多值字段用例。固定使用数据集 `18b86197-65e3-4682-8501-6e7125afad02` 与 Skill `sales-opportunity-a53@1.3.0`。
+
+| 门禁 | 结果 | 证据 |
+|---|---:|---|
+| 最新代码隔离 API 门禁 | 52/52，`releaseReady=true` | `UAT-AY/latest-full-browser-2026-09-22/api-isolated-final/api-release-gate.json` |
+| Codex 内置浏览器截图门禁 | 52/52，`releaseReady=true` | `UAT-AY/latest-full-browser-2026-09-22/browser-release-gate.json` |
+| 截图完整性 | 52/52，缺失 0，异常小文件 0 | `UAT-AY/latest-full-browser-2026-09-22/screenshots/` |
+| 浏览器控制台 | warning 0，error 0 | 浏览器门禁结果 |
+
+所有非澄清结果均展开“详情”并核对执行归属包含 Wyn、样本为否、替代结果未使用、数据集与 Skill 正确、Trace 存在、结果行数与 API 门禁一致，且页面不泄漏平台 `queryMode`、平台 NONE 或 fallback。`UAT-AY-002` 与 `UAT-SEM-004` 按预期进入澄清；`UAT-AY-034` 与 `B-010` 为合法完整 0 行结果。重点回归 `UAT-AY-032` 返回 5 行、`UAT-AY-033` 返回 2 行，确认聚合与聚合后筛选仍由 Wyn 执行。
+
+原 8787 进程在连续长批 API 验证中发生进程退出，因此本轮使用同一最新工作区源码和 `.env.local`、但隔离运行数据目录的 8791 实例完成最终 API 与浏览器门禁。该现象单独登记为 8787 长批次运行稳定性问题；不能用本轮语义门禁通过替代 8787 的压力/内存稳定性验收。完整报告见 `UAT-AY/latest-full-browser-2026-09-22/FINAL_UAT_REPORT.md`。

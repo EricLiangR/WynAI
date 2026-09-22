@@ -11,7 +11,7 @@ const run = {
   analysis: {
     dataset: { id: 'sales', name: '销售数据' },
     profile: { rowCount: 10000, sampleRowCount: 5000, sourceLimitReached: true, sourceTruncationConfidence: 'possible' },
-    validation: { queryMode: 'dataset-wax-controlled', evidenceCoverage: 100 },
+    validation: { executionStrategy: 'wyn-wax-controlled', evidenceCoverage: 100 },
     execution: { dataSource: 'wyn-dataset-api', waxQueryCount: 5, filters: [{ field: '地区', operator: 'eq', value: '华东' }] },
     kpis: [{ label: '销售额合计', value: '¥1,000', rawValue: 1000 }],
     charts: [
@@ -78,7 +78,7 @@ test('系统界面关键标签默认使用中文', async () => {
   assert.match(app, /includeInsight: false/);
   assert.match(app, /已验证指标/);
   assert.match(app, /statusLabel\(step\.status\)/);
-  assert.match(app, /queryModeLabel\(queryMode\)/);
+  assert.match(app, /executionStrategyLabel\(executionStrategy\)/);
   assert.match(html, /id="agent-plan" tabindex="0"/);
   assert.match(css, /max-height: min\(440px,52vh\)/);
   assert.match(app, /elements\.agentPlan\.scrollTop = 0/);

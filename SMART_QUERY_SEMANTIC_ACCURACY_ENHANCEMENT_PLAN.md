@@ -149,7 +149,7 @@ Canonical Compiler
   - 禁止原始 SQL/WAX/Payload
         |
         v
-Wyn Query Router / WAX / NONE
+Wyn Query Router / explicit execution policy / WAX or governed NONE
         |
         v
 Result Intent Validator
@@ -284,7 +284,7 @@ LLM 返回 `BusinessQueryIntent v2`，不直接返回可执行 Wyn 查询。这�
 | 排名 | 排名范围、并列策略 | 排序 + 排名计算 | 结果数量与规则一致 |
 | 占比 | 分子、分母、分组 | 两个可验证结果或窗口计算 | 分母范围一致、和约等于 100% |
 | 同比/环比 | 当前期、基期、指标 | 两期查询 + 白名单公式 | 基期为零策略明确 |
-| 明细 | 字段、筛选、分页 | NONE/detail | 显示样本、截断和分页边界 |
+| 明细 | 字段、筛选、分页 | Wyn WAX `FILTER + SELECTCOLUMNS` 与同条件计数 | 超限或计数不一致即阻断，平台不做二次筛选 |
 | 下钻/上卷 | 当前层级、目标层级 | 替换维度，继承范围 | 层级来自 Wyn/Skill 语义 |
 | 原因分析 | 目标指标、异常期间、候选维度 | 查询图、多维贡献分析 | 结论必须绑定证据，不宣称因果 |
 | 复合问题 | 子意图和依赖关系 | 多查询 DAG | 子查询均通过完整性和结果校验 |
@@ -873,7 +873,7 @@ E0-E4 具备立即开发条件，不需要新的外部信息。E5-E7 中不依�
 
 上一节描述的是 9 月 14 日的历史实现，其中“detail 固定走 NONE”和“未知总数可交付”的结论已被真实 UAT 否定。当前正式 Smart Query 不选择 NONE：`detail` 仍是暂时保留的内部协议值，但编译为 Wyn WAX 的服务端 FILTER + SELECTCOLUMNS，使用同条件 COUNTROWS 校验完整性。用户未要求 Top N 时，匹配行超过 20,000 即报错；需要聚合后结果筛选、时间归并或占比计算时，必须先验证中间分组完整。异常不得转向采样、平台本地筛选或固定问句规则。独立质量分析可以使用显式样本，样本不能宣称精确完整。
 
-本修订是平台级查询正确性约束，不依赖特定销售字段、客户字典或问题关键词。去除 `queryMode=aggregate/detail` 的 LLM 输出概念仍待单独设计与实施；当前修订只消除它绑定到 NONE 的错误执行行为。
+本修订是平台级查询正确性约束，不依赖特定销售字段、客户字典或问题关键词。截至 9 月 17 日，去除 `queryMode=aggregate/detail` 的 LLM 输出概念仍待实施；该历史状态已由 9 月 21 日的 queryMode/NONE 架构清理取代。
 
 ## 2026-09-18 P0 执行所有权与派生计算治理需求（待实施）
 
@@ -888,4 +888,10 @@ E0-E4 具备立即开发条件，不需要新的外部信息。E5-E7 中不依�
 5. 架构测试必须阻止在注册表和统一 Guard 之外新增业务性本地筛选、排序、排名和分组。
 6. P0 用例不得使用平均分、fallback 或部分成功豁免。
 
-详细协议、迁移清单、测试矩阵和 UAT 门禁见 `SMART_QUERY_EXECUTION_BOUNDARY_AND_DERIVED_CALCULATION_GOVERNANCE_REQUIREMENTS_DESIGN_2026-09-18.md`。当前仅登记需求，实施状态不得标记为完成。
+详细协议、迁移清单、测试矩阵和 UAT 门禁见 `SMART_QUERY_EXECUTION_BOUNDARY_AND_DERIVED_CALCULATION_GOVERNANCE_REQUIREMENTS_DESIGN_2026-09-18.md`。
+
+### 2026-09-21 queryMode/NONE 架构清理状态
+
+`queryMode=aggregate/detail` 已从新 BusinessQueryIntent 输出和 Canonical 路由依赖中移除。`expectedResult.shape` 只承担展示契约，不再控制执行方式；执行模式由 `metrics`、`dimensions` 和时间粒度等结构推导。历史输入中的 `queryMode` 在规范化时删除，不参与生产展示、查询编译或路由。
+
+Smart Query 必须显式声明 `smart-query` 策略，只能调用 Wyn/WAX，并在适配器注册、执行结果、缓存命中和会话交付阶段拒绝 NONE 与样本结果；独立数据洞察仍可为质量分析使用明确标记的 NONE 样本。用户可见审计名称改为“执行方式”，新字段为 `executionStrategy`。该变化是平台级协议治理，不使用问题关键词、销售字段或固定数据集分支。

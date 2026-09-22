@@ -98,6 +98,57 @@ multiValue: false
 
 维护规则：用户说“recurring”时按 `recurring` 字段做模糊筛选，条件为包含 `Yes`；用户明确老客户、老合同续约时使用 `Yes - Continuous`，明确老客户、新合同时使用 `Yes - New Win`，明确不是 recurring 时使用 `No`。不得把 recurring 映射为商机来源，也不得把用户词直接作为枚举值。
 
+## 产品大类
+
+<!-- dictionary
+id: product-category
+version: 1.0.0
+field: 产品大类
+concept: productCategory
+sourceColumn: 数据值
+canonicalColumn: 数据值
+aliasColumn: 用户称呼
+matchMode: exact
+multiValue: false
+-->
+
+| 数据值 | 用户称呼 |
+| --- | --- |
+| Consumer & Retail |  |
+| Finance |  |
+| Healthcare |  |
+| Manufacturing |  |
+| Digital Technology |  |
+
+## 产品小类
+
+<!-- dictionary
+id: product-subcategory
+version: 1.0.0
+field: 产品小类
+concept: productSubcategory
+sourceColumn: 数据值
+canonicalColumn: 数据值
+aliasColumn: 用户称呼
+matchMode: exact
+multiValue: false
+-->
+
+| 数据值 | 用户称呼 |
+| --- | --- |
+| Smart Operations |  |
+| Organizational Optimization |  |
+| Product Development |  |
+| Talent Development |  |
+| Operational Efficiency |  |
+| Investment & Financing |  |
+| Risk Management | 风险管理 |
+| Financial Management |  |
+| Supply Chain Collaboration |  |
+| Strategic M&A |  |
+| Strategy Planning |  |
+| Ecosystem Collaboration |  |
+
 ## 客户所属行业
 
 <!-- dictionary

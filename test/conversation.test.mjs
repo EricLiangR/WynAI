@@ -22,7 +22,7 @@ function fakeRunAnalysis({ focus }) {
       report: { summary: ['销售额为100'] },
       execution: { filters: [] },
     },
-    queries: [{ request: { id: 'qry-trend' } }],
+    queries: [{ request: { id: 'qry-trend' }, executionPlan: { adapter: 'wyn-wax-controlled' }, status: 'completed' }],
     resultSets: [{ id: 'rs-trend', requestId: 'qry-trend', rows: [{ period: '2026-01', revenue: 100 }], schema: [{ name: 'period' }, { name: 'revenue' }], quality: { isSample: false, isTruncated: false, isEstimated: false, warnings: [] } }],
     audit: { warnings: [] },
   });
@@ -41,6 +41,48 @@ test('会话支持连续追问并返回统一 InsightDocument', async () => {
   assert.equal(first.response.document.blocks.find(block => block.type === 'chart').dataRef, 'rs-trend');
   assert.deepEqual(store.get(conversation.id).resultSetIds, ['rs-trend']);
   assert.deepEqual(store.get(conversation.id).activeMetrics, []);
+});
+
+test('Smart Query 自治分析调用固定传递 smart-query 执行策略', async () => {
+  const calls = [];
+  const runAnalysis = async input => {
+    calls.push(input);
+    return fakeRunAnalysis(input);
+  };
+  const store = new SmartQueryConversationStore({ loadMetadata: async () => metadata, runAnalysis });
+  const conversation = await store.create({ datasetId: metadata.id });
+  await store.ask(conversation.id, { question: '综合分析经营情况' });
+  assert.equal(calls.length, 1);
+  assert.equal(calls[0].executionPolicy, 'smart-query');
+  assert.equal(calls[0].strictMode, true);
+});
+
+test('Smart Query 会话交付边界拒绝 NONE 和样本分析结果', async () => {
+  const noneStore = new SmartQueryConversationStore({
+    loadMetadata: async () => metadata,
+    runAnalysis: async input => {
+      const result = await fakeRunAnalysis(input);
+      result.queries[0].executionPlan.adapter = 'wyn-dataset-none-json';
+      return result;
+    },
+  });
+  const noneConversation = await noneStore.create({ datasetId: metadata.id });
+  await assert.rejects(() => noneStore.ask(noneConversation.id, { question: '综合分析经营情况' }), error => (
+    error?.code === 'QUERY_EXECUTION_POLICY_VIOLATION' && /不接受查询适配器/.test(error.message)
+  ));
+
+  const sampleStore = new SmartQueryConversationStore({
+    loadMetadata: async () => metadata,
+    runAnalysis: async input => {
+      const result = await fakeRunAnalysis(input);
+      result.resultSets[0].quality.isSample = true;
+      return result;
+    },
+  });
+  const sampleConversation = await sampleStore.create({ datasetId: metadata.id });
+  await assert.rejects(() => sampleStore.ask(sampleConversation.id, { question: '综合分析经营情况' }), error => (
+    error?.code === 'QUERY_EXECUTION_POLICY_VIOLATION' && /禁止样本结果/.test(error.message)
+  ));
 });
 
 test('会话支持多个数据集并合并为一个 InsightDocument', async () => {

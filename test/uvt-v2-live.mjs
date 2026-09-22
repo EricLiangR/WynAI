@@ -54,7 +54,7 @@ async function createRun(datasetId, focus) {
   });
   assert.equal(payload.version, 'analysis-run/v2.1');
   assert.equal(payload.status, 'completed');
-  assert.equal(payload.analysis.validation.queryMode, 'routed-canonical-v2.1-exploration');
+  assert.equal(payload.analysis.validation.executionStrategy, 'data-insight-governed-routing');
   assert.equal(payload.analysis.validation.sqlAllowed, false);
   assert.equal(payload.analysis.validation.evidenceCoverage, 100);
   assert.equal(payload.analysis.validation.strictMode, true);

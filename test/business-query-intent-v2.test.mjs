@@ -131,6 +131,43 @@ test('华东和华南解析为同一地区字段的 in 筛选', () => {
   assert.deepEqual(plan.request.filters.find(item => item.field === '客户地区').value, ['华东', '华南']);
 });
 
+test('业务名单附带金额默认由 Wyn 按展示维度聚合', () => {
+  const catalog = {
+    id: 'dataset-list-grain', revision: 1,
+    fields: [
+      { name: '交易编号', role: 'identifier', type: 'String', rawType: 'String' },
+      { name: '客户', role: 'dimension', type: 'String', rawType: 'String' },
+      { name: '项目', role: 'dimension', type: 'String', rawType: 'String' },
+      { name: '金额', role: 'measure', type: 'Number', rawType: 'Double' },
+    ],
+  };
+  const skill = {
+    id: 'list-grain', version: '1.0.0', status: 'approved',
+    metrics: [
+      { id: 'transactionCount', concept: 'transactionCount', name: '交易数量', field: '交易编号', aggregation: 'distinctCount', synonyms: [] },
+      { id: 'amount', concept: 'revenue', name: '金额', field: '金额', aggregation: 'sum', synonyms: [] },
+    ],
+    businessEntities: [
+      { id: 'transaction', concept: 'transaction', name: '交易', field: '交易编号', synonyms: [] },
+      { id: 'customer', concept: 'customer', name: '客户', field: '客户', synonyms: [] },
+      { id: 'project', concept: 'project', name: '项目', field: '项目', synonyms: [] },
+    ],
+  };
+  const grouped = buildBusinessQueryIntent({
+    metadata: catalog, skills: [skill], question: '列出客户名单及每个客户的金额',
+  });
+  assert.deepEqual(grouped.dimensions.map(item => item.field), ['客户']);
+  assert.deepEqual(grouped.metrics.map(item => [item.field, item.aggregation]), [['金额', 'sum']]);
+  assert.equal(compileBusinessQueryIntent(catalog, grouped).request.mode, 'aggregate');
+
+  const rows = buildBusinessQueryIntent({
+    metadata: catalog, skills: [skill], question: '哪些交易，返回客户和金额',
+  });
+  assert.equal(rows.metrics.length, 0);
+  assert.ok(rows.dimensions.some(item => item.field === '金额'));
+  assert.equal(compileBusinessQueryIntent(catalog, rows).request.mode, 'projection');
+});
+
 test('地区 in 筛选的结果覆盖校验会拒绝静默缺失成员', () => {
   const intent = {
     expectedResult: { minimumRows: 1, requiredMetrics: ['revenue'], requiredDimensions: ['region'], requiredPeriods: [] },

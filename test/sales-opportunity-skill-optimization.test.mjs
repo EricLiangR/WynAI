@@ -50,7 +50,10 @@ test('销售商机请求字段绑定和多值字符串筛选可被严格校验',
   const registry = await loadSkillsFromDirectory(skillsDirectory);
   const skill = registry.get('sales-opportunity-a53', '1.3.0');
   const fields = new Map(skill.businessEntities.map(item => [item.id, item.field]));
-  assert.deepEqual(['projectName', 'salesDirector', 'opportunityPartner', 'createdDate', 'expectedEndDate', 'primeOffice'].map(id => fields.get(id)), ['pipelineName', 'Opportunity_manager', 'Opportunity_partner', 'code_open_date', '预计关闭日期', 'primeOffice']);
+  assert.deepEqual(
+    ['projectName', 'salesDirector', 'opportunityPartner', 'createdDate', 'expectedEndDate', 'primeOffice', 'customerSubsector'].map(id => fields.get(id)),
+    ['pipelineName', 'Opportunity_manager', 'Opportunity_partner', 'code_open_date', '预计关闭日期', 'primeOffice', '客户所属子行业'],
+  );
   assert.deepEqual(skill.businessEntities.find(item => item.id === 'projectName')?.sourceValuePatterns, ['订单名称\\d+']);
   const request = normalizeCanonicalQueryRequest(metadata, {
     id: 'sales-uat-001', mode: 'projection',

@@ -1,6 +1,16 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { planBusinessQuestion, planBusinessQuestionAsync } from '../lib/conversation/question-planner.mjs';
+import {
+  alignLlmExplicitValueFilters,
+  normalizeLlmRankingDimensionReferences,
+  normalizeRankingPlaceholderFilters,
+  normalizeSkillEntityFilterFields,
+  normalizeSkillValueFilters,
+  planBusinessQuestion,
+  planBusinessQuestionAsync,
+  restoreBaselineOutputReferences,
+  restoreRankingDimensionReferences,
+} from '../lib/conversation/question-planner.mjs';
 
 const now = new Date('2026-09-15T08:00:00+08:00');
 const metadata = {
@@ -33,6 +43,346 @@ test('同一问题中的多个直接指标字段按各自概念绑定', () => {
   assert.deepEqual(plan.intent.metrics.map(item => [item.concept, item.field]), [
     ['revenue', '销售额'], ['profit', '利润'],
   ]);
+});
+
+test('排名下钻的语义概念别名归一化为唯一实际输出别名', () => {
+  const intent = normalizeLlmRankingDimensionReferences({
+    dimensions: [
+      { field: '产品名称', alias: 'productName', concept: 'product' },
+      { field: '客户名称', alias: 'customerName', concept: 'customer' },
+    ],
+    ranking: {
+      thenDrilldown: true,
+      byDimension: 'product',
+      drilldownDimensions: ['customer'],
+      partitionBy: [],
+    },
+  });
+  assert.equal(intent.ranking.byDimension, 'productName');
+  assert.deepEqual(intent.ranking.drilldownDimensions, ['customerName']);
+});
+
+test('模型修复丢失排名维度时从同一问题的语义基线恢复', () => {
+  const baseline = {
+    dimensions: [
+      { field: '产品名称', alias: 'productName', concept: 'product' },
+      { field: '客户名称', alias: 'customerName', concept: 'customer' },
+    ],
+  };
+  const repaired = restoreRankingDimensionReferences({
+    dimensions: [{ field: '客户名称', alias: 'customerName', concept: 'customer' }],
+    ranking: {
+      thenDrilldown: true,
+      byDimension: 'productName',
+      drilldownDimensions: ['customerName'],
+      partitionBy: [],
+    },
+  }, baseline);
+  assert.deepEqual(repaired.dimensions.map(item => item.alias), ['customerName', 'productName']);
+  assert.deepEqual(repaired.expectedResult.requiredDimensions, ['customerName', 'productName']);
+});
+
+test('排名维度的自然语言占位值不会生成实际筛选条件', () => {
+  const normalized = normalizeRankingPlaceholderFilters({
+    dimensions: [
+      { field: '产品名称', alias: 'productName', concept: 'product' },
+      { field: '客户名称', alias: 'customerName', concept: 'customer' },
+    ],
+    ranking: { byDimension: 'productName', thenDrilldown: true, drilldownDimensions: ['customerName'] },
+    filters: [
+      { field: '产品名称', operator: 'eq', value: '什么' },
+      { field: '客户名称', operator: 'eq', value: '客户A' },
+    ],
+    constraints: [
+      { type: 'filter', normalized: { field: '产品名称', operator: 'eq', value: '什么' } },
+      { type: 'filter', normalized: { field: '客户名称', operator: 'eq', value: '客户A' } },
+    ],
+  });
+  assert.deepEqual(normalized.filters, [{ field: '客户名称', operator: 'eq', value: '客户A' }]);
+  assert.deepEqual(normalized.constraints, [
+    { type: 'filter', normalized: { field: '客户名称', operator: 'eq', value: '客户A' } },
+  ]);
+});
+
+test('Skill 字典把别名绑定到源字段并移除问句占位筛选', () => {
+  const normalized = normalizeSkillValueFilters({
+    filters: [
+      { field: 'pipelineCode', operator: 'eq', value: 'PSM的' },
+      { field: 'primeOffice', operator: 'eq', value: '哪里' },
+      { field: '客户名称', operator: 'eq', value: 'Consumer Products 行业 的商机有多少个' },
+    ],
+  }, {
+    question: '有哪些商机是 PSM的，prime office 是哪里，Consumer Products 行业的商机有多少个',
+    metadata: { fields: [
+      { name: 'is_subcode' }, { name: 'pipelineCode' }, { name: 'primeOffice' }, { name: '客户名称' },
+    ] },
+    skills: [{ valueMappings: [
+      { field: 'is_subcode', canonicalValue: '1', synonyms: ['PSM'], matchMode: 'exact', concept: 'psm' },
+    ] }],
+  });
+  assert.deepEqual(normalized.filters, [{
+    field: 'is_subcode', fieldRef: 'is_subcode', operator: 'eq', value: '1', concept: 'psm', source: 'PSM',
+  }]);
+});
+
+test('列表查询从语义基线恢复模型遗漏的显式金额投影字段', () => {
+  const restored = restoreBaselineOutputReferences({
+    dimensions: [{ field: '客户名称', alias: 'customer', concept: 'customer' }],
+    expectedResult: { requiredDimensions: ['customer'] },
+  }, {
+    dimensions: [
+      { field: '客户名称', alias: 'customer', concept: 'customer' },
+      { field: 'Opportunity_amount_CNY', alias: 'revenue_source', concept: 'revenue' },
+    ],
+  }, {
+    question: '哪些交易，返回客户名称和商机金额',
+    metadata: { fields: [
+      { name: '客户名称', role: 'dimension' },
+      { name: 'Opportunity_amount_CNY', displayName: '商机金额', role: 'measure' },
+    ] },
+  });
+  assert.deepEqual(restored.dimensions.map(item => item.field), ['客户名称', 'Opportunity_amount_CNY']);
+  assert.deepEqual(restored.expectedResult.requiredDimensions, ['customer', 'revenue_source']);
+});
+
+test('明确列出字段清单时不依赖哪些关键词即可建立金额源字段投影', () => {
+  const catalog = {
+    id: 'dataset-explicit-list-clause', revision: 1,
+    fields: [
+      { name: '交易编号', role: 'dimension', type: 'String' },
+      { name: '客户名称', role: 'dimension', type: 'String' },
+      { name: '交易金额', role: 'measure', type: 'Number' },
+    ],
+  };
+  const skill = {
+    id: 'generic-explicit-list-clause', version: '1.0.0', status: 'approved',
+    metrics: [
+      { id: 'transactionAmount', concept: 'revenue', name: '交易金额', field: '交易金额', aggregation: 'sum', synonyms: ['金额'] },
+      { id: 'transactionCount', concept: 'transactionCount', name: '交易数量', field: '交易编号', aggregation: 'distinctCount', synonyms: [] },
+    ],
+    businessEntities: [
+      { id: 'transaction', concept: 'transaction', name: '交易', field: '交易编号', synonyms: [] },
+      { id: 'customer', concept: 'customer', name: '客户名称', field: '客户名称', synonyms: ['客户'] },
+    ],
+  };
+  const plan = planBusinessQuestion({
+    metadata: catalog,
+    skills: [skill],
+    question: '交易金额大于100的交易，列出客户和金额',
+    now,
+  });
+  assert.equal(plan.status, 'supported');
+  assert.deepEqual(plan.intent.metrics, []);
+  assert.ok(plan.intent.dimensions.some(item => item.field === '交易金额'));
+});
+
+test('显式返回 Skill 指标同义词时保留物理金额字段的源记录投影', async () => {
+  const catalog = {
+    id: 'dataset-skill-metric-synonym-projection', revision: 1,
+    fields: [
+      { name: '客户名称', role: 'dimension', type: 'String', rawType: 'String' },
+      { name: '项目名称', role: 'dimension', type: 'String', rawType: 'String' },
+      { name: '创建日期', role: 'time', type: 'Date', rawType: 'Date' },
+      { name: 'amount_cny', role: 'measure', type: 'Number', rawType: 'Double' },
+    ],
+  };
+  const skill = {
+    id: 'generic-skill-metric-synonym-projection', version: '1.0.0', status: 'approved',
+    metrics: [{
+      id: 'revenueCny', concept: 'revenue', name: '销售额', field: 'amount_cny',
+      aggregation: 'sum', synonyms: ['订单金额', '商机金额'],
+    }],
+    businessEntities: [],
+  };
+  const model = modelThatChanges(intent => ({
+    ...intent,
+    metrics: [],
+    dimensions: [
+      { field: '客户名称', alias: 'customer', concept: 'customer' },
+      { field: '项目名称', alias: 'project', concept: 'project' },
+      { field: 'amount_cny', alias: 'order_amount', concept: 'revenue' },
+      { field: '创建日期', alias: 'created_at', concept: 'createdAt' },
+    ],
+    expectedResult: {
+      ...intent.expectedResult,
+      shape: 'detail-table',
+      requiredMetrics: [],
+      requiredDimensions: ['customer', 'project', 'order_amount', 'created_at'],
+    },
+  }));
+  const result = await planBusinessQuestionAsync({
+    metadata: catalog,
+    question: '列出客户、项目、订单金额和创建日期',
+    skills: [skill],
+    now,
+    llm: model.llm,
+  });
+  assert.equal(result.status, 'supported', result.message);
+  assert.equal(result.request.mode, 'projection');
+  assert.equal(result.request.measures.length, 0);
+  assert.ok(result.request.select.some(item => item.field === 'amount_cny'));
+});
+
+test('显式字段值关系优先保留数据集字段和用户原始值', () => {
+  const catalog = {
+    fields: [
+      { name: '产品名称', role: 'dimension', type: 'String' },
+      { name: '产品小类', role: 'dimension', type: 'String' },
+      { name: 'recurring', role: 'dimension', type: 'String' },
+    ],
+  };
+  const skill = {
+    businessEntities: [
+      { id: 'productName', concept: 'product', name: '产品名称', field: '产品名称', synonyms: ['产品', 'product'] },
+      { id: 'productSubcategory', concept: 'productSubcategory', name: '产品小类', field: '产品小类', synonyms: ['小类'] },
+      { id: 'recurring', concept: 'recurring', name: 'recurring 类型', field: 'recurring', synonyms: ['recurring'] },
+    ],
+  };
+  const intent = alignLlmExplicitValueFilters({
+    filters: [
+      { field: '产品小类', operator: 'eq', value: 'Risk Management' },
+    ],
+  }, {
+    question: 'recurring的商机，产品是 Safety Production and Risk Control in Manufacturing 的有哪些',
+    metadata: catalog,
+    skills: [skill],
+  });
+  assert.deepEqual(intent.filters, [{
+    field: '产品名称',
+    fieldRef: '产品名称',
+    operator: 'eq',
+    value: 'Safety Production and Risk Control in Manufacturing',
+    concept: 'product',
+    source: '产品是Safety Production and Risk Control in Manufacturing',
+  }]);
+});
+
+test('显式字段值解析截断后续数量问句而保留真实源值', () => {
+  const catalog = {
+    fields: [{ name: '客户所属子行业', role: 'dimension', type: 'String' }],
+  };
+  const skill = {
+    businessEntities: [{
+      id: 'customerSubsector', concept: 'customerSubsector', name: '客户所属子行业',
+      field: '客户所属子行业', synonyms: ['subsector', '子行业'],
+    }],
+  };
+  const aligned = alignLlmExplicitValueFilters({
+    filters: [{ field: '客户所属子行业', operator: 'eq', value: 'Food 的商机有多少个' }],
+  }, {
+    question: 'MNC 客户且 subsector是Food 的商机有多少个',
+    metadata: catalog,
+    skills: [skill],
+  });
+  assert.deepEqual(aligned.filters, [{
+    field: '客户所属子行业', fieldRef: '客户所属子行业', operator: 'eq', value: 'Food',
+    concept: 'customerSubsector', source: 'subsector是Food',
+  }]);
+
+  const governed = normalizeSkillValueFilters(aligned, {
+    question: 'MNC 客户且 subsector是Food 的商机有多少个',
+    metadata: catalog,
+    skills: [{
+      ...skill,
+      valueMappings: [{
+        field: '客户所属行业', concept: 'customerIndustry', canonicalValue: 'Food', synonyms: [], matchMode: 'exact',
+      }],
+    }],
+  });
+  assert.deepEqual(governed.filters, aligned.filters);
+});
+
+test('Skill 字典补齐模型遗漏的别名筛选并移除绑定到错误字段的值', () => {
+  const normalized = normalizeSkillValueFilters({
+    filters: [{ field: '客户名称', operator: 'eq', value: 'Consumer Products 行业' }],
+  }, {
+    question: 'MNC 客户是 Consumer Products 行业的商机有多少个',
+    metadata: { fields: [
+      { name: '客户名称' }, { name: '客户类型' }, { name: '客户所属行业' },
+    ] },
+    skills: [{ valueMappings: [
+      {
+        field: '客户类型', concept: 'customerType', canonicalValue: 'Multinational Corporation（MNC）',
+        synonyms: ['MNC'], matchMode: 'containsAny',
+      },
+      {
+        field: '客户所属行业', concept: 'customerIndustry', canonicalValue: 'Consumer Products',
+        synonyms: [], matchMode: 'exact',
+      },
+    ] }],
+  });
+  assert.deepEqual(normalized.filters, [
+    {
+      field: '客户类型', fieldRef: '客户类型', operator: 'containsAny',
+      value: ['Multinational Corporation（MNC）'], concept: 'customerType', source: 'MNC',
+    },
+    {
+      field: '客户所属行业', fieldRef: '客户所属行业', operator: 'eq',
+      value: 'Consumer Products', concept: 'customerIndustry', source: 'Consumer Products',
+    },
+  ]);
+});
+
+test('Skill 泛化实体词把相邻层级的错误筛选字段纠正为受治理字段', () => {
+  const normalized = normalizeSkillEntityFilterFields({
+    filters: [{ field: '产品小类', operator: 'eq', value: 'Digital Ecosystem Enterprise Alliances' }],
+  }, {
+    question: '请列举去年 Digital Ecosystem Enterprise Alliances 产品的客户名单',
+    metadata: { fields: [
+      { name: '产品名称' }, { name: '产品大类' }, { name: '产品小类' },
+    ] },
+    skills: [{ status: 'approved', businessEntities: [
+      { id: 'productName', concept: 'product', name: '产品名称', field: '产品名称', synonyms: ['产品'] },
+      { id: 'productCategory', concept: 'productCategory', name: '产品大类', field: '产品大类', synonyms: ['Level0', '大类'] },
+      { id: 'productSubcategory', concept: 'productSubcategory', name: '产品小类', field: '产品小类', synonyms: ['Level1', '小类'] },
+    ] }],
+  });
+  assert.deepEqual(normalized.filters, [{
+    field: '产品名称', fieldRef: '产品名称', operator: 'eq', value: 'Digital Ecosystem Enterprise Alliances', concept: 'product',
+  }]);
+});
+
+test('实体前置的英文源值覆盖模型改写并保持用户原文', () => {
+  const catalog = { fields: [
+    { name: '产品名称', role: 'dimension', type: 'String' },
+    { name: '产品小类', role: 'dimension', type: 'String' },
+  ] };
+  const skill = { status: 'approved', businessEntities: [
+    { id: 'productName', concept: 'product', name: '产品名称', field: '产品名称', synonyms: ['产品', 'product'] },
+    { id: 'productSubcategory', concept: 'productSubcategory', name: '产品小类', field: '产品小类', synonyms: ['小类'] },
+  ], valueMappings: [{
+    field: '产品小类', concept: 'productSubcategory', canonicalValue: 'Ecosystem Collaboration', synonyms: [], matchMode: 'exact',
+  }] };
+  const normalized = alignLlmExplicitValueFilters({
+    filters: [{ field: '产品小类', operator: 'eq', value: 'Ecosystem Collaboration' }],
+  }, {
+    question: '请列举去年 Digital Ecosystem Enterprise Alliances 产品的客户名单',
+    metadata: catalog,
+    skills: [skill],
+  });
+  assert.deepEqual(normalized.filters, [{
+    field: '产品名称', fieldRef: '产品名称', operator: 'eq',
+    value: 'Digital Ecosystem Enterprise Alliances', concept: 'product',
+    source: 'Digital Ecosystem Enterprise Alliances 产品',
+  }]);
+});
+
+test('Skill 多值字典补齐筛选时保持问句否定语义', () => {
+  const mapping = {
+    field: '客户类型', concept: 'customerType', canonicalValue: 'Multinational Corporation（MNC）',
+    synonyms: ['MNC'], matchMode: 'containsAny',
+  };
+  const normalized = normalizeSkillValueFilters({
+    filters: [{ field: '客户类型', operator: 'containsAny', value: ['MNC'] }],
+  }, {
+    question: '不是 MNC 客户的商机金额是多少',
+    metadata: { fields: [{ name: '客户类型' }] },
+    skills: [{ valueMappings: [mapping] }],
+  });
+  assert.deepEqual(normalized.filters, [{
+    field: '客户类型', fieldRef: '客户类型', operator: 'notContainsAny',
+    value: ['Multinational Corporation（MNC）'], concept: 'customerType', source: 'MNC',
+  }]);
 });
 
 test('LLM 遗漏用户明确要求的指标时归类为覆盖失败', async () => {
@@ -70,7 +420,7 @@ test('LLM 把已声明派生指标和普通指标误标为聚合后筛选时按�
     now,
     llm: model.llm,
   });
-  assert.equal(result.status, 'supported', result.message);
+  assert.equal(result.status, 'supported', JSON.stringify(result));
   assert.equal(result.intent.resultFilters.length, 0);
   assert.ok(result.intent.derivedMetrics.some(item => item.type === 'share-of-total'));
   assert.ok(result.request.select.some(item => item.field === '客户省份'));
@@ -80,16 +430,19 @@ test('LLM 把已声明派生指标和普通指标误标为聚合后筛选时按�
 test('逐行返回数值字段可以由原始字段投影满足，而不能丢失该列', async () => {
   const model = modelThatChanges(intent => {
     const metric = intent.metrics.find(item => item.field === '销售额');
-    const amount = { field: '销售额', alias: 'raw_revenue', concept: metric.concept };
+    const amount = { field: '销售额', alias: 'raw_revenue', concept: metric?.concept || 'revenue' };
     return {
       ...intent,
       metrics: [],
-      dimensions: [...intent.dimensions, amount],
+      dimensions: [...intent.dimensions.filter(item => item.field !== '销售额'), amount],
       expectedResult: {
         ...intent.expectedResult,
         shape: 'detail-table',
         requiredMetrics: [],
-        requiredDimensions: [...intent.expectedResult.requiredDimensions, amount.alias],
+        requiredDimensions: [
+          ...intent.expectedResult.requiredDimensions.filter(alias => !intent.dimensions.some(item => item.field === '销售额' && item.alias === alias)),
+          amount.alias,
+        ],
       },
     };
   });
@@ -104,13 +457,20 @@ test('逐行返回数值字段可以由原始字段投影满足，而不能丢�
   const missing = modelThatChanges(intent => ({
     ...intent,
     metrics: [],
-    expectedResult: { ...intent.expectedResult, requiredMetrics: [] },
+    dimensions: intent.dimensions.filter(item => item.field !== '销售额'),
+    expectedResult: {
+      ...intent.expectedResult,
+      requiredMetrics: [],
+      requiredDimensions: intent.expectedResult.requiredDimensions
+        .filter(alias => !intent.dimensions.some(item => item.field === '销售额' && item.alias === alias)),
+    },
   }));
-  const rejected = await planBusinessQuestionAsync({
+  const recovered = await planBusinessQuestionAsync({
     metadata, question: '逐条列出客户省份和销售额，不聚合、不去重', now, llm: missing.llm,
   });
-  assert.equal(rejected.status, 'error');
-  assert.match(rejected.message, /销售额|指标/);
+  assert.equal(recovered.status, 'supported', recovered.message);
+  assert.equal(recovered.request.mode, 'projection');
+  assert.ok(recovered.request.select.some(item => item.field === '销售额'));
 });
 
 test('LLM 遗漏用户明确要求的维度时归类为覆盖失败', async () => {
@@ -295,7 +655,7 @@ test('Skill 中更具体的层级别名覆盖同概念族的泛化字段', () =>
   assert.deepEqual(plan.intent.dimensions.map(item => item.field), ['产品大类']);
 });
 
-test('LLM 将泛化实体解析为同一 Skill 概念族筛选时不强制输出该实体', async () => {
+test('标量聚合将同一 Skill 概念族实体作为筛选范围且忽略继承的输出别名', async () => {
   const catalog = {
     id: 'dataset-scope-family',
     fields: [
@@ -316,7 +676,7 @@ test('LLM 将泛化实体解析为同一 Skill 概念族筛选时不强制输出
     semanticFrame: null,
     dimensions: [],
     filters: [{ field: '客户类型', operator: 'eq', value: 'A类' }],
-    expectedResult: { ...intent.expectedResult, shape: 'scalar', requiredDimensions: [], maximumRows: 1 },
+    expectedResult: { ...intent.expectedResult, shape: 'scalar', requiredDimensions: ['customer'], maximumRows: 1 },
   }));
   const result = await planBusinessQuestionAsync({
     metadata: catalog, question: '不是A类客户的商机金额是多少', skills: [skill], now, llm: model.llm,
@@ -800,7 +1160,7 @@ test('明确列举唯一业务实体并返回金额时保持 Wyn 源端记录投
     ...intent,
     dimensions: [
       { field: '客户', alias: 'customer', concept: 'customer' },
-      { field: '交易金额', alias: 'amount', concept: 'revenue' },
+      { field: '交易金额', alias: 'amount', concept: 'metric' },
     ],
     metrics: [],
     filters: [...(intent.filters || []), { field: '交易金额', operator: 'gt', value: 100 }],
@@ -816,12 +1176,52 @@ test('明确列举唯一业务实体并返回金额时保持 Wyn 源端记录投
   const result = await planBusinessQuestionAsync({
     metadata: catalog, question: '交易金额大于100的交易有哪些，返回客户和交易金额', skills: [skill], now, llm: model.llm,
   });
-  assert.equal(result.status, 'supported', result.message);
+  assert.equal(result.status, 'supported', JSON.stringify(result));
   assert.equal(result.request.mode, 'projection');
   assert.ok(result.request.select.some(item => item.field === '交易编号'));
   assert.ok(result.request.select.some(item => item.field === '交易金额'));
   assert.equal(result.request.measures.length, 0);
   assert.ok(!result.displayRequest.select.some(item => item.field === '交易编号'));
+});
+
+test('LLM 将显式返回的源金额误标为聚合时按语义账本恢复投影', async () => {
+  const catalog = {
+    id: 'dataset-explicit-source-projection', revision: 1,
+    fields: [
+      { name: '交易编号', role: 'identifier', type: 'String', rawType: 'String' },
+      { name: '客户', role: 'dimension', type: 'String', rawType: 'String' },
+      { name: '交易金额', role: 'measure', type: 'Number', rawType: 'Double' },
+    ],
+  };
+  const skill = {
+    id: 'generic-explicit-source-projection', version: '1.0.0', status: 'approved',
+    metrics: [
+      { id: 'transactionAmount', concept: 'revenue', name: '交易金额', field: '交易金额', aggregation: 'sum', synonyms: [] },
+      { id: 'transactionCount', concept: 'transactionCount', name: '交易数量', field: '交易编号', aggregation: 'distinctCount', synonyms: [] },
+    ],
+    businessEntities: [
+      { id: 'transaction', concept: 'transaction', name: '交易', field: '交易编号', synonyms: [] },
+      { id: 'customer', concept: 'customer', name: '客户', field: '客户', synonyms: [] },
+    ],
+  };
+  const model = modelThatChanges(intent => ({
+    ...intent,
+    metrics: [{ field: '交易金额', alias: 'amount', concept: 'revenue', aggregation: 'sum', internal: false }],
+    dimensions: (intent.dimensions || []).filter(item => item.field !== '交易金额'),
+    expectedResult: {
+      ...intent.expectedResult,
+      shape: 'grouped-table',
+      requiredMetrics: ['amount'],
+      requiredDimensions: (intent.expectedResult?.requiredDimensions || []).filter(alias => alias !== 'dimension_source'),
+    },
+  }));
+  const result = await planBusinessQuestionAsync({
+    metadata: catalog, question: '哪些交易，返回客户和交易金额', skills: [skill], now, llm: model.llm,
+  });
+  assert.equal(result.status, 'supported', result.message);
+  assert.equal(result.request.mode, 'projection');
+  assert.equal(result.request.measures.length, 0);
+  assert.ok(result.request.select.some(item => item.field === '交易金额'));
 });
 
 test('最终协议不变量消除 detail-table 与聚合指标的非法组合', async () => {

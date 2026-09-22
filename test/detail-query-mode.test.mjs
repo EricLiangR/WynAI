@@ -5,6 +5,7 @@ import { planBusinessQuestionAsync } from '../lib/conversation/question-planner.
 import { applyQueryProgram } from '../lib/query/query-program.mjs';
 import {
   compileBusinessQueryIntent,
+  inferCanonicalExecutionMode,
   normalizeBusinessQueryIntentV2,
   validateIntentCoverage,
 } from '../lib/semantics/business-query-intent.mjs';
@@ -77,7 +78,7 @@ test('包含数值和日期返回字段的列表请求按字段角色直接规�
       assert.equal(repairFeedback, undefined);
       return detailIntent({
         businessQuestion: '有哪些记录，返回项目名称、金额和发生日期',
-        metrics: [{ field: '金额', aggregation: 'sum', alias: 'amount_sum', concept: 'amount' }],
+        metrics: [],
         dimensions: [
           { field: '项目名称', alias: 'project_name', concept: 'projectName', grain: null },
           { field: '金额', alias: 'amount', concept: 'amount', grain: null },
@@ -85,7 +86,7 @@ test('包含数值和日期返回字段的列表请求按字段角色直接规�
         ],
         expectedResult: {
           shape: 'grouped-table', minimumRows: 0, maximumRows: 20000,
-          requiredPeriods: [], requiredMetrics: ['amount_sum'],
+          requiredPeriods: [], requiredMetrics: [],
           requiredDimensions: ['project_name', 'amount', 'occurred_at'], timeZone: 'Asia/Shanghai',
         },
       });
@@ -134,18 +135,29 @@ test('普通去重名单被模型标为 detail-table 时按查询结构规范为
   assert.equal(plan.request.measures[0].aggregation, 'distinctCount');
 });
 
-test('detail 模式拒绝聚合指标、派生指标和聚合排名', () => {
-  const invalid = detailIntent({
+test('结果展示形态不参与 Canonical 执行模式路由', () => {
+  const aggregateIntent = detailIntent({
     metrics: [{ field: '金额', aggregation: 'sum', alias: 'total_amount', concept: 'amount' }],
-    derivedMetrics: [{ type: 'share-of-total', sourceAlias: 'total_amount', alias: 'amount_share' }],
-    ranking: { orderBy: 'total_amount', direction: 'desc', limit: 10 },
+    dimensions: [{ field: '项目名称', alias: 'project_name', concept: 'projectName', grain: null }],
+    expectedResult: {
+      shape: 'detail-table', minimumRows: 0, maximumRows: 20000,
+      requiredPeriods: [], requiredMetrics: ['total_amount'], requiredDimensions: ['project_name'], timeZone: 'Asia/Shanghai',
+    },
   });
-  const validation = validateIntentCoverage(invalid);
-  assert.equal(validation.valid, false);
-  assert.match(validation.errors.join('；'), /不得包含聚合指标/);
-  assert.match(validation.errors.join('；'), /不得包含派生指标/);
-  assert.match(validation.errors.join('；'), /不得包含聚合排名/);
-  assert.equal(compileBusinessQueryIntent(metadata, invalid).status, 'needs_clarification');
+  const groupedShape = { ...aggregateIntent, expectedResult: { ...aggregateIntent.expectedResult, shape: 'grouped-table' } };
+  assert.equal(validateIntentCoverage(aggregateIntent).valid, true);
+  assert.equal(inferCanonicalExecutionMode(aggregateIntent), 'aggregate');
+  assert.equal(compileBusinessQueryIntent(metadata, aggregateIntent).request.mode, 'aggregate');
+  assert.equal(compileBusinessQueryIntent(metadata, groupedShape).request.mode, 'aggregate');
+});
+
+test('旧 queryMode 输入只做兼容读取且不能影响 Canonical 路由', () => {
+  const normalized = normalizeBusinessQueryIntentV2({
+    ...detailIntent(),
+    queryMode: 'aggregate',
+  }, { metadata });
+  assert.equal('queryMode' in normalized, false);
+  assert.equal(compileBusinessQueryIntent(metadata, normalized).request.mode, 'projection');
 });
 
 test('受限明细结果的未知总行数在 QueryProgram 后仍保持 null', () => {

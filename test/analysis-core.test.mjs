@@ -155,7 +155,7 @@ test('WAX 聚合结果覆盖样本指标并保留质量样本边界', () => {
   assert.equal(result.kpis.find(item => item.id === 'orders').rawValue, 8000);
   assert.deepEqual(result.charts.find(item => item.id === 'chart-trend').labels, ['2025-01', '2025-02']);
   assert.equal(result.charts.find(item => item.id === 'chart-category').labels[0], '饮料');
-  assert.equal(result.validation.queryMode, 'dataset-wax-controlled');
+  assert.equal(result.validation.executionStrategy, 'wyn-wax-controlled');
   assert.match(result.evidence.find(item => item.id === 'ev-total').method, /WAX/);
   assert.match(result.report.markdown, /分析范围：10000 行/);
   assert.match(result.report.markdown, /客户地区 eq 华东/);

@@ -287,6 +287,18 @@
       ]
     },
     {
+      "id": "customerSubsector",
+      "concept": "customerSubsector",
+      "name": "客户所属子行业",
+      "field": "客户所属子行业",
+      "synonyms": [
+        "subsector",
+        "子行业",
+        "客户子行业",
+        "客户所属子行业"
+      ]
+    },
+    {
       "id": "productName",
       "concept": "product",
       "name": "产品名称",

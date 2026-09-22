@@ -15,6 +15,7 @@ test('多数据集查询服务逐个执行 Canonical 请求并记录缓存与预
   const calls = [];
   const service = new MultiDatasetQueryService({
     loadMetadata: async id => ({ ...metadata, id }),
+    executionPolicy: 'smart-query',
     executeDatasetQuery: async (id, options) => {
       calls.push({ id, options });
       return { rows: [{ group1: '华东', sales: 100 }], truncated: false, limitReached: false };
@@ -26,6 +27,21 @@ test('多数据集查询服务逐个执行 Canonical 请求并记录缓存与预
   assert.equal(first.resultSets[0].rows[0].sales, 100);
   assert.equal(second.audits[0].cache, 'hit');
   assert.equal(calls.length, 1);
+});
+
+test('Smart Query 缓存命中仍拒绝样本结果', async () => {
+  const service = new MultiDatasetQueryService({
+    loadMetadata: async id => ({ ...metadata, id }),
+    executionPolicy: 'smart-query',
+    executeDatasetQuery: async () => ({ rows: [{ group1: '华东', sales: 100 }], truncated: false, limitReached: false }),
+  });
+  const request = { id: 'qry-cached-sales', datasetId: 'dataset-sales-v1', mode: 'aggregate', select: [{ field: '区域', alias: 'region' }], measures: [{ field: '销售额', aggregation: 'sum', alias: 'sales' }], limit: 10 };
+  await service.execute({ requests: [request] });
+  const cached = service.cache.values().next().value;
+  cached.resultSet.quality.isSample = true;
+  await assert.rejects(() => service.execute({ requests: [request] }), error => (
+    error?.code === 'QUERY_EXECUTION_POLICY_VIOLATION' && /禁止样本结果/.test(error.message)
+  ));
 });
 
 test('多数据集结果只能按声明维度对齐合并并保留样本边界', () => {

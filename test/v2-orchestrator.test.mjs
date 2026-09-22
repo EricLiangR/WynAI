@@ -73,6 +73,15 @@ function fakeDatasetExecutor() {
   };
 }
 
+test('V2.1 Harness 必须显式声明执行策略', async () => {
+  await assert.rejects(() => runAutonomousAnalysis({
+    metadata,
+    executeDatasetQuery: fakeDatasetExecutor(),
+    analyzeDataset,
+  }), error => error?.code === 'QUERY_EXECUTION_POLICY_VIOLATION'
+    && /必须显式声明/.test(error.message));
+});
+
 test('V2.1 Harness 保留受控探索结果并不在平台结果层本地归并', async () => {
   const result = await runAutonomousAnalysis({
     metadata,
@@ -80,9 +89,10 @@ test('V2.1 Harness 保留受控探索结果并不在平台结果层本地归并'
     constraints: { filters: [] },
     executeDatasetQuery: fakeDatasetExecutor(),
     analyzeDataset,
+    executionPolicy: 'data-insight',
   });
   assert.equal(result.analysis.version, 'analysis-run/v2.1');
-  assert.equal(result.analysis.validation.queryMode, 'routed-canonical-v2.1-exploration');
+  assert.equal(result.analysis.validation.executionStrategy, 'data-insight-governed-routing');
   assert.equal(result.queries.length, 3);
   assert.equal(result.budget.usedRounds, 1);
   assert.ok(result.queries.every(item => item.executionPlan?.adapter !== 'wyn-wax-controlled' || !item.request.select.some(field => field.grain)));
@@ -96,6 +106,7 @@ test('严格模式禁止确定性 fallback 被包装成成功分析', async () =
     executeDatasetQuery: fakeDatasetExecutor(),
     analyzeDataset,
     strictMode: true,
+    executionPolicy: 'data-insight',
   }), /严格分析禁止 Planner 降级/);
 });
 
@@ -115,6 +126,7 @@ test('严格模式在首轮 Wyn 能力不可用时立即停止且不执行 Criti
       executeDatasetQuery,
       analyzeDataset,
       strictMode: true,
+      executionPolicy: 'data-insight',
       explorationAgent: {
         enabled: true,
         plan: async () => ({ plan: { intent: 'anomaly', methods: ['anomaly_trend'], hypotheses: [] }, model: 'fake-model' }),
@@ -150,6 +162,7 @@ test('严格模式首轮查询失败时保留原始错误并且不调用 Critic'
       executeDatasetQuery,
       analyzeDataset,
       strictMode: true,
+      executionPolicy: 'data-insight',
       explorationAgent: {
         enabled: true,
         plan: async () => ({ plan: { intent: 'anomaly', methods: ['anomaly_trend'], hypotheses: [] }, model: 'fake-model' }),

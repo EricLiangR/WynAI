@@ -197,3 +197,9 @@ Phase 0 不再新增权限穿透、非索引数据集精确聚合或 Wyn 原生�
 - 本轮不验证真实用户权限穿透，也不修改 Wyn 权限逻辑；真实用户权限穿透不属于本项目后续范围。
 - Wyn 原生分页不属于本项目后续范围；当前 Smart Query 只对已验收的应用前端分页负责。
 - Arrow 格式仍未形成真实协议证据，作为可选性能研究保留，不阻塞当前交付。
+
+### 7.3 2026-09-21 Smart Query 执行策略边界
+
+Wyn API 是否支持 NONE 与 Smart Query 是否允许使用 NONE 是两个不同层次。NONE 仍是 Wyn 数据集接口的可用能力，但 Smart Query 业务查询策略只允许 `wyn-wax-controlled`，并拒绝任何 `isSample=true` 的结果。筛选、计数、投影、聚合、排序和排名必须先由 Wyn/WAX 执行；平台不得把 NONE 样本加工成业务答案。
+
+独立数据洞察可在 `data-insight` 策略下使用 `wyn-dataset-none-json` 进行无筛选质量采样，结果必须保留样本标识。Canonical 的 `aggregate/compare/projection` 由结构化指标、维度和时间粒度推导，用户展示形态 `expectedResult.shape` 不参与适配器选择。新运行和生产展示只使用 `executionStrategy`；旧 `queryMode` 输入在规范化时删除，不参与路由或展示。

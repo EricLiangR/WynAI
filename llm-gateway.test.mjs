@@ -164,10 +164,10 @@ test('模型标量列表字段可规范化且 Skill 字典校验可进入有限�
   ] }];
   const plan = await planBusinessQuestionAsync({ metadata, skills, question: 'recurring 的项目有哪些，请返回项目名称和订单金额', llm });
   assert.equal(plan.status, 'supported');
-  assert.equal(calls, 2);
-  assert.match(repairFeedback, /筛选值未使用 Skill 源值/);
+  assert.equal(calls, 1);
+  assert.equal(repairFeedback, '');
   assert.equal(plan.intent.filters[0].value[0], 'Yes');
-  assert.equal(plan.plannerDiagnostics.repairAttempted, true);
+  assert.equal(plan.plannerDiagnostics.repairAttempted, false);
 });
 
 test('本地意图处理异常不会被误报为大模型服务不可用', async () => {

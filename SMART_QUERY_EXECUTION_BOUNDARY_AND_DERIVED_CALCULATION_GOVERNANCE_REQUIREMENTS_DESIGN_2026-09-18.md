@@ -394,8 +394,31 @@ Wyn 结果
 
 正式证据位于 `UAT-AY/RELEASE_GATE_UAT_REPORT_2026-09-20.md`、`UAT-AY/release-gate-1.0.0-2026-09-20/api-release-gate.json`、`browser-release-gate.json` 和 `browser-screenshots/`。
 
-本轮不实施 `queryMode/NONE` 架构清理；权限穿透、非索引数据集和 Wyn 原生分页仍不属于本专项范围。
+该发布门禁批次本身未实施 `queryMode/NONE` 架构清理；后续 2026-09-21 专项已进入实施。权限穿透、非索引数据集和 Wyn 原生分页仍不属于本专项范围。
 
 ## 2026-09-21 发布门禁动态日期约束
 
 发布门禁中的相对日期不能使用固定自然日。评测包允许使用版本化日期表达式 `{"$relativeDate":"businessDate","offsetDays":N}`；门禁运行器在一轮执行开始时以 `Asia/Shanghai` 固定唯一 `businessDate`，再将表达式物化为实际日期值。对于“截止目前”，排他上界为业务日期加一天。该机制只用于验证相对时间的稳定性，实际筛选仍必须由 Wyn 执行；任何平台本地二次过滤、从部分结果推算或业务 fallback 仍然禁止。
+
+## 15. 2026-09-21 queryMode/NONE 架构清理设计
+
+### 15.1 执行策略
+
+- `smart-query`：仅允许 `wyn-wax-controlled`，禁止样本结果；适用于单数据集、多数据集和 Smart Query 开放分析。
+- `data-insight`：允许 `wyn-wax-controlled` 与 `wyn-dataset-none-json`；NONE 仅用于明确质量采样。
+- 所有共享编排器和查询服务必须显式声明策略；缺失或未知策略立即失败，不允许默认回落到任一模式。
+- 底层 Wyn 查询调用必须显式声明 `queryType=WAX|NONE`；缺失值不得默认成 NONE，NONE 样本读取函数必须使用 Data Insight 专用命名和入口。
+- Smart Query 服务装配固定使用 `smart-query`，调用参数不能把它改成 `data-insight`。
+- 策略在适配器注册、单次执行结果、缓存命中和 Smart Query 会话交付四个阶段校验，避免未来新入口绕过边界。
+
+### 15.2 结构推导
+
+Canonical 执行模式不读取 `expectedResult.shape`：无指标且存在投影字段时为 `projection`；存在指标和时间粒度时为 `compare`；其他指标查询为 `aggregate`。`expectedResult.shape` 只描述结果展示，改变它不得改变相同业务结构的执行模式。
+
+### 15.3 兼容与审计
+
+新 BusinessQueryIntent 继续删除输入中的 `queryMode`，新运行不再生成该字段。数据洞察、页面和报告审计只读取 `executionStrategy`；历史 `queryMode` 不再参与生产展示、查询编译或路由。用户消息清洗仍识别该技术词，防止历史错误文本直接泄漏给用户。
+
+### 15.4 防回归门禁
+
+自动化必须覆盖：缺失执行策略立即失败、Smart Query 拒绝注册 NONE、拒绝 NONE 查询记录、拒绝样本结果、缓存命中重新校验、会话交付边界二次校验、数据洞察允许 NONE 质量采样、展示形态不控制 Canonical 模式、旧 `queryMode` 不影响路由。真实 UAT 还必须核对 Trace 中 Smart Query 适配器全部为 WAX，NONE、fallback、sample 和 truncation 均为 0。

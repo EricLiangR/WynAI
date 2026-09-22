@@ -343,12 +343,12 @@ function plannerModeLabel(value) {
   return raw ? '智能规划' : '';
 }
 
-function queryModeLabel(value) {
+function executionStrategyLabel(value) {
   const raw = String(value || '').toLowerCase();
-  if (raw.includes('routed')) return '动态路由';
-  if (raw.includes('wax')) return 'WAX 聚合';
-  if (raw.includes('none') || raw.includes('detail')) return '数据集明细';
-  if (raw.includes('sample')) return '样本分析';
+  if (raw.includes('smart-query-wax-only')) return 'Wyn 受控查询';
+  if (raw.includes('data-insight-governed-routing') || raw.includes('routed')) return '受控洞察编排';
+  if (raw.includes('wax')) return 'Wyn 受控查询';
+  if (raw.includes('none') || raw.includes('sample')) return '质量采样读取';
   return '受控查询';
 }
 
@@ -959,8 +959,8 @@ function renderAgentRun(run) {
   document.querySelector('#agent-run-status').textContent = statusLabel(run.status);
   document.querySelector('#agent-run-id').textContent = `运行 ${run.id.slice(0, 12)}`;
   document.querySelector('#agent-evidence-coverage').textContent = `${analysis.validation?.evidenceCoverage ?? 0}%`;
-  const queryMode = String(analysis.validation?.queryMode || '');
-  document.querySelector('#agent-query-mode').textContent = queryModeLabel(queryMode);
+  const executionStrategy = String(analysis.validation?.executionStrategy || '');
+  document.querySelector('#agent-execution-strategy').textContent = executionStrategyLabel(executionStrategy);
   const sampleRows = analysis.profile.sampleRowCount ?? analysis.profile.rowCount;
   document.querySelector('#agent-profile-summary').textContent = `${Number(analysis.profile.rowCount || 0).toLocaleString('zh-CN')} 行全量 · ${Number(sampleRows || 0).toLocaleString('zh-CN')} 行质量样本 · ${analysis.profile.completeness}% 完整`;
   const plannerMode = analysis.planning?.plannerMode || '';

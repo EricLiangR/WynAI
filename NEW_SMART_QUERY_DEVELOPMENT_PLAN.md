@@ -29,8 +29,8 @@
 - 读取数据集 `contentUrl` 中的数据集定义；
 - 规范化 `Fields`、字段类型、字段角色、字段描述、`AIAssistantInfo`、`ColumnAssistantInfos`、字段同义词和聚合配置；
 - 使用 `CanonicalQueryRequest` 描述平台无关的查询需求；
-- 使用受控 WAX 适配器执行聚合查询；
-- 使用 Dataset NONE 适配器执行明细或受控样本查询；
+- 使用受控 WAX 适配器执行 Smart Query 的筛选、计数、投影、聚合、排序和排名；
+- 仅在显式 `data-insight` 策略中使用 Dataset NONE 适配器执行受治理质量采样；
 - 将不同查询适配器的结果转换为统一 `CanonicalResultSet`；
 - 通过 Planner/Critic 进行多轮分析、追问和证据绑定；
 - 使用 ECharts 和已有分析结构生成可视化结果。
@@ -69,24 +69,23 @@ POST /api/chat
 
 本项目不建设或验证 Wyn 用户权限穿透、行级权限代理、非索引数据集精确聚合和 Wyn 原生分页协议。Wyn 继续负责其既有权限和数据查询执行边界，WynAI 只对已接入的受控查询、结果契约和应用前端分页负责。上述取消项不作为开发任务、UAT 用例或发布门禁。
 
-## 4. NONE 样本模式说明
+## 4. WAX 与 NONE 执行边界
 
 当前查询层有两种重要模式：
 
-### WAX 聚合查询
+### WAX 业务查询
 
-- Wyn 在数据集侧执行聚合、分组和部分过滤；
-- 适合总额、趋势、排名、分布等精确聚合结果；
-- 结果行数通常是分组后的行数；
-- 仍需要标记是否被 Wyn 的行数上限截断。
+- Wyn 在数据集侧执行筛选、计数、字段投影、聚合、分组、排序和排名；
+- Smart Query 的标量、名单、明细、趋势、排名和分布查询全部使用该路径；
+- 结果必须满足完整计数、非样本、非截断等结果契约；
+- 超过 20,000 行或计数不一致时阻断，不允许切换到 NONE 或平台本地加工。
 
-### NONE 明细查询
+### NONE 质量采样
 
-- 通常返回数据集原始行；
-- 当前项目在服务端对返回行执行受控过滤和字段投影；
-- 受 `RowLimit` 限制，当前适配器将其标记为 `isSample=true`；
-- 适合明细预览、质量检查、示例数据和受控局部分析；
-- 不适合将返回样本当成全数据集，直接回答“全局总额”“所有客户排名”等问题。
+- NONE 是 Wyn 数据集 API 的原生能力，通常返回受 `RowLimit` 限制的原始行；
+- 平台仅在显式 `data-insight` 策略下用于无筛选质量采样，并强制标记 `isSample=true`；
+- Smart Query 策略禁止注册、执行或交付 NONE 结果；
+- NONE 样本不得在平台本地执行用户业务筛选、聚合、排序或排名，也不得包装成业务答案。
 
 因此，当前纳入范围的结果必须区分：
 
@@ -124,8 +123,8 @@ Schema Validator + Query Planner/Compiler
   v
 Query Router
   |
-  +-- Controlled WAX Adapter
-  +-- Dataset NONE Adapter
+  +-- smart-query: Controlled WAX Adapter only
+  +-- data-insight: Controlled WAX Adapter + governed Dataset NONE Adapter
   +-- 后续可增加其他受控适配器
   |
   v
@@ -362,7 +361,7 @@ Skill 建议包含：
 
 工作项：
 
-- 复用并完善 `QueryRouter`、WAX 和 NONE 适配器；
+- 复用并完善 `QueryRouter`、WAX 和 NONE 适配器，并由显式执行策略隔离两者适用范围；
 - 增加 exact/sample/truncated/estimated 结果范围标识；
 - 增加查询缓存、超时、并发和预算控制；
 - 增加字段、聚合、过滤、权限和数据集 revision 校验；
@@ -647,7 +646,7 @@ Phase 3 的“接口、查询执行和页面可用”与“自然语言语义准
 
 9 月 14 日的 `detail -> NONE` 与“先交付 20,000 行再提示受限”是历史实现，不再是正式问数能力：对原始 28,944 行的固定新数据集，旧路径的 B-001 只找到 2 行，而 Wyn 先过滤后的正确结果是 7 行。现已将 Smart Query 默认适配器限定为 WAX；原始行先在 Wyn 过滤并计数，超过 20,000 行或计数与取数不一致时停止生成答案。聚合后计算需要完整中间分组；NONE 只用于独立、明确标记的无筛选质量样本，分析入口亦不再在 Wyn 筛选失败时取未筛选样本本地过滤。前端分页仍仅分页已验证完整交付的结果。
 
-专项自动化与真实浏览器 B-001 已验收；B-002 至 B-010 和其余 UAT 库应逐条重跑，不能沿用旧截图结论。LLM 输出中的 `queryMode=aggregate/detail` 仍为现有意图协议，全面移除该概念属于独立未完成工作，不应与本次“禁用 NONE 正式问数路径”混淆。详见 `UAT-AY/WYN_FILTER_BEFORE_CAP_UAT_2026-09-17.md`。
+专项自动化与真实浏览器 B-001 已验收；B-002 至 B-010 和其余 UAT 库在该阶段仍需逐条重跑，不能沿用旧截图结论。截至 9 月 17 日，LLM 输出中的 `queryMode=aggregate/detail` 仍为当时协议；该历史状态已由 9 月 21 日的 queryMode/NONE 架构清理取代。详见 `UAT-AY/WYN_FILTER_BEFORE_CAP_UAT_2026-09-17.md`。
 
 ## 2026-09-18 P0 执行边界与派生计算治理（2026-09-20 开发完成，真实 UAT 待执行）
 
@@ -694,4 +693,12 @@ Phase 3 的“接口、查询执行和页面可用”与“自然语言语义准
 
 ### 明确不属于本轮
 
-本轮不实施 `queryMode/NONE` 架构清理，也不重新打开已取消的权限穿透、非索引数据集和 Wyn 原生分页范围。
+该发布基线本身未实施 `queryMode/NONE` 架构清理。后续 2026-09-21 专项已启动并取代该未完成状态：新 Smart Query 链路不再生成或依赖 `queryMode`，Canonical 执行形态由指标、维度和时间粒度等结构推导；Smart Query 执行策略只允许 `wyn-wax-controlled`，NONE 仅保留给独立数据洞察的明确质量采样。权限穿透、非索引数据集和 Wyn 原生分页仍不重新纳入范围。
+
+## 2026-09-21 queryMode/NONE 架构清理
+
+本专项将结果展示形态与查询执行方式彻底解耦：`expectedResult.shape` 继续描述用户希望看到的标量、表格、趋势或明细展示，但不能决定使用聚合、投影或哪个适配器。Canonical 模式只根据结构化意图推导：有指标时为聚合，有时间粒度的指标查询为比较，无指标且有投影字段时为源端投影。
+
+Smart Query 使用默认拒绝的 `smart-query` 执行策略，只允许 Wyn/WAX 适配器，运行结果必须为非样本；多数据集和开放分析入口同样透传该策略。独立数据洞察使用 `data-insight` 策略，可保留 NONE 质量采样，但其结果必须标记为样本，不能进入 Smart Query 业务答案。新运行审计字段统一为 `executionStrategy`；历史保存结果中的 `queryMode` 只允许兼容读取，不参与新请求路由。
+
+发布门禁新增：禁止 Smart Query 注册 NONE、禁止 Smart Query 接受 `isSample=true`、允许数据洞察质量采样、展示形态变化不得改变 Canonical 执行模式、旧 `queryMode` 输入不得影响路由、会话必须显式传递 `executionPolicy=smart-query`。本专项不增加销售场景、固定问题或数据集 ID 特判。

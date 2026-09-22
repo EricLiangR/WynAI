@@ -97,7 +97,7 @@ await runCase('UVT-05', '带业务筛选的完整 AI 数据分析运行', async 
   assert.ok(run.analysis.evidence.length >= run.analysis.insights.length);
   assert.equal(run.analysis.validation.evidenceCoverage, 100);
   assert.equal(run.analysis.validation.sqlAllowed, false);
-  assert.equal(run.analysis.validation.queryMode, 'dataset-wax-controlled');
+  assert.equal(run.analysis.validation.executionStrategy, 'wyn-wax-controlled');
   assert.equal(run.analysis.execution.sampleQueryType, 'WAX');
   assert.equal(run.analysis.execution.waxQueryCount, queryBundle.plans.length);
   assert.deepEqual(run.analysis.execution.filters.map(item => item.field), [filters[0].field]);
