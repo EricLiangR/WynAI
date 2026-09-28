@@ -702,3 +702,17 @@ Phase 3 的“接口、查询执行和页面可用”与“自然语言语义准
 Smart Query 使用默认拒绝的 `smart-query` 执行策略，只允许 Wyn/WAX 适配器，运行结果必须为非样本；多数据集和开放分析入口同样透传该策略。独立数据洞察使用 `data-insight` 策略，可保留 NONE 质量采样，但其结果必须标记为样本，不能进入 Smart Query 业务答案。新运行审计字段统一为 `executionStrategy`；历史保存结果中的 `queryMode` 只允许兼容读取，不参与新请求路由。
 
 发布门禁新增：禁止 Smart Query 注册 NONE、禁止 Smart Query 接受 `isSample=true`、允许数据洞察质量采样、展示形态变化不得改变 Canonical 执行模式、旧 `queryMode` 输入不得影响路由、会话必须显式传递 `executionPolicy=smart-query`。本专项不增加销售场景、固定问题或数据集 ID 特判。
+
+## 2026-09-22 P0 受治理语义映射
+
+目标是把数据集/Skill 字典从“供模型参考的文本”升级为可校验的执行证据。实施包括：
+
+1. 字典解析结果必须以 `field + concept + operator + canonicalValue + sourcePhrase + skillRef` 原子绑定，字段和值不得拆分迁移。
+2. 未知简称若无法从当前数据集、已加载 Skill、用户确认或既有受治理约束获得证据，必须先澄清，不得由 LLM 自由猜测。
+3. requiredMetrics/requiredDimensions 的覆盖校验优先按源字段、业务概念和 Skill 同义词解析，再使用输出 alias。
+4. Canonical 编译前再次校验规范值所属字段和操作符，错误绑定不得发送给 Wyn。
+5. 自动化与真实浏览器 UAT 同时验证正向 MNC、未知 MCN/POC、partner 输出字段和错误字段绑定阻断。
+
+本工作包不优化或收紧多轮上下文继承；相关行为保持现状，并由既有回归用例继续保护。禁止新增固定问题、销售专用代码分支或业务 fallback。
+
+完成状态：代码、Schema、销售 Skill 同义词、专项测试与项目文档已更新；全量自动化 `539/539`、`npm run check` 通过。8787 真实浏览器完成合法 MNC + `partner`、未知 MCN、未知 POC 三类用户路径及合法查询技术详情验收，4/4 通过，控制台 warning/error 为 0。证据见 `UAT-AY/governed-semantic-mapping-2026-09-22/GOVERNED_SEMANTIC_MAPPING_UAT_REPORT_2026-09-22.md`。

@@ -422,3 +422,23 @@ Canonical 执行模式不读取 `expectedResult.shape`：无指标且存在投�
 ### 15.4 防回归门禁
 
 自动化必须覆盖：缺失执行策略立即失败、Smart Query 拒绝注册 NONE、拒绝 NONE 查询记录、拒绝样本结果、缓存命中重新校验、会话交付边界二次校验、数据洞察允许 NONE 质量采样、展示形态不控制 Canonical 模式、旧 `queryMode` 不影响路由。真实 UAT 还必须核对 Trace 中 Smart Query 适配器全部为 WAX，NONE、fallback、sample 和 truncation 均为 0。
+
+## 16. 2026-09-22 语义映射执行前证据门禁
+
+### 16.1 原子映射契约
+
+Skill 字典成员不再只表示“简称可以替换成某个文本值”，而是一个不可拆分的执行契约：`sourcePhrase + field + concept + operator + canonicalValue + skillRef + evidenceSource`。LLM 可以理解用户语言，但不能把规范值搬到其它字段，也不能改变多值字段要求的成员操作符。
+
+### 16.2 未知简称
+
+对于当前数据集/Skill 未登记的英文或数字简称，如果模型将其映射为已知规范值，或直接作为受治理字典字段的源值使用，规划器必须返回澄清。可以根据编辑距离提供相近的已批准简称作为选项，但不能自动采用。用户确认后的澄清结果和既有受治理约束可作为后续执行证据。本阶段不改变现有多轮继承判定。
+
+### 16.3 输出字段覆盖
+
+requiredDimensions 和 requiredMetrics 在验证前应通过字段名、concept、实体 ID、Skill 名称和同义词解析到实际输出 alias。解析必须唯一；歧义继续澄清。真实存在且已绑定的字段不能因 LLM 使用 `partner`、`合作伙伴` 或源字段名而被误判为缺失。
+
+### 16.4 防回归门禁
+
+默认测试必须证明：已批准简称可执行并留下完整映射证据；未知简称不能进入 Wyn；规范值绑定到错误字段或错误操作符时阻断；Skill 同义词能解析到真实输出字段；既有多轮上下文测试保持不变。真实浏览器 UAT 必须保存澄清页面、成功结果、技术详情和 Trace 截图。
+
+实施验收状态：已完成。自动化 `539/539`、静态检查通过；8787 真实浏览器确认合法映射进入 Wyn、未知简称停留在澄清态、错误绑定由自动化在编译前阻断，控制台 warning/error 为 0。验收报告见 `UAT-AY/governed-semantic-mapping-2026-09-22/GOVERNED_SEMANTIC_MAPPING_UAT_REPORT_2026-09-22.md`。

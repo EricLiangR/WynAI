@@ -406,14 +406,14 @@
       "concept": "salesDirector",
       "name": "销售总监",
       "field": "Opportunity_manager",
-      "synonyms": ["销售总监", "销售主管", "商机负责主管", "主EIC", "主EM"]
+      "synonyms": ["销售总监", "销售主管", "商机负责主管", "主EIC", "主EM", "manager"]
     },
     {
       "id": "opportunityPartner",
       "concept": "opportunityPartner",
       "name": "合作伙伴",
       "field": "Opportunity_partner",
-      "synonyms": ["合作伙伴", "商机合作伙伴", "oppo partner", "主PIC", "主EP"]
+      "synonyms": ["合作伙伴", "商机合作伙伴", "oppo partner", "partner", "主PIC", "主EP"]
     },
     {
       "id": "createdDate",

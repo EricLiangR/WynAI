@@ -825,3 +825,16 @@ BusinessQueryIntent 新链路不生成或依赖 `queryMode`；Canonical 执行�
 所有非澄清结果均展开“详情”并核对执行归属包含 Wyn、样本为否、替代结果未使用、数据集与 Skill 正确、Trace 存在、结果行数与 API 门禁一致，且页面不泄漏平台 `queryMode`、平台 NONE 或 fallback。`UAT-AY-002` 与 `UAT-SEM-004` 按预期进入澄清；`UAT-AY-034` 与 `B-010` 为合法完整 0 行结果。重点回归 `UAT-AY-032` 返回 5 行、`UAT-AY-033` 返回 2 行，确认聚合与聚合后筛选仍由 Wyn 执行。
 
 原 8787 进程在连续长批 API 验证中发生进程退出，因此本轮使用同一最新工作区源码和 `.env.local`、但隔离运行数据目录的 8791 实例完成最终 API 与浏览器门禁。该现象单独登记为 8787 长批次运行稳定性问题；不能用本轮语义门禁通过替代 8787 的压力/内存稳定性验收。完整报告见 `UAT-AY/latest-full-browser-2026-09-22/FINAL_UAT_REPORT.md`。
+
+## 2026-09-22 受治理语义映射加固
+
+状态：开发完成、自动化与真实浏览器 UAT 均通过。
+
+- 新增规范值字段与操作符绑定校验，禁止把 Skill 规范值挂到其它字段。
+- 新增版本化映射证据，记录源短语、字段、概念、操作符、规范值、Skill 版本和证据来源。
+- 未知简称被模型映射为已知枚举值，或直接作为受治理字段值使用时，返回明确澄清而不是执行错误查询。
+- requiredDimensions 可通过源字段、业务 concept 和 Skill 同义词解析到实际输出 alias；销售 Skill 补充 `partner`、`manager` 作为字段同义词。
+- 本阶段不修改多轮上下文继承逻辑，不使用固定问题分支或业务 fallback。
+- 专项与全量自动化：`npm test` 539/539，`npm run check` 和 `git diff --check` 通过。
+- 真实浏览器 UAT：合法 MNC + `partner` 返回 5 行，详情确认客户类型使用“包含任一”、`partner` 绑定 `Opportunity_partner`，筛选/分组/聚合/排序由 Wyn 执行，结果完整、非样本且未使用替代结果；未知 MCN、POC 均进入澄清，不生成错误结果表。浏览器控制台 warning/error 为 0。
+- 截图与验收报告：`UAT-AY/governed-semantic-mapping-2026-09-22/`。

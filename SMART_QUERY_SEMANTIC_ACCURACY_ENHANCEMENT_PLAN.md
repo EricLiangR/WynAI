@@ -895,3 +895,13 @@ E0-E4 具备立即开发条件，不需要新的外部信息。E5-E7 中不依�
 `queryMode=aggregate/detail` 已从新 BusinessQueryIntent 输出和 Canonical 路由依赖中移除。`expectedResult.shape` 只承担展示契约，不再控制执行方式；执行模式由 `metrics`、`dimensions` 和时间粒度等结构推导。历史输入中的 `queryMode` 在规范化时删除，不参与生产展示、查询编译或路由。
 
 Smart Query 必须显式声明 `smart-query` 策略，只能调用 Wyn/WAX，并在适配器注册、执行结果、缓存命中和会话交付阶段拒绝 NONE 与样本结果；独立数据洞察仍可为质量分析使用明确标记的 NONE 样本。用户可见审计名称改为“执行方式”，新字段为 `executionStrategy`。该变化是平台级协议治理，不使用问题关键词、销售字段或固定数据集分支。
+
+## 2026-09-22 受治理语义映射与未知简称澄清
+
+本阶段解决 LLM 将未知简称无证据映射为已知枚举值、将规范值挂到错误字段，以及 requiredDimensions 仅按模型 alias 校验导致合法字段被误拒绝的问题。实现为平台通用协议，不针对 MCN、POC、MNC 或销售问句建立固定分支。
+
+平台新增 `wynai.governed-mapping-evidence/v1`：每次 Skill 字典解析必须原子记录用户源短语、源字段、业务概念、操作符、规范值、Skill 版本和证据来源。规范值不能脱离其声明字段和操作符使用；没有数据集、Skill、用户已确认澄清或既有受治理约束证据时，模型猜测必须转为 `needs_clarification`，不能执行 Wyn 查询或用零结果掩盖歧义。
+
+必需输出字段先按实际字段、业务概念、实体 ID、Skill 名称和同义词解析到真实输出 alias，再执行覆盖校验。数据集确实不支持的字段继续归类为能力不可用；数据集支持且已有 Skill 绑定的字段不得因模型 alias 不一致被误判失败。本阶段明确不修改多轮上下文继承策略。
+
+实施结果：本阶段已完成并通过 `539/539` 全量自动化、静态检查和 8787 真实浏览器 4/4 截图验收。合法 MNC 映射保留完整字段、操作符和 Skill 证据，`partner` 正确解析到 `Opportunity_partner`；未知 MCN、POC 未执行错误查询而进入澄清。报告见 `UAT-AY/governed-semantic-mapping-2026-09-22/GOVERNED_SEMANTIC_MAPPING_UAT_REPORT_2026-09-22.md`。

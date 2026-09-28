@@ -237,6 +237,25 @@
       "type": "array",
       "maxItems": 8
     },
+    "governedMappingEvidence": {
+      "type": "array",
+      "maxItems": 16,
+      "items": {
+        "type": "object",
+        "required": ["schema", "sourcePhrase", "field", "operator", "canonicalValue", "evidenceSource"],
+        "properties": {
+          "schema": { "const": "wynai.governed-mapping-evidence/v1" },
+          "sourcePhrase": { "type": "string" },
+          "field": { "type": "string" },
+          "concept": { "type": ["string", "null"] },
+          "operator": { "type": "string" },
+          "canonicalValue": { "type": "string" },
+          "skillRef": { "type": ["string", "null"] },
+          "evidenceSource": { "const": "skill-value-mapping" }
+        },
+        "additionalProperties": false
+      }
+    },
     "resultFilters": {
       "type": "array",
       "maxItems": 4,
