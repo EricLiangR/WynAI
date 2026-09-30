@@ -136,6 +136,26 @@ test('Canonical 时间筛选安全规范化 ISO 日期而不放宽字段校验',
   assert.equal(request.filters[0].value, '2026-03-01');
 });
 
+test('Canonical 允许 Skill 声明的字符串期间字段在 Wyn 中直接分组', () => {
+  const periodMetadata = {
+    ...metadata,
+    fields: [...metadata.fields, { name: '赢单季度', type: 'String', rawType: 'String', role: 'dimension' }],
+  };
+  const request = normalizeCanonicalQueryRequest(periodMetadata, {
+    id: 'qry-won-quarter', mode: 'compare', dataset: { id: periodMetadata.id, revision: periodMetadata.revision },
+    select: [{ field: '赢单季度', alias: 'won_quarter', grain: 'quarter', temporal: true }],
+    measures: [
+      { field: '订单金额', aggregation: 'sum', alias: 'revenue' },
+      { field: '客户类型', aggregation: 'distinctCount', alias: 'customer_type_count' },
+    ],
+  });
+  const adapter = new ControlledWaxAdapter();
+  assert.equal(adapter.canExecute(request, { metadata: periodMetadata }), true);
+  const executionPlan = adapter.compile(request, { metadata: periodMetadata });
+  assert.match(executionPlan.compiled.query, /\[赢单季度\]/);
+  assert.doesNotMatch(executionPlan.compiled.query, /YEAR\(|MONTH\(|DATE\(/);
+});
+
 test('Canonical in 筛选逐值校验并编译为受控 WAX 集合', () => {
   const request = normalizeCanonicalQueryRequest(metadata, {
     id: 'qry-region-set', mode: 'aggregate', dataset: { id: metadata.id, revision: metadata.revision },
@@ -236,6 +256,26 @@ test('未确认 Wyn 时间粒度表达时阻断，不在平台本地归并', () 
     for (let day = 1; day <= 20; day += 1) rawRows.push({ group1: new Date(Date.UTC(2026, month, day)).toISOString(), records: 1 });
   }
   assert.throws(() => normalizeCanonicalResultSet({ request, executionPlan, rawResult: { rows: rawRows, truncated: false }, metadata }), /不会在返回明细后本地归并/);
+});
+
+test('Skill 声明的字符串期间字段按 Wyn 返回值直接规范化', () => {
+  const periodMetadata = {
+    ...metadata,
+    fields: [...metadata.fields, { name: '赢单季度', type: 'String', rawType: 'String', role: 'dimension' }],
+  };
+  const request = normalizeCanonicalQueryRequest(periodMetadata, {
+    id: 'qry-materialized-quarter', mode: 'compare', dataset: { id: periodMetadata.id, revision: periodMetadata.revision },
+    select: [{ field: '赢单季度', alias: 'won_quarter', grain: 'quarter', temporal: true }],
+    measures: [{ field: '订单金额', aggregation: 'sum', alias: 'revenue' }],
+  });
+  const result = normalizeCanonicalResultSet({
+    request,
+    executionPlan: { id: 'xp-materialized-quarter', adapter: 'wyn-wax-controlled', adapterVersion: 'test' },
+    metadata: periodMetadata,
+    rawResult: { rows: [{ group1: '1', revenue: 100 }], totalRows: 1, isComplete: true },
+  });
+  assert.deepEqual(result.rows, [{ won_quarter: '1', revenue: 100 }]);
+  assert.equal(result.resultContract.isComplete, true);
 });
 
 test('查询路由按需求选择 WAX 聚合与服务端筛选投影并统一结果结构', async () => {

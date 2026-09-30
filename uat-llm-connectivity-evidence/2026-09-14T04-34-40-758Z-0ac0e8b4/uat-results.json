@@ -1,0 +1,19 @@
+{
+  "schemaVersion": "uat-llm-connectivity/v2",
+  "startedAt": "2026-09-14T04:34:39.201Z",
+  "finishedAt": "2026-09-14T04:34:40.758Z",
+  "status": "passed",
+  "endpoint": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+  "model": "deepseek-v4-flash-0731",
+  "nodeVersion": "v24.11.1",
+  "sendsBusinessData": false,
+  "checks": [
+    {
+      "id": "LLM-CONNECT-01",
+      "status": "passed",
+      "model": "deepseek-v4-flash-0731",
+      "latencyMs": 1555
+    }
+  ],
+  "artifactDirectory": "uat-llm-connectivity-evidence\\2026-09-14T04-34-40-758Z-0ac0e8b4"
+}

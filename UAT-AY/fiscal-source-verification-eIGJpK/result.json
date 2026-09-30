@@ -1,0 +1,474 @@
+{
+  "checkedAt": "2026-09-11T08:11:12.814Z",
+  "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+  "evidenceType": "read-only-query-diagnostic-not-browser-UAT",
+  "requests": [
+    {
+      "id": "verify-fiscal-distribution",
+      "select": [
+        {
+          "field": "赢单财年",
+          "alias": "fiscal",
+          "role": "dimension"
+        }
+      ],
+      "filters": [],
+      "dataset": {
+        "id": "18b86197-65e3-4682-8501-6e7125afad02"
+      },
+      "mode": "aggregate",
+      "purpose": "Read-only UAT fiscal source verification",
+      "measures": [
+        {
+          "aggregation": "countRows",
+          "alias": "records"
+        }
+      ],
+      "limit": 20000
+    },
+    {
+      "id": "verify-fiscal-26",
+      "select": [],
+      "filters": [
+        {
+          "field": "赢单财年",
+          "operator": "eq",
+          "value": "26"
+        }
+      ],
+      "dataset": {
+        "id": "18b86197-65e3-4682-8501-6e7125afad02"
+      },
+      "mode": "aggregate",
+      "purpose": "Read-only UAT fiscal source verification",
+      "measures": [
+        {
+          "aggregation": "countRows",
+          "alias": "records"
+        }
+      ],
+      "limit": 20000
+    },
+    {
+      "id": "verify-fiscal-27",
+      "select": [],
+      "filters": [
+        {
+          "field": "赢单财年",
+          "operator": "eq",
+          "value": "27"
+        }
+      ],
+      "dataset": {
+        "id": "18b86197-65e3-4682-8501-6e7125afad02"
+      },
+      "mode": "aggregate",
+      "purpose": "Read-only UAT fiscal source verification",
+      "measures": [
+        {
+          "aggregation": "countRows",
+          "alias": "records"
+        }
+      ],
+      "limit": 20000
+    },
+    {
+      "id": "verify-b010-filtered-count",
+      "select": [],
+      "filters": [
+        {
+          "field": "产品名称",
+          "operator": "eq",
+          "value": "Digital Ecosystem Enterprise Alliances",
+          "fieldType": "dimension"
+        },
+        {
+          "field": "客户类型",
+          "operator": "containsAny",
+          "value": [
+            "Private Entity（POE）"
+          ],
+          "fieldType": "dimension"
+        },
+        {
+          "field": "赢单财年",
+          "operator": "eq",
+          "value": "26",
+          "fieldType": "dimension"
+        }
+      ],
+      "dataset": {
+        "id": "18b86197-65e3-4682-8501-6e7125afad02"
+      },
+      "mode": "aggregate",
+      "purpose": "Read-only UAT fiscal source verification",
+      "measures": [
+        {
+          "aggregation": "countRows",
+          "alias": "records"
+        }
+      ],
+      "limit": 20000
+    }
+  ],
+  "response": {
+    "schema": "wynai.multi-dataset-query-result/v1",
+    "requests": 4,
+    "datasets": [
+      "18b86197-65e3-4682-8501-6e7125afad02"
+    ],
+    "resultSets": [
+      {
+        "id": "rs-verify-fiscal-distribution",
+        "requestId": "verify-fiscal-distribution",
+        "executionPlanId": "xp-verify-fiscal-distribution-wyn-wax-controlled",
+        "schema": [
+          {
+            "name": "fiscal",
+            "sourceField": "赢单财年",
+            "type": "string",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "name": "records",
+            "sourceField": null,
+            "type": "number",
+            "role": "measure",
+            "aggregation": "countRows"
+          }
+        ],
+        "rows": [
+          {
+            "fiscal": "24",
+            "records": 11489
+          },
+          {
+            "fiscal": "",
+            "records": 10724
+          },
+          {
+            "fiscal": "25",
+            "records": 6574
+          },
+          {
+            "fiscal": "26",
+            "records": 106
+          },
+          {
+            "fiscal": "23",
+            "records": 50
+          },
+          {
+            "fiscal": "22",
+            "records": 1
+          }
+        ],
+        "statistics": {
+          "rowCount": 6,
+          "nullCounts": {
+            "fiscal": 1,
+            "records": 0
+          },
+          "minimums": {
+            "records": 1
+          },
+          "maximums": {
+            "records": 11489
+          },
+          "totalRowCount": 6,
+          "returnedRowCount": 6
+        },
+        "scope": {
+          "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+          "datasetRevision": 5,
+          "filters": [],
+          "resultFilters": [],
+          "fieldComparisons": [],
+          "timeRange": null,
+          "aggregationLevel": [
+            "fiscal"
+          ],
+          "timeZone": "Asia/Shanghai"
+        },
+        "provenance": {
+          "adapter": "wyn-wax-controlled",
+          "adapterVersion": "canonical-v1",
+          "executedAt": "2026-09-11T08:11:12.582Z",
+          "durationMs": 72
+        },
+        "quality": {
+          "isSample": false,
+          "isTruncated": false,
+          "limitReached": false,
+          "limitSource": "none",
+          "userLimitApplied": false,
+          "sourceLimitReached": false,
+          "truncationConfidence": "none",
+          "isEstimated": false,
+          "totalRowCount": 6,
+          "returnedRowCount": 6,
+          "warnings": []
+        }
+      },
+      {
+        "id": "rs-verify-fiscal-26",
+        "requestId": "verify-fiscal-26",
+        "executionPlanId": "xp-verify-fiscal-26-wyn-wax-controlled",
+        "schema": [
+          {
+            "name": "records",
+            "sourceField": null,
+            "type": "number",
+            "role": "measure",
+            "aggregation": "countRows"
+          }
+        ],
+        "rows": [
+          {
+            "records": 106
+          }
+        ],
+        "statistics": {
+          "rowCount": 1,
+          "nullCounts": {
+            "records": 0
+          },
+          "minimums": {
+            "records": 106
+          },
+          "maximums": {
+            "records": 106
+          },
+          "totalRowCount": 1,
+          "returnedRowCount": 1
+        },
+        "scope": {
+          "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+          "datasetRevision": 5,
+          "filters": [
+            {
+              "field": "赢单财年",
+              "operator": "eq",
+              "value": "26",
+              "fieldType": "dimension"
+            }
+          ],
+          "resultFilters": [],
+          "fieldComparisons": [],
+          "timeRange": null,
+          "aggregationLevel": [],
+          "timeZone": "Asia/Shanghai"
+        },
+        "provenance": {
+          "adapter": "wyn-wax-controlled",
+          "adapterVersion": "canonical-v1",
+          "executedAt": "2026-09-11T08:11:12.644Z",
+          "durationMs": 58
+        },
+        "quality": {
+          "isSample": false,
+          "isTruncated": false,
+          "limitReached": false,
+          "limitSource": "none",
+          "userLimitApplied": false,
+          "sourceLimitReached": false,
+          "truncationConfidence": "none",
+          "isEstimated": false,
+          "totalRowCount": 1,
+          "returnedRowCount": 1,
+          "warnings": []
+        }
+      },
+      {
+        "id": "rs-verify-fiscal-27",
+        "requestId": "verify-fiscal-27",
+        "executionPlanId": "xp-verify-fiscal-27-wyn-wax-controlled",
+        "schema": [
+          {
+            "name": "records",
+            "sourceField": null,
+            "type": "number",
+            "role": "measure",
+            "aggregation": "countRows"
+          }
+        ],
+        "rows": [
+          {
+            "records": 0
+          }
+        ],
+        "statistics": {
+          "rowCount": 1,
+          "nullCounts": {
+            "records": 0
+          },
+          "minimums": {
+            "records": 0
+          },
+          "maximums": {
+            "records": 0
+          },
+          "totalRowCount": 1,
+          "returnedRowCount": 1
+        },
+        "scope": {
+          "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+          "datasetRevision": 5,
+          "filters": [
+            {
+              "field": "赢单财年",
+              "operator": "eq",
+              "value": "27",
+              "fieldType": "dimension"
+            }
+          ],
+          "resultFilters": [],
+          "fieldComparisons": [],
+          "timeRange": null,
+          "aggregationLevel": [],
+          "timeZone": "Asia/Shanghai"
+        },
+        "provenance": {
+          "adapter": "wyn-wax-controlled",
+          "adapterVersion": "canonical-v1",
+          "executedAt": "2026-09-11T08:11:12.717Z",
+          "durationMs": 72
+        },
+        "quality": {
+          "isSample": false,
+          "isTruncated": false,
+          "limitReached": false,
+          "limitSource": "none",
+          "userLimitApplied": false,
+          "sourceLimitReached": false,
+          "truncationConfidence": "none",
+          "isEstimated": false,
+          "totalRowCount": 1,
+          "returnedRowCount": 1,
+          "warnings": []
+        }
+      },
+      {
+        "id": "rs-verify-b010-filtered-count",
+        "requestId": "verify-b010-filtered-count",
+        "executionPlanId": "xp-verify-b010-filtered-count-wyn-wax-controlled",
+        "schema": [
+          {
+            "name": "records",
+            "sourceField": null,
+            "type": "number",
+            "role": "measure",
+            "aggregation": "countRows"
+          }
+        ],
+        "rows": [
+          {
+            "records": 0
+          }
+        ],
+        "statistics": {
+          "rowCount": 1,
+          "nullCounts": {
+            "records": 0
+          },
+          "minimums": {
+            "records": 0
+          },
+          "maximums": {
+            "records": 0
+          },
+          "totalRowCount": 1,
+          "returnedRowCount": 1
+        },
+        "scope": {
+          "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+          "datasetRevision": 5,
+          "filters": [
+            {
+              "field": "产品名称",
+              "operator": "eq",
+              "value": "Digital Ecosystem Enterprise Alliances",
+              "fieldType": "dimension"
+            },
+            {
+              "field": "客户类型",
+              "operator": "containsAny",
+              "value": [
+                "Private Entity（POE）"
+              ],
+              "fieldType": "dimension"
+            },
+            {
+              "field": "赢单财年",
+              "operator": "eq",
+              "value": "26",
+              "fieldType": "dimension"
+            }
+          ],
+          "resultFilters": [],
+          "fieldComparisons": [],
+          "timeRange": null,
+          "aggregationLevel": [],
+          "timeZone": "Asia/Shanghai"
+        },
+        "provenance": {
+          "adapter": "wyn-wax-controlled",
+          "adapterVersion": "canonical-v1",
+          "executedAt": "2026-09-11T08:11:12.807Z",
+          "durationMs": 89
+        },
+        "quality": {
+          "isSample": false,
+          "isTruncated": false,
+          "limitReached": false,
+          "limitSource": "none",
+          "userLimitApplied": false,
+          "sourceLimitReached": false,
+          "truncationConfidence": "none",
+          "isEstimated": false,
+          "totalRowCount": 1,
+          "returnedRowCount": 1,
+          "warnings": []
+        }
+      }
+    ],
+    "merged": null,
+    "budget": {
+      "requests": 4,
+      "estimatedCost": 5,
+      "maxRequests": 12,
+      "maxCost": 36
+    },
+    "audits": [
+      {
+        "requestId": "verify-fiscal-distribution",
+        "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+        "cache": "miss",
+        "adapter": "wyn-wax-controlled",
+        "estimatedCost": 2
+      },
+      {
+        "requestId": "verify-fiscal-26",
+        "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+        "cache": "miss",
+        "adapter": "wyn-wax-controlled",
+        "estimatedCost": 1
+      },
+      {
+        "requestId": "verify-fiscal-27",
+        "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+        "cache": "miss",
+        "adapter": "wyn-wax-controlled",
+        "estimatedCost": 1
+      },
+      {
+        "requestId": "verify-b010-filtered-count",
+        "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+        "cache": "miss",
+        "adapter": "wyn-wax-controlled",
+        "estimatedCost": 1
+      }
+    ]
+  }
+}

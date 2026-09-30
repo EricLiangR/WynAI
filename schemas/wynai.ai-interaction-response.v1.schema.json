@@ -8,7 +8,7 @@
   "properties": {
     "schema": { "const": "wynai.ai-interaction-response/v1" },
     "type": { "const": "query.plan" },
-    "status": { "enum": ["ok", "needs_clarification", "rejected", "error"] },
+    "status": { "enum": ["ok", "completed-partial", "needs_clarification", "rejected", "error"] },
     "intent": { "type": "object", "required": ["name", "confidence", "summary"], "properties": { "name": { "type": "string" }, "confidence": { "type": "number", "minimum": 0, "maximum": 1 }, "summary": { "type": "string" } } },
     "clarification": { "anyOf": [{ "type": "null" }, { "type": "object", "required": ["question", "options"], "properties": { "question": { "type": "string" }, "options": { "type": "array", "items": { "anyOf": [{ "type": "string" }, { "type": "object", "required": ["label"], "properties": { "label": { "type": "string" }, "slotId": { "type": ["string", "null"] }, "concepts": { "type": "array", "items": { "type": "string" } }, "mode": { "type": ["string", "null"] } } }] } } } }] },
     "assumptions": { "type": "array", "items": { "type": "string" } },
@@ -17,7 +17,8 @@
     "analysisMethod": { "type": "object", "required": ["id", "version"], "properties": { "id": { "type": "string" }, "version": { "type": "string" } } },
     "presentationIntent": { "type": "object", "required": ["documentType", "preferredBlocks"], "properties": { "documentType": { "type": "string" }, "preferredBlocks": { "type": "array", "items": { "type": "string" } } } },
     "followUp": { "type": "object", "required": ["enabled", "suggestions", "actions"], "properties": { "enabled": { "type": "boolean" }, "suggestions": { "type": "array", "items": { "type": "string" } }, "actions": { "type": "array", "maxItems": 3, "items": { "type": "object" } } } },
-    "diagnostics": { "type": "object", "required": ["skillRefs", "semanticWarnings"], "properties": { "skillRefs": { "type": "array" }, "semanticWarnings": { "type": "array" } } }
+    "diagnostics": { "type": "object", "required": ["skillRefs", "semanticWarnings"], "properties": { "skillRefs": { "type": "array" }, "semanticWarnings": { "type": "array" } } },
+    "completion": { "anyOf": [{ "type": "null" }, { "type": "object", "required": ["status", "executedUnitIds", "omittedUnits"], "properties": { "status": { "enum": ["complete", "partial", "unavailable"] }, "executedUnitIds": { "type": "array", "items": { "type": "string" } }, "omittedUnits": { "type": "array", "items": { "type": "object" } } } }] }
   },
   "$defs": {
     "id": { "type": "string", "pattern": "^[a-z0-9][a-z0-9-]{1,99}$" },

@@ -1,0 +1,2155 @@
+{
+  "schema": "wynai.release-gate-run/v1",
+  "packRef": "sales-ay-release@1.0.0",
+  "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+  "total": 52,
+  "passed": 4,
+  "failed": 48,
+  "releaseReady": false,
+  "results": [
+    {
+      "id": "UAT-AY-001",
+      "passed": true,
+      "checks": [
+        {
+          "name": "status",
+          "passed": true,
+          "actual": "ok",
+          "expected": "ok"
+        },
+        {
+          "name": "clarification",
+          "passed": true,
+          "actual": "ok",
+          "expected": "needs_clarification"
+        },
+        {
+          "name": "fields",
+          "passed": true,
+          "actual": [
+            "revenue_cny",
+            "Opportunity_amount_CNY"
+          ],
+          "expected": []
+        },
+        {
+          "name": "metrics",
+          "passed": true,
+          "actual": [
+            "Opportunity_amount_CNY"
+          ],
+          "expected": []
+        },
+        {
+          "name": "filters",
+          "passed": true,
+          "actual": [
+            {
+              "field": "pipelineName",
+              "operator": "eq",
+              "value": "订单名称15247",
+              "fieldType": "dimension"
+            }
+          ],
+          "expected": [
+            {
+              "field": "pipelineName",
+              "operator": "eq"
+            }
+          ]
+        },
+        {
+          "name": "forbiddenFilters",
+          "passed": true,
+          "actual": [
+            {
+              "field": "pipelineName",
+              "operator": "eq",
+              "value": "订单名称15247",
+              "fieldType": "dimension"
+            }
+          ],
+          "expected": []
+        },
+        {
+          "name": "postAggregateFilters",
+          "passed": true,
+          "actual": [],
+          "expected": []
+        },
+        {
+          "name": "rows",
+          "passed": true,
+          "actual": 1,
+          "expected": 1
+        },
+        {
+          "name": "zeroRows",
+          "passed": true,
+          "actual": 1,
+          "expected": "> 0"
+        },
+        {
+          "name": "trace",
+          "passed": true,
+          "actual": "trace-e7238d76-27aa-4073-8d09-6df652cc6ffd",
+          "expected": "required"
+        },
+        {
+          "name": "fallback",
+          "passed": true,
+          "actual": false,
+          "expected": false
+        },
+        {
+          "name": "adapter",
+          "passed": true,
+          "actual": "wyn-wax-controlled",
+          "expected": "wyn-wax-controlled"
+        },
+        {
+          "name": "isSample",
+          "passed": true,
+          "actual": false,
+          "expected": false
+        },
+        {
+          "name": "isTruncated",
+          "passed": true,
+          "actual": false,
+          "expected": false
+        },
+        {
+          "name": "isEstimated",
+          "passed": true,
+          "actual": false,
+          "expected": false
+        },
+        {
+          "name": "limitReached",
+          "passed": true,
+          "actual": false,
+          "expected": false
+        },
+        {
+          "name": "returnedRowCount",
+          "passed": true,
+          "actual": 1,
+          "expected": 1
+        },
+        {
+          "name": "totalRowCount",
+          "passed": true,
+          "actual": 1,
+          "expected": 1
+        }
+      ],
+      "actual": {
+        "status": "ok",
+        "rowCount": 1,
+        "fields": [
+          "revenue_cny",
+          "Opportunity_amount_CNY"
+        ],
+        "metrics": [
+          "Opportunity_amount_CNY"
+        ],
+        "filters": [
+          {
+            "field": "pipelineName",
+            "operator": "eq",
+            "value": "订单名称15247",
+            "fieldType": "dimension"
+          }
+        ],
+        "postAggregateFilters": [],
+        "traceId": "trace-e7238d76-27aa-4073-8d09-6df652cc6ffd",
+        "adapter": "wyn-wax-controlled",
+        "fallback": false,
+        "contract": {
+          "schema": "wynai.query-result-contract/v1",
+          "version": 1,
+          "type": "wyn-complete-aggregate-result",
+          "issuedBy": "wyn-query-adapter",
+          "requestId": "qry-intent-78414a90",
+          "aggregate": true,
+          "isComplete": true,
+          "isSample": false,
+          "isTruncated": false,
+          "isEstimated": false,
+          "userLimitApplied": false,
+          "totalRowCount": 1,
+          "returnedRowCount": 1,
+          "countVerified": true,
+          "limitReached": false,
+          "limitSource": "none",
+          "sourceLimitReached": false,
+          "truncationConfidence": "none",
+          "warnings": [],
+          "internalCalculationRowCount": 1,
+          "internalReturnedRowCount": 1
+        }
+      },
+      "question": "订单名称15247的商机金额是多少",
+      "durationMs": 17050,
+      "transport": {
+        "conversationId": "conv-b5b17289-5e7f-4bfb-a46f-612ba2419086",
+        "httpStatus": 200
+      },
+      "evidence": {
+        "traceId": "trace-e7238d76-27aa-4073-8d09-6df652cc6ffd",
+        "skillRefs": [
+          "sales-opportunity-a53@1.3.0"
+        ],
+        "analysisMethod": {
+          "id": "llm-first",
+          "version": "3.0"
+        },
+        "planningDiagnostics": {
+          "route": "llm-first",
+          "planningDurationMs": 14515,
+          "llmAttempted": true,
+          "llmDurationMs": 14514,
+          "circuitOpen": false,
+          "reason": "intent-llm-validated-after-repair",
+          "repairAttempted": true,
+          "llmCalls": 2
+        },
+        "queryRequests": [
+          {
+            "id": "qry-intent-78414a90",
+            "hypothesisId": null,
+            "purpose": "订单名称为“订单名称15247”的商机的商机金额（人民币）是多少",
+            "mode": "aggregate",
+            "topic": "open",
+            "dataset": {
+              "id": "18b86197-65e3-4682-8501-6e7125afad02",
+              "revision": 5
+            },
+            "select": [],
+            "measures": [
+              {
+                "field": "Opportunity_amount_CNY",
+                "aggregation": "sum",
+                "alias": "revenue_cny",
+                "resultType": "number",
+                "displayName": "商机金额",
+                "concept": "revenue"
+              }
+            ],
+            "filters": [
+              {
+                "field": "pipelineName",
+                "operator": "eq",
+                "value": "订单名称15247",
+                "fieldType": "dimension"
+              }
+            ],
+            "resultFilters": [],
+            "fieldComparisons": [],
+            "comparison": null,
+            "orderBy": [],
+            "limit": 20000,
+            "limitSource": "default",
+            "expectedResult": {
+              "shape": "scalar",
+              "minimumRows": 1,
+              "maximumRows": 20000,
+              "requiredPeriods": [],
+              "requiredMetrics": [
+                "revenue_cny"
+              ],
+              "requiredDimensions": [],
+              "timeZone": "Asia/Shanghai"
+            },
+            "sensitivity": "aggregate-only",
+            "lineage": null
+          }
+        ],
+        "resultSets": [
+          {
+            "id": "rs-qry-intent-78414a90",
+            "requestId": "qry-intent-78414a90",
+            "adapter": "wyn-wax-controlled",
+            "fields": [
+              {
+                "name": "revenue_cny",
+                "sourceField": "Opportunity_amount_CNY",
+                "role": "measure"
+              }
+            ],
+            "rowCount": 1,
+            "statistics": {
+              "rowCount": 1,
+              "nullCounts": {
+                "revenue_cny": 0
+              },
+              "minimums": {
+                "revenue_cny": 412228.8704000001
+              },
+              "maximums": {
+                "revenue_cny": 412228.8704000001
+              },
+              "totalRowCount": 1,
+              "returnedRowCount": 1,
+              "internalCalculationRowCount": 1,
+              "internalReturnedRowCount": 1
+            },
+            "scope": {
+              "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+              "datasetRevision": 5,
+              "filters": [
+                {
+                  "field": "pipelineName",
+                  "operator": "eq",
+                  "value": "订单名称15247",
+                  "fieldType": "dimension"
+                }
+              ],
+              "resultFilters": [],
+              "fieldComparisons": [],
+              "timeRange": null,
+              "aggregationLevel": [],
+              "timeZone": "Asia/Shanghai",
+              "sourceFiltering": "wyn",
+              "sourceTotalRowCount": null
+            },
+            "resultContract": {
+              "schema": "wynai.query-result-contract/v1",
+              "version": 1,
+              "type": "wyn-complete-aggregate-result",
+              "issuedBy": "wyn-query-adapter",
+              "requestId": "qry-intent-78414a90",
+              "aggregate": true,
+              "isComplete": true,
+              "isSample": false,
+              "isTruncated": false,
+              "isEstimated": false,
+              "userLimitApplied": false,
+              "totalRowCount": 1,
+              "returnedRowCount": 1,
+              "countVerified": true
+            },
+            "quality": {
+              "isSample": false,
+              "isComplete": true,
+              "isTruncated": false,
+              "limitReached": false,
+              "limitSource": "none",
+              "userLimitApplied": false,
+              "sourceLimitReached": false,
+              "truncationConfidence": "none",
+              "isEstimated": false,
+              "totalRowCount": 1,
+              "returnedRowCount": 1,
+              "warnings": [],
+              "internalCalculationRowCount": 1,
+              "internalReturnedRowCount": 1
+            }
+          }
+        ],
+        "rowsSha256": "3981e1b9944d84beeb4c9f14870775df7ed3fd99e8beaa234587e221750ae7f2",
+        "clarification": null
+      }
+    },
+    {
+      "id": "UAT-AY-002",
+      "passed": true,
+      "checks": [
+        {
+          "name": "status",
+          "passed": true,
+          "actual": "needs_clarification",
+          "expected": "needs_clarification"
+        },
+        {
+          "name": "clarification",
+          "passed": true,
+          "actual": "needs_clarification",
+          "expected": "needs_clarification"
+        },
+        {
+          "name": "fields",
+          "passed": true,
+          "actual": [],
+          "expected": []
+        },
+        {
+          "name": "metrics",
+          "passed": true,
+          "actual": [],
+          "expected": []
+        },
+        {
+          "name": "filters",
+          "passed": true,
+          "actual": [],
+          "expected": []
+        },
+        {
+          "name": "forbiddenFilters",
+          "passed": true,
+          "actual": [],
+          "expected": []
+        },
+        {
+          "name": "postAggregateFilters",
+          "passed": true,
+          "actual": [],
+          "expected": []
+        },
+        {
+          "name": "rows",
+          "passed": true,
+          "actual": 0,
+          "expected": null
+        },
+        {
+          "name": "zeroRows",
+          "passed": true,
+          "actual": 0,
+          "expected": "> 0"
+        },
+        {
+          "name": "trace",
+          "passed": true,
+          "actual": "trace-25d0b05c-0bde-481b-9d89-c1bc6f540066",
+          "expected": "required"
+        },
+        {
+          "name": "fallback",
+          "passed": true,
+          "actual": false,
+          "expected": false
+        },
+        {
+          "name": "adapter",
+          "passed": true,
+          "actual": null,
+          "expected": null
+        }
+      ],
+      "actual": {
+        "status": "needs_clarification",
+        "rowCount": 0,
+        "fields": [],
+        "metrics": [],
+        "filters": [],
+        "postAggregateFilters": [],
+        "traceId": "trace-25d0b05c-0bde-481b-9d89-c1bc6f540066",
+        "adapter": null,
+        "fallback": false,
+        "contract": {}
+      },
+      "question": "某个客户的商机金额是多少",
+      "durationMs": 26,
+      "transport": {
+        "conversationId": "conv-504462e8-9772-4c8c-9537-886d8a90de8f",
+        "httpStatus": 200
+      },
+      "evidence": {
+        "traceId": "trace-25d0b05c-0bde-481b-9d89-c1bc6f540066",
+        "skillRefs": [
+          "sales-opportunity-a53@1.3.0",
+          "temporal-semantics@1.1.0"
+        ],
+        "analysisMethod": {
+          "id": "direct-query",
+          "version": "1.0"
+        },
+        "planningDiagnostics": {
+          "route": "semantic-clarification",
+          "planningDurationMs": 3,
+          "llmAttempted": false,
+          "llmDurationMs": 0,
+          "circuitOpen": false,
+          "reason": "unresolved-entity-reference"
+        },
+        "queryRequests": [],
+        "resultSets": [],
+        "rowsSha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "clarification": {
+          "question": "请明确要查询的客户具体值。",
+          "options": []
+        }
+      }
+    },
+    {
+      "id": "UAT-AY-003",
+      "passed": true,
+      "checks": [
+        {
+          "name": "status",
+          "passed": true,
+          "actual": "ok",
+          "expected": "ok"
+        },
+        {
+          "name": "clarification",
+          "passed": true,
+          "actual": "ok",
+          "expected": "needs_clarification"
+        },
+        {
+          "name": "fields",
+          "passed": true,
+          "actual": [
+            "share_dimension",
+            "产品大类",
+            "manufacturing_revenue",
+            "Opportunity_amount_CNY",
+            "manufacturing_share",
+            "产品大类占比"
+          ],
+          "expected": []
+        },
+        {
+          "name": "metrics",
+          "passed": true,
+          "actual": [
+            "Opportunity_amount_CNY",
+            "Opportunity_amount_CNY占比"
+          ],
+          "expected": []
+        },
+        {
+          "name": "filters",
+          "passed": true,
+          "actual": [
+            {
+              "field": "赢单日期",
+              "operator": "lt",
+              "value": "2026-09-23",
+              "fieldType": "time"
+            }
+          ],
+          "expected": [
+            {
+              "field": "赢单日期",
+              "operator": "lt",
+              "value": "2026-09-23"
+            }
+          ]
+        },
+        {
+          "name": "forbiddenFilters",
+          "passed": true,
+          "actual": [
+            {
+              "field": "赢单日期",
+              "operator": "lt",
+              "value": "2026-09-23",
+              "fieldType": "time"
+            }
+          ],
+          "expected": [
+            {
+              "field": "赢单财年",
+              "operator": "eq"
+            }
+          ]
+        },
+        {
+          "name": "postAggregateFilters",
+          "passed": true,
+          "actual": [],
+          "expected": []
+        },
+        {
+          "name": "rows",
+          "passed": true,
+          "actual": 1,
+          "expected": 1
+        },
+        {
+          "name": "zeroRows",
+          "passed": true,
+          "actual": 1,
+          "expected": "> 0"
+        },
+        {
+          "name": "trace",
+          "passed": true,
+          "actual": "trace-a5fe6961-8977-4bb7-b151-17c07bcd3c93",
+          "expected": "required"
+        },
+        {
+          "name": "fallback",
+          "passed": true,
+          "actual": false,
+          "expected": false
+        },
+        {
+          "name": "adapter",
+          "passed": true,
+          "actual": "wyn-wax-controlled",
+          "expected": "wyn-wax-controlled"
+        },
+        {
+          "name": "isSample",
+          "passed": true,
+          "actual": false,
+          "expected": false
+        },
+        {
+          "name": "isTruncated",
+          "passed": true,
+          "actual": false,
+          "expected": false
+        },
+        {
+          "name": "isEstimated",
+          "passed": true,
+          "actual": false,
+          "expected": false
+        },
+        {
+          "name": "limitReached",
+          "passed": true,
+          "actual": false,
+          "expected": false
+        },
+        {
+          "name": "returnedRowCount",
+          "passed": true,
+          "actual": 1,
+          "expected": 1
+        },
+        {
+          "name": "totalRowCount",
+          "passed": true,
+          "actual": 1,
+          "expected": 1
+        },
+        {
+          "name": "value:revenue",
+          "passed": true,
+          "actual": 2403914608.076598,
+          "expected": 2403914608.08
+        },
+        {
+          "name": "value:share",
+          "passed": true,
+          "actual": 0.18193352180809094,
+          "expected": 0.1819
+        }
+      ],
+      "actual": {
+        "status": "ok",
+        "rowCount": 1,
+        "fields": [
+          "share_dimension",
+          "产品大类",
+          "manufacturing_revenue",
+          "Opportunity_amount_CNY",
+          "manufacturing_share",
+          "产品大类占比"
+        ],
+        "metrics": [
+          "Opportunity_amount_CNY",
+          "Opportunity_amount_CNY占比"
+        ],
+        "filters": [
+          {
+            "field": "赢单日期",
+            "operator": "lt",
+            "value": "2026-09-23",
+            "fieldType": "time"
+          }
+        ],
+        "postAggregateFilters": [],
+        "traceId": "trace-a5fe6961-8977-4bb7-b151-17c07bcd3c93",
+        "adapter": "wyn-wax-controlled",
+        "fallback": false,
+        "contract": {
+          "schema": "wynai.query-result-contract/v1",
+          "version": 1,
+          "type": "platform-derived-result",
+          "issuedBy": "platform-derived-calculation-guard",
+          "requestId": "qry-intent-cee4812d",
+          "aggregate": true,
+          "isComplete": true,
+          "isSample": false,
+          "isTruncated": false,
+          "isEstimated": false,
+          "userLimitApplied": false,
+          "totalRowCount": 1,
+          "returnedRowCount": 1,
+          "countVerified": true,
+          "derivedFrom": "wyn-complete-aggregate-result",
+          "operationId": "share-of-total",
+          "operationVersion": 1,
+          "limitReached": false,
+          "limitSource": "none",
+          "sourceLimitReached": false,
+          "truncationConfidence": "none",
+          "warnings": [],
+          "internalCalculationRowCount": 5,
+          "internalReturnedRowCount": 5
+        }
+      },
+      "question": "截止目前，Manufacturing product的占比是多少，具体金额是多少",
+      "durationMs": 13608,
+      "transport": {
+        "conversationId": "conv-4fc9a240-ed5a-4b9f-bef2-08ace80d7e9f",
+        "httpStatus": 200
+      },
+      "evidence": {
+        "traceId": "trace-a5fe6961-8977-4bb7-b151-17c07bcd3c93",
+        "skillRefs": [
+          "sales-opportunity-a53@1.3.0"
+        ],
+        "analysisMethod": {
+          "id": "llm-first",
+          "version": "3.0"
+        },
+        "planningDiagnostics": {
+          "route": "llm-first",
+          "planningDurationMs": 10967,
+          "llmAttempted": true,
+          "llmDurationMs": 10967,
+          "circuitOpen": false,
+          "reason": "intent-llm-validated",
+          "repairAttempted": false,
+          "llmCalls": 1
+        },
+        "queryRequests": [
+          {
+            "id": "qry-intent-cee4812d",
+            "hypothesisId": null,
+            "purpose": "截止目前，产品大类为 Manufacturing 的商机金额占全部商机金额的比例是多少，以及 Manufacturing 产品大类的商机金额具体是多少。",
+            "mode": "aggregate",
+            "topic": "product",
+            "dataset": {
+              "id": "18b86197-65e3-4682-8501-6e7125afad02",
+              "revision": 5
+            },
+            "select": [
+              {
+                "field": "产品大类",
+                "alias": "share_dimension",
+                "role": "dimension",
+                "grain": null,
+                "displayName": "产品大类"
+              }
+            ],
+            "measures": [
+              {
+                "field": "Opportunity_amount_CNY",
+                "aggregation": "sum",
+                "alias": "manufacturing_revenue",
+                "resultType": "number",
+                "displayName": "金额",
+                "concept": "revenue"
+              },
+              {
+                "field": "Opportunity_amount_CNY占比",
+                "aggregation": "share-of-total",
+                "alias": "manufacturing_share",
+                "concept": "share",
+                "unitFamily": null,
+                "resultType": "number",
+                "derived": true
+              }
+            ],
+            "filters": [
+              {
+                "field": "赢单日期",
+                "operator": "lt",
+                "value": "2026-09-23",
+                "fieldType": "time"
+              }
+            ],
+            "resultFilters": [],
+            "fieldComparisons": [],
+            "comparison": null,
+            "orderBy": [
+              {
+                "field": "manufacturing_revenue",
+                "direction": "desc"
+              }
+            ],
+            "limit": 20000,
+            "limitSource": "internal-calculation",
+            "expectedResult": {
+              "shape": "scalar",
+              "minimumRows": 1,
+              "maximumRows": 20000,
+              "requiredPeriods": [],
+              "requiredMetrics": [
+                "manufacturing_revenue",
+                "manufacturing_share"
+              ],
+              "requiredDimensions": [],
+              "timeZone": "Asia/Shanghai"
+            },
+            "sensitivity": "aggregate-only",
+            "lineage": null
+          }
+        ],
+        "resultSets": [
+          {
+            "id": "rs-qry-intent-cee4812d",
+            "requestId": "qry-intent-cee4812d",
+            "adapter": "wyn-wax-controlled",
+            "fields": [
+              {
+                "name": "share_dimension",
+                "sourceField": "产品大类",
+                "role": "dimension"
+              },
+              {
+                "name": "manufacturing_revenue",
+                "sourceField": "Opportunity_amount_CNY",
+                "role": "measure"
+              },
+              {
+                "name": "manufacturing_share",
+                "sourceField": "产品大类占比",
+                "role": "derived-measure"
+              }
+            ],
+            "rowCount": 1,
+            "statistics": {
+              "rowCount": 1,
+              "nullCounts": {
+                "share_dimension": 0,
+                "manufacturing_revenue": 0,
+                "manufacturing_share": 0
+              },
+              "minimums": {
+                "manufacturing_revenue": 2403914608.076598,
+                "manufacturing_share": 0.18193352180809094
+              },
+              "maximums": {
+                "manufacturing_revenue": 2403914608.076598,
+                "manufacturing_share": 0.18193352180809094
+              },
+              "totalRowCount": 1,
+              "returnedRowCount": 1,
+              "internalCalculationRowCount": 5,
+              "internalReturnedRowCount": 5
+            },
+            "scope": {
+              "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+              "datasetRevision": 5,
+              "filters": [
+                {
+                  "field": "赢单日期",
+                  "operator": "lt",
+                  "value": "2026-09-23",
+                  "fieldType": "time"
+                }
+              ],
+              "resultFilters": [],
+              "fieldComparisons": [],
+              "timeRange": null,
+              "aggregationLevel": [
+                "share_dimension"
+              ],
+              "timeZone": "Asia/Shanghai",
+              "sourceFiltering": "wyn",
+              "sourceTotalRowCount": null
+            },
+            "resultContract": {
+              "schema": "wynai.query-result-contract/v1",
+              "version": 1,
+              "type": "platform-derived-result",
+              "issuedBy": "platform-derived-calculation-guard",
+              "requestId": "qry-intent-cee4812d",
+              "aggregate": true,
+              "isComplete": true,
+              "isSample": false,
+              "isTruncated": false,
+              "isEstimated": false,
+              "userLimitApplied": false,
+              "totalRowCount": 5,
+              "returnedRowCount": 5,
+              "countVerified": true,
+              "derivedFrom": "wyn-complete-aggregate-result",
+              "operationId": "share-of-total",
+              "operationVersion": 1
+            },
+            "quality": {
+              "isSample": false,
+              "isComplete": true,
+              "isTruncated": false,
+              "limitReached": false,
+              "limitSource": "none",
+              "userLimitApplied": false,
+              "sourceLimitReached": false,
+              "truncationConfidence": "none",
+              "isEstimated": false,
+              "totalRowCount": 1,
+              "returnedRowCount": 1,
+              "warnings": [],
+              "internalCalculationRowCount": 5,
+              "internalReturnedRowCount": 5
+            }
+          }
+        ],
+        "rowsSha256": "046f4f8d69546460bba5a070635a89078049740ebf3d9f88c66eaa972f1fb81f",
+        "clarification": null
+      }
+    },
+    {
+      "id": "UAT-AY-004",
+      "passed": true,
+      "checks": [
+        {
+          "name": "status",
+          "passed": true,
+          "actual": "ok",
+          "expected": "ok"
+        },
+        {
+          "name": "clarification",
+          "passed": true,
+          "actual": "ok",
+          "expected": "needs_clarification"
+        },
+        {
+          "name": "fields",
+          "passed": true,
+          "actual": [
+            "customer_name",
+            "客户名称"
+          ],
+          "expected": []
+        },
+        {
+          "name": "metrics",
+          "passed": true,
+          "actual": [],
+          "expected": []
+        },
+        {
+          "name": "filters",
+          "passed": true,
+          "actual": [
+            {
+              "field": "客户母公司所在地",
+              "operator": "eq",
+              "value": "United States",
+              "fieldType": "dimension"
+            }
+          ],
+          "expected": []
+        },
+        {
+          "name": "forbiddenFilters",
+          "passed": true,
+          "actual": [
+            {
+              "field": "客户母公司所在地",
+              "operator": "eq",
+              "value": "United States",
+              "fieldType": "dimension"
+            }
+          ],
+          "expected": []
+        },
+        {
+          "name": "postAggregateFilters",
+          "passed": true,
+          "actual": [],
+          "expected": []
+        },
+        {
+          "name": "rows",
+          "passed": true,
+          "actual": 7,
+          "expected": 7
+        },
+        {
+          "name": "zeroRows",
+          "passed": true,
+          "actual": 7,
+          "expected": "> 0"
+        },
+        {
+          "name": "trace",
+          "passed": true,
+          "actual": "trace-20df8313-50e6-4d41-8d7b-8bbf62dbfa67",
+          "expected": "required"
+        },
+        {
+          "name": "fallback",
+          "passed": true,
+          "actual": false,
+          "expected": false
+        },
+        {
+          "name": "adapter",
+          "passed": true,
+          "actual": "wyn-wax-controlled",
+          "expected": "wyn-wax-controlled"
+        },
+        {
+          "name": "isSample",
+          "passed": true,
+          "actual": false,
+          "expected": false
+        },
+        {
+          "name": "isTruncated",
+          "passed": true,
+          "actual": false,
+          "expected": false
+        },
+        {
+          "name": "isEstimated",
+          "passed": true,
+          "actual": false,
+          "expected": false
+        },
+        {
+          "name": "limitReached",
+          "passed": true,
+          "actual": false,
+          "expected": false
+        },
+        {
+          "name": "returnedRowCount",
+          "passed": true,
+          "actual": 7,
+          "expected": 7
+        },
+        {
+          "name": "totalRowCount",
+          "passed": true,
+          "actual": 7,
+          "expected": 7
+        }
+      ],
+      "actual": {
+        "status": "ok",
+        "rowCount": 7,
+        "fields": [
+          "customer_name",
+          "客户名称"
+        ],
+        "metrics": [],
+        "filters": [
+          {
+            "field": "客户母公司所在地",
+            "operator": "eq",
+            "value": "United States",
+            "fieldType": "dimension"
+          }
+        ],
+        "postAggregateFilters": [],
+        "traceId": "trace-20df8313-50e6-4d41-8d7b-8bbf62dbfa67",
+        "adapter": "wyn-wax-controlled",
+        "fallback": false,
+        "contract": {
+          "schema": "wynai.query-result-contract/v1",
+          "version": 1,
+          "type": "wyn-complete-aggregate-result",
+          "issuedBy": "wyn-query-adapter",
+          "requestId": "qry-intent-04e48d7e",
+          "aggregate": true,
+          "isComplete": true,
+          "isSample": false,
+          "isTruncated": false,
+          "isEstimated": false,
+          "userLimitApplied": false,
+          "totalRowCount": 7,
+          "returnedRowCount": 7,
+          "countVerified": true,
+          "limitReached": false,
+          "limitSource": "none",
+          "sourceLimitReached": false,
+          "truncationConfidence": "none",
+          "warnings": [],
+          "internalCalculationRowCount": 7,
+          "internalReturnedRowCount": 7
+        }
+      },
+      "question": "我的客户中head_office_location是美国的名单",
+      "durationMs": 9754,
+      "transport": {
+        "conversationId": "conv-d36632c9-810c-4b4d-a271-43cfe96c57af",
+        "httpStatus": 200
+      },
+      "evidence": {
+        "traceId": "trace-20df8313-50e6-4d41-8d7b-8bbf62dbfa67",
+        "skillRefs": [
+          "sales-opportunity-a53@1.3.0"
+        ],
+        "analysisMethod": {
+          "id": "llm-first",
+          "version": "3.0"
+        },
+        "planningDiagnostics": {
+          "route": "llm-first",
+          "planningDurationMs": 7204,
+          "llmAttempted": true,
+          "llmDurationMs": 7204,
+          "circuitOpen": false,
+          "reason": "intent-llm-validated",
+          "repairAttempted": false,
+          "llmCalls": 1
+        },
+        "queryRequests": [
+          {
+            "id": "qry-intent-04e48d7e",
+            "hypothesisId": null,
+            "purpose": "我的客户中head_office_location是美国的名单",
+            "mode": "aggregate",
+            "topic": "customer",
+            "dataset": {
+              "id": "18b86197-65e3-4682-8501-6e7125afad02",
+              "revision": 5
+            },
+            "select": [
+              {
+                "field": "客户名称",
+                "alias": "customer_name",
+                "role": "dimension",
+                "grain": null,
+                "displayName": "客户"
+              }
+            ],
+            "measures": [],
+            "filters": [
+              {
+                "field": "客户母公司所在地",
+                "operator": "eq",
+                "value": "United States",
+                "fieldType": "dimension"
+              }
+            ],
+            "resultFilters": [],
+            "fieldComparisons": [],
+            "comparison": null,
+            "orderBy": [],
+            "limit": 20000,
+            "limitSource": "default",
+            "expectedResult": {
+              "shape": "grouped-table",
+              "minimumRows": 1,
+              "maximumRows": 20000,
+              "requiredPeriods": [],
+              "requiredMetrics": [],
+              "requiredDimensions": [
+                "customer_name"
+              ],
+              "timeZone": "Asia/Shanghai"
+            },
+            "sensitivity": "aggregate-only",
+            "lineage": null
+          }
+        ],
+        "resultSets": [
+          {
+            "id": "rs-qry-intent-04e48d7e",
+            "requestId": "qry-intent-04e48d7e",
+            "adapter": "wyn-wax-controlled",
+            "fields": [
+              {
+                "name": "customer_name",
+                "sourceField": "客户名称",
+                "role": "dimension"
+              }
+            ],
+            "rowCount": 7,
+            "statistics": {
+              "rowCount": 7,
+              "nullCounts": {
+                "customer_name": 0
+              },
+              "minimums": {},
+              "maximums": {},
+              "totalRowCount": 7,
+              "returnedRowCount": 7,
+              "internalCalculationRowCount": 7,
+              "internalReturnedRowCount": 7
+            },
+            "scope": {
+              "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+              "datasetRevision": 5,
+              "filters": [
+                {
+                  "field": "客户母公司所在地",
+                  "operator": "eq",
+                  "value": "United States",
+                  "fieldType": "dimension"
+                }
+              ],
+              "resultFilters": [],
+              "fieldComparisons": [],
+              "timeRange": null,
+              "aggregationLevel": [
+                "customer_name"
+              ],
+              "timeZone": "Asia/Shanghai",
+              "sourceFiltering": "wyn",
+              "sourceTotalRowCount": null
+            },
+            "resultContract": {
+              "schema": "wynai.query-result-contract/v1",
+              "version": 1,
+              "type": "wyn-complete-aggregate-result",
+              "issuedBy": "wyn-query-adapter",
+              "requestId": "qry-intent-04e48d7e",
+              "aggregate": true,
+              "isComplete": true,
+              "isSample": false,
+              "isTruncated": false,
+              "isEstimated": false,
+              "userLimitApplied": false,
+              "totalRowCount": 7,
+              "returnedRowCount": 7,
+              "countVerified": true
+            },
+            "quality": {
+              "isSample": false,
+              "isComplete": true,
+              "isTruncated": false,
+              "limitReached": false,
+              "limitSource": "none",
+              "userLimitApplied": false,
+              "sourceLimitReached": false,
+              "truncationConfidence": "none",
+              "isEstimated": false,
+              "totalRowCount": 7,
+              "returnedRowCount": 7,
+              "warnings": [],
+              "internalCalculationRowCount": 7,
+              "internalReturnedRowCount": 7
+            }
+          }
+        ],
+        "rowsSha256": "f067384e9f596b460736acaf552c5bf9ccdd6a87476eb212036e201ff8a66ca4",
+        "clarification": null
+      }
+    },
+    {
+      "id": "UAT-AY-005",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "所有财年中，我的客户中head_office_location是美国和法国的名单",
+      "durationMs": 10383,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-006",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "所有财年中，我的客户中HQ是美国和法国的名单",
+      "durationMs": 3,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-007",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "我的POE客户名单",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-008",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "我的POE、MNC客户名单",
+      "durationMs": 2,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-009",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "所有财年中，我的POE客户名单",
+      "durationMs": 2,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-010",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "我最热卖的product是什么，是哪些客户",
+      "durationMs": 2,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-011",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "请列举去年Digital Ecosystem Enterprise Alliances 产品的客户名单，及每个客户的订单金额",
+      "durationMs": 2,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-012",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "x-ssl的项目有哪些",
+      "durationMs": 2,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-013",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "去年x-ssl的项目有哪些，请列出项目的名称，pursuit leader、oppo partner、product、client等信息",
+      "durationMs": 3,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-014",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "有什么recurring的项目",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-015",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "有哪些商机是 PSM的，prime office 是哪里",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-016",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "去年，有哪些商机是 PSM的，prime office 是哪里，请列出项目名称、client等信息",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-017",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "有哪些商机是 PSM的，prime office 是哪里，请列出项目名称、client name、客户类型、product等信息",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-018",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "MNC、POE客户的商机金额是多少",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-019",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "MNC 客户的商机金额 大于20万的商机有几个",
+      "durationMs": 2,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-020",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "MNC 客户的商机金额 大于20万的商机，分别是哪些客户、product",
+      "durationMs": 2,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-021",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "MNC 客户 且 subsector是Food 的商机有多少个",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-022",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "MNC 客户 是Consumer Products 行业 的商机有多少个",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-023",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "不是 MNC 和 POE 客户的商机金额是多少",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-024",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "x-ssl的项目有哪些",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-025",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "x-ssl的项目有哪些",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-026",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "去年x-ssl的项目有哪些",
+      "durationMs": 2,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-027",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "Risk Management product的占比是多少，具体金额是多少",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-028",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "我的POE客户名单",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-029",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "我最热卖的product是什么，是哪些客户",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-030",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "请列举去年Risk Management 产品的客户名单，及每个客户的订单金额",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-031",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "recurring的商机，产品是 Safety Production and Risk Control in Manufacturing 的有哪些",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-032",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "按产品level0 统计去年的总商机金额和商机数量",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-033",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "按产品大类统计财年26的总商机金额，并筛选总金额大于1000万",
+      "durationMs": 2,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-AY-034",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "按产品大类统计财年26的总商机金额和商机数量，并筛选总金额大于1000万且商机数量大于3",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "B-001",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "去年 x-ssl 的项目，而且是 POE 类型的有哪些，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "B-002",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "去年 x-ssl 的 MNC 项目有哪些，列出项目、客户、产品、销售总监和商机金额",
+      "durationMs": 2,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "B-003",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "去年 x-ssl 且 recurring 的项目，返回项目、客户、recurring 类型和订单金额",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "B-004",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "去年 POE 客户中 recurring 的项目，列出项目、客户、产品和预计结束日期",
+      "durationMs": 2,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "B-005",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "x-ssl 项目中哪些是 PSM，列出项目、客户、客户类型、prime office 和产品",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "B-006",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "去年 PSM 且 x-ssl 的项目，列出项目名称和客户等信息",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "B-007",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "去年 x-ssl 且产品是 Safety Production and Risk Control in Manufacturing 的项目，列出项目、客户和产品",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "B-008",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "去年 MNC 和 POE 客户的 x-ssl 项目，按产品统计商机金额和项目数量",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "B-009",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "x-ssl 项目中 MNC 且商机金额大于 20 万的商机，列出客户、项目、产品和金额",
+      "durationMs": 2,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "B-010",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "去年 Digital Ecosystem Enterprise Alliances 产品中 POE 客户有哪些，列出客户、项目、订单金额和创建日期",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-EXPLAIN-001",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "去年 recurring 的商机中，产品是 Safety Production and Risk Control in Manufacturing 的有哪些，返回项目名称、客户名称、商机金额、recurring 类型",
+      "durationMs": 2,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-EXPLAIN-002",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "MNC 或 POE 客户中，Consumer Products 行业的商机数量和商机金额是多少？",
+      "durationMs": 2,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-EXPLAIN-003",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "Risk Management 产品中，MNC 或 POE 客户的商机有哪些？返回客户名称、商机金额和项目名称。",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-EXPLAIN-004",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "有哪些商机是 PSM 的？请返回项目名称、客户名称、客户类型、产品和主要办公室。",
+      "durationMs": 2,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-SEM-002",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "去年 x-ssl 的项目，而且是 POE 类型的有哪些，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-SEM-003",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "去年 x-ssl 的项目有哪些，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期",
+      "durationMs": 1,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "UAT-SEM-004",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "按不存在的业务字段统计商机金额",
+      "durationMs": 2,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    },
+    {
+      "id": "MV-002",
+      "passed": false,
+      "checks": [
+        {
+          "name": "transport",
+          "passed": false,
+          "actual": "fetch failed",
+          "expected": "successful response"
+        }
+      ],
+      "actual": {},
+      "question": "我的 MNC 客户名单",
+      "durationMs": 2,
+      "transport": {
+        "error": "fetch failed"
+      },
+      "evidence": null
+    }
+  ],
+  "startedAt": "2026-09-22T03:38:40.596Z",
+  "completedAt": "2026-09-22T03:39:31.492Z",
+  "baseUrl": "http://127.0.0.1:8787",
+  "datasetName": "01测试销售订单-09",
+  "skillRef": "sales-opportunity-a53@1.3.0",
+  "health": {
+    "connected": true,
+    "server": "http://localhost:51980",
+    "llmModel": "deepseek-v4-flash-0731"
+  },
+  "runtime": {
+    "businessDate": "2026-09-22",
+    "timeZone": "Asia/Shanghai"
+  }
+}

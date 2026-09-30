@@ -1950,6 +1950,11 @@ function renderSmartDocument(document, resultSets = [], runtimeStatus = null, qu
   const accuracy = document.scope?.accuracy === 'exact' ? '精确结果' : document.scope?.accuracy === 'sample' ? '样本结果' : '范围待确认';
   elements.smartScope.innerHTML = `<i></i>${datasets.length || 0} 个数据集 · ${accuracy}`;
   const analysisDetails = renderSmartAnalysisDetails(queryRequests, document.scope || {}, resultSets, responseContext);
+  const completion = responseContext?.completion;
+  const omittedUnits = Array.isArray(completion?.omittedUnits) ? completion.omittedUnits : [];
+  const completionNotice = completion?.status === 'partial'
+    ? `<section class="smart-partial-completion" role="status"><strong>部分完成</strong><p>已返回当前可可靠执行的查询结果。以下要求未执行：</p><ul>${omittedUnits.map(item => `<li><span>${escapeHtml(item.sourceText || '未命名要求')}</span><small>${escapeHtml(item.reason || '当前无法执行')}</small></li>`).join('')}</ul></section>`
+    : '';
   const answerBlock = blocks.find(block => block.id === 'answer-summary' || block.title === '回答');
   const insightAction = dataInsight?.insightId
     ? `<button class="smart-insight-action" type="button" data-action="open-smart-insight" data-insight-id="${escapeHtml(dataInsight.insightId)}" title="使用当前回答的结构化结果进入数据洞察"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19V9m6 10V5m6 14v-7m4 7H2"/></svg><span>数据洞察</span></button>`
@@ -1964,7 +1969,7 @@ function renderSmartDocument(document, resultSets = [], runtimeStatus = null, qu
     return `<article class="smart-query-block wide"><h4>${title}</h4><p>${escapeHtml(block.content || block.message || '')}</p></article>`;
   };
   const answerText = answerBlock?.content || answerBlock?.message || '已完成本次分析。';
-  const answerHtml = `<article class="smart-query-block wide smart-query-answer"><div class="smart-answer-summary-row"><p>${escapeHtml(answerText)}</p><div class="smart-answer-actions"><button class="smart-answer-copy" type="button" data-smart-copy-answer="${escapeHtml(answerText)}" aria-label="复制回答" title="复制回答，作为继续追问的基础">${smartIcon('copy')}</button></div></div>${analysisDetails}</article>`;
+  const answerHtml = `<article class="smart-query-block wide smart-query-answer"><div class="smart-answer-summary-row"><p>${escapeHtml(answerText)}</p><div class="smart-answer-actions"><button class="smart-answer-copy" type="button" data-smart-copy-answer="${escapeHtml(answerText)}" aria-label="复制回答" title="复制回答，作为继续追问的基础">${smartIcon('copy')}</button></div></div>${completionNotice}${analysisDetails}</article>`;
   const visualGroups = [];
   const visualGroupMap = new Map();
   for (const block of blocks.filter(item => item.type === 'chart' || item.type === 'table')) {
@@ -2180,7 +2185,9 @@ async function askSmartQuery() {
     } else {
       elements.smartMessages.insertAdjacentHTML('beforeend', renderSmartDocument(payload.response?.document, payload.response?.resultSets || [], payload.response?.runtimeStatus, payload.response?.queryRequests || [], payload.response?.trace || null, payload.response?.dataInsight || null, payload.response || {}));
       hydrateSmartCharts(elements.smartMessages.lastElementChild, payload.response?.document, payload.response?.resultSets || []);
-      elements.smartStatus.textContent = '已完成，可以继续追问';
+      elements.smartStatus.textContent = payload.response?.status === 'completed-partial'
+        ? '已部分完成，可以查看未完成要求'
+        : '已完成，可以继续追问';
       updateSmartContext(payload);
     }
     elements.smartMessages.scrollTop = elements.smartMessages.scrollHeight;

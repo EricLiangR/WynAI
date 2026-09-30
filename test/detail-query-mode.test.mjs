@@ -69,7 +69,7 @@ test('BusinessQueryIntent 以 detail-table 保留原始数值和日期投影并�
   assert.deepEqual(compiled.displayRequest.select.map(item => item.field), ['记录编号', '项目名称', '金额', '发生日期']);
 });
 
-test('包含数值和日期返回字段的列表请求按字段角色直接规范为投影查询', async () => {
+test('汇总列表中的数值返回字段按 Skill 指标规范进入 Wyn 聚合', async () => {
   let calls = 0;
   const llm = {
     enabled: true,
@@ -101,14 +101,17 @@ test('包含数值和日期返回字段的列表请求按字段角色直接规�
   });
   assert.equal(plan.status, 'supported', JSON.stringify(plan));
   assert.equal('queryMode' in plan.intent, false);
-  assert.equal(plan.request.mode, 'projection');
-  assert.deepEqual(plan.request.measures, []);
+  assert.equal(plan.request.mode, 'aggregate');
+  assert.deepEqual(plan.request.measures.map(item => [item.field, item.aggregation, item.alias]), [
+    ['金额', 'sum', 'amount'],
+  ]);
+  assert.ok(!plan.request.select.some(item => item.field === '金额'));
   assert.equal(plan.plannerDiagnostics.repairAttempted, false);
   assert.equal(plan.plannerDiagnostics.llmCalls, 1);
   assert.equal(calls, 1);
 });
 
-test('普通去重名单被模型标为 detail-table 时按查询结构规范为 grouped-table', async () => {
+test('普通名单保留 LLM 选择的业务维度，不由平台追加隐藏计数或实体键', async () => {
   const llm = {
     enabled: true,
     async planQueryIntent() {
@@ -131,8 +134,10 @@ test('普通去重名单被模型标为 detail-table 时按查询结构规范为
   });
   assert.equal(plan.status, 'supported', JSON.stringify(plan));
   assert.equal(plan.intent.expectedResult.shape, 'grouped-table');
-  assert.equal(plan.request.mode, 'aggregate');
-  assert.equal(plan.request.measures[0].aggregation, 'distinctCount');
+  assert.equal(plan.request.mode, 'projection');
+  assert.deepEqual(plan.request.measures, []);
+  assert.ok(!plan.request.select.some(item => item.field === '记录编号'));
+  assert.deepEqual(plan.displayRequest.measures, []);
 });
 
 test('结果展示形态不参与 Canonical 执行模式路由', () => {

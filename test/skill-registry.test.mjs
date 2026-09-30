@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { SkillRegistry, loadSkillsFromDirectory } from '../lib/skills/skill-registry.mjs';
 import { buildFallbackExplorationPlan } from '../lib/planning/exploration-planner.mjs';
@@ -20,6 +21,34 @@ test('Skill Registry 可从本地 skill.json 加载并按数据集触发', async
   const resolved = registry.resolveForQuestion({ datasetId: '2b445034-38fe-4350-9cab-b7684c28b5f8', question: '查看销售额趋势' });
   assert.ok(resolved.refs.includes('sales-baseline@1.3.0'));
   assert.equal(resolved.conflicts.length, 0);
+});
+
+test('销售 Skill 将裸词 recurring 映射为 Yes 成员包含查询', async () => {
+  const registry = await loadSkillsFromDirectory(path.join(process.cwd(), 'skills'));
+  const skill = registry.resolve({
+    datasetId: '18b86197-65e3-4682-8501-6e7125afad02',
+    question: 'recurring的商机有哪些',
+  }).find(item => item.id === 'sales-opportunity-a53');
+  assert.ok(skill);
+  assert.ok(skill.valueMappings.some(item => (
+    item.field === 'recurring'
+      && item.canonicalValue === 'Yes'
+      && item.synonyms.includes('recurring')
+      && item.matchMode === 'containsAny'
+  )));
+});
+
+test('Skill Registry 保留时间语义的字段绑定', async () => {
+  const registry = await loadSkillsFromDirectory(path.join(process.cwd(), 'skills'));
+  const skill = registry.resolve({
+    datasetId: '18b86197-65e3-4682-8501-6e7125afad02',
+    question: '去年按赢单季度统计销售额和商机数量',
+  }).find(item => item.id === 'sales-opportunity-a53');
+  assert.ok(skill);
+  const quarter = skill.temporalSemantics.find(item => item.id === 'won-quarter');
+  assert.equal(quarter.field, '赢单季度');
+  assert.equal(quarter.grain, 'quarter');
+  assert.ok(quarter.expressions.includes('按季度'));
 });
 
 test('Skill 指标口径可驱动无 LLM 确定性计划', () => {

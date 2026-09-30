@@ -1,0 +1,72 @@
+{
+  "schema": "wynai.dynamic-smart-query-uat/v1",
+  "generatedAt": "2026-09-29T04:33:26.430Z",
+  "baseUrl": "http://127.0.0.1:8787",
+  "dataset": {
+    "id": "18b86197-65e3-4682-8501-6e7125afad02",
+    "name": "01测试销售订单-09",
+    "revision": 5,
+    "fieldCount": 86
+  },
+  "skill": {
+    "id": "sales-opportunity-a53",
+    "version": "1.3.0",
+    "runtimeApproved": true
+  },
+  "generation": {
+    "source": "live-dataset-metadata-and-approved-skill",
+    "presetExpectedAnswers": false,
+    "readFixImplementation": false,
+    "minimumQuestions": 10
+  },
+  "questions": [
+    {
+      "id": "DYN-01",
+      "question": "去年按产品大类统计销售额，列出金额最高的前三个产品大类"
+    },
+    {
+      "id": "DYN-02",
+      "question": "去年按销售地区统计商机数量，列出数量最多的前三个销售地区"
+    },
+    {
+      "id": "DYN-03",
+      "question": "recurring 类型为Yes - New Win的商机中，产品小类为Risk Management的有哪些？返回项目名称、客户、预计结束日期"
+    },
+    {
+      "id": "DYN-04",
+      "question": "x-ssl项目中客户类型为POE的项目有哪些？返回项目名称、客户、合作伙伴"
+    },
+    {
+      "id": "DYN-05",
+      "question": "去年客户类型为MNC的销售额和商机数量是多少"
+    },
+    {
+      "id": "DYN-06",
+      "question": "客户所属行业为Food且客户类型为POE的商机有多少个"
+    },
+    {
+      "id": "DYN-07",
+      "question": "所有财年中不是 recurring 的客户名单"
+    },
+    {
+      "id": "DYN-08",
+      "question": "去年按产品小类统计销售额，筛选总金额大于500万"
+    },
+    {
+      "id": "DYN-09",
+      "question": "去年产品小类为Risk Management的商机，返回项目名称、客户和预计结束日期"
+    },
+    {
+      "id": "DYN-10",
+      "question": "去年按赢单季度统计销售额和商机数量"
+    },
+    {
+      "id": "DYN-11",
+      "question": "去年x-ssl项目返回项目名称、销售总监、合作伙伴、创建日期和预计结束日期"
+    },
+    {
+      "id": "DYN-12",
+      "question": "MNC或POE客户中产品大类为Manufacturing的销售额是多少"
+    }
+  ]
+}

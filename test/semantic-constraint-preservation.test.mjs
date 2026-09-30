@@ -104,13 +104,10 @@ test('排名维度的自然语言占位值不会生成实际筛选条件', () =>
   ]);
 });
 
-test('Skill 字典把别名绑定到源字段并移除问句占位筛选', () => {
+test('Skill 字典只在 LLM 声明筛选单元后绑定源字段，不从问句补条件', () => {
   const normalized = normalizeSkillValueFilters({
-    filters: [
-      { field: 'pipelineCode', operator: 'eq', value: 'PSM的' },
-      { field: 'primeOffice', operator: 'eq', value: '哪里' },
-      { field: '客户名称', operator: 'eq', value: 'Consumer Products 行业 的商机有多少个' },
-    ],
+    filters: [],
+    requestUnits: [{ id: 'psm', kind: 'filter', sourceText: 'PSM', status: 'executable', field: 'PSM' }],
   }, {
     question: '有哪些商机是 PSM的，prime office 是哪里，Consumer Products 行业的商机有多少个',
     metadata: { fields: [
@@ -176,7 +173,7 @@ test('明确列出字段清单时不依赖哪些关键词即可建立金额源�
   assert.ok(plan.intent.dimensions.some(item => item.field === '交易金额'));
 });
 
-test('显式返回 Skill 指标同义词时保留物理金额字段的源记录投影', async () => {
+test('汇总列表返回 Skill 指标同义词时使用受治理聚合而非物理金额投影', async () => {
   const catalog = {
     id: 'dataset-skill-metric-synonym-projection', revision: 1,
     fields: [
@@ -218,12 +215,14 @@ test('显式返回 Skill 指标同义词时保留物理金额字段的源记录�
     llm: model.llm,
   });
   assert.equal(result.status, 'supported', result.message);
-  assert.equal(result.request.mode, 'projection');
-  assert.equal(result.request.measures.length, 0);
-  assert.ok(result.request.select.some(item => item.field === 'amount_cny'));
+  assert.equal(result.request.mode, 'aggregate');
+  assert.deepEqual(result.request.measures.map(item => [item.field, item.aggregation, item.alias]), [
+    ['amount_cny', 'sum', 'order_amount'],
+  ]);
+  assert.ok(!result.request.select.some(item => item.field === 'amount_cny'));
 });
 
-test('显式字段值关系优先保留数据集字段和用户原始值', () => {
+test('原问题中的显式字段值不会由平台第二次解析并替换 LLM 筛选', () => {
   const catalog = {
     fields: [
       { name: '产品名称', role: 'dimension', type: 'String' },
@@ -247,17 +246,10 @@ test('显式字段值关系优先保留数据集字段和用户原始值', () =>
     metadata: catalog,
     skills: [skill],
   });
-  assert.deepEqual(intent.filters, [{
-    field: '产品名称',
-    fieldRef: '产品名称',
-    operator: 'eq',
-    value: 'Safety Production and Risk Control in Manufacturing',
-    concept: 'product',
-    source: '产品是Safety Production and Risk Control in Manufacturing',
-  }]);
+  assert.deepEqual(intent.filters, [{ field: '产品小类', operator: 'eq', value: 'Risk Management' }]);
 });
 
-test('显式字段值解析截断后续数量问句而保留真实源值', () => {
+test('原问题中的值尾部不会被平台解析为新的筛选条件', () => {
   const catalog = {
     fields: [{ name: '客户所属子行业', role: 'dimension', type: 'String' }],
   };
@@ -274,10 +266,7 @@ test('显式字段值解析截断后续数量问句而保留真实源值', () =>
     metadata: catalog,
     skills: [skill],
   });
-  assert.deepEqual(aligned.filters, [{
-    field: '客户所属子行业', fieldRef: '客户所属子行业', operator: 'eq', value: 'Food',
-    concept: 'customerSubsector', source: 'subsector是Food',
-  }]);
+  assert.deepEqual(aligned.filters, [{ field: '客户所属子行业', operator: 'eq', value: 'Food 的商机有多少个' }]);
 
   const governed = normalizeSkillValueFilters(aligned, {
     question: 'MNC 客户且 subsector是Food 的商机有多少个',
@@ -292,9 +281,9 @@ test('显式字段值解析截断后续数量问句而保留真实源值', () =>
   assert.deepEqual(governed.filters, aligned.filters);
 });
 
-test('Skill 字典补齐模型遗漏的别名筛选并移除绑定到错误字段的值', () => {
+test('Skill 字典只规范化模型已声明的别名筛选，不从原问句新增业务条件', () => {
   const normalized = normalizeSkillValueFilters({
-    filters: [{ field: '客户名称', operator: 'eq', value: 'Consumer Products 行业' }],
+    filters: [{ field: '客户所属行业', operator: 'eq', value: 'Consumer Products' }],
   }, {
     question: 'MNC 客户是 Consumer Products 行业的商机有多少个',
     metadata: { fields: [
@@ -311,19 +300,13 @@ test('Skill 字典补齐模型遗漏的别名筛选并移除绑定到错误字�
       },
     ] }],
   });
-  assert.deepEqual(normalized.filters, [
-    {
-      field: '客户类型', fieldRef: '客户类型', operator: 'containsAny',
-      value: ['Multinational Corporation（MNC）'], concept: 'customerType', source: 'MNC',
-    },
-    {
+  assert.deepEqual(normalized.filters, [{
       field: '客户所属行业', fieldRef: '客户所属行业', operator: 'eq',
       value: 'Consumer Products', concept: 'customerIndustry', source: 'Consumer Products',
-    },
-  ]);
+  }]);
 });
 
-test('Skill 泛化实体词把相邻层级的错误筛选字段纠正为受治理字段', () => {
+test('Skill 泛化实体词不能静默纠正 LLM 的相邻层级字段', () => {
   const normalized = normalizeSkillEntityFilterFields({
     filters: [{ field: '产品小类', operator: 'eq', value: 'Digital Ecosystem Enterprise Alliances' }],
   }, {
@@ -337,12 +320,10 @@ test('Skill 泛化实体词把相邻层级的错误筛选字段纠正为受治�
       { id: 'productSubcategory', concept: 'productSubcategory', name: '产品小类', field: '产品小类', synonyms: ['Level1', '小类'] },
     ] }],
   });
-  assert.deepEqual(normalized.filters, [{
-    field: '产品名称', fieldRef: '产品名称', operator: 'eq', value: 'Digital Ecosystem Enterprise Alliances', concept: 'product',
-  }]);
+  assert.deepEqual(normalized.filters, [{ field: '产品小类', operator: 'eq', value: 'Digital Ecosystem Enterprise Alliances' }]);
 });
 
-test('实体前置的英文源值覆盖模型改写并保持用户原文', () => {
+test('实体前置的英文值不能覆盖 LLM 已选择的筛选字段', () => {
   const catalog = { fields: [
     { name: '产品名称', role: 'dimension', type: 'String' },
     { name: '产品小类', role: 'dimension', type: 'String' },
@@ -360,20 +341,16 @@ test('实体前置的英文源值覆盖模型改写并保持用户原文', () =>
     metadata: catalog,
     skills: [skill],
   });
-  assert.deepEqual(normalized.filters, [{
-    field: '产品名称', fieldRef: '产品名称', operator: 'eq',
-    value: 'Digital Ecosystem Enterprise Alliances', concept: 'product',
-    source: 'Digital Ecosystem Enterprise Alliances 产品',
-  }]);
+  assert.deepEqual(normalized.filters, [{ field: '产品小类', operator: 'eq', value: 'Ecosystem Collaboration' }]);
 });
 
-test('Skill 多值字典补齐筛选时保持问句否定语义', () => {
+test('Skill 多值字典保留 LLM 已声明的否定成员操作符', () => {
   const mapping = {
     field: '客户类型', concept: 'customerType', canonicalValue: 'Multinational Corporation（MNC）',
     synonyms: ['MNC'], matchMode: 'containsAny',
   };
   const normalized = normalizeSkillValueFilters({
-    filters: [{ field: '客户类型', operator: 'containsAny', value: ['MNC'] }],
+    filters: [{ field: '客户类型', operator: 'notContainsAny', value: ['MNC'] }],
   }, {
     question: '不是 MNC 客户的商机金额是多少',
     metadata: { fields: [{ name: '客户类型' }] },
@@ -385,13 +362,20 @@ test('Skill 多值字典补齐筛选时保持问句否定语义', () => {
   }]);
 });
 
-test('LLM 遗漏用户明确要求的指标时归类为覆盖失败', async () => {
-  const model = modelThatChanges(intent => ({ ...intent, metrics: intent.metrics.filter(item => item.concept === 'revenue') }));
+test('LLM 将独立不可用指标写入请求单元时返回部分完成', async () => {
+  const model = modelThatChanges(intent => ({
+    ...intent,
+    metrics: intent.metrics.filter(item => item.concept === 'revenue'),
+    requestUnits: [
+      { id: 'revenue', kind: 'metric', sourceText: '销售额', status: 'executable', criticality: 'independent', field: '销售额', alias: 'revenue' },
+      { id: 'profit', kind: 'metric', sourceText: '利润', status: 'unsupported', criticality: 'independent', field: '利润', alias: 'profit', reason: '当前口径不可执行' },
+    ],
+  }));
   const result = await planBusinessQuestionAsync({ metadata, question: '按客户省份统计销售额和利润', now, llm: model.llm });
-  assert.equal(result.status, 'error');
-  assert.equal(result.plannerDiagnostics.reason, 'INTENT_COVERAGE_INVALID');
-  assert.match(result.message, /利润/);
-  assert.equal(model.calls(), 3);
+  assert.equal(result.status, 'supported', result.message);
+  assert.equal(result.completion.status, 'partial');
+  assert.match(result.completion.omittedUnits[0].sourceText, /利润/);
+  assert.equal(model.calls(), 1);
 });
 
 test('LLM 把已声明派生指标和普通指标误标为聚合后筛选时按结构化基线纠正', async () => {
@@ -464,31 +448,44 @@ test('逐行返回数值字段可以由原始字段投影满足，而不能丢�
       requiredDimensions: intent.expectedResult.requiredDimensions
         .filter(alias => !intent.dimensions.some(item => item.field === '销售额' && item.alias === alias)),
     },
+    requestUnits: [
+      { id: 'province', kind: 'projection', sourceText: '客户省份', status: 'executable', criticality: 'required-output', field: '客户省份', alias: 'dimension_source' },
+      { id: 'amount', kind: 'projection', sourceText: '销售额', status: 'unsupported', criticality: 'optional-output', field: '销售额', alias: 'raw_revenue', reason: '模型未形成可执行投影' },
+    ],
   }));
   const recovered = await planBusinessQuestionAsync({
     metadata, question: '逐条列出客户省份和销售额，不聚合、不去重', now, llm: missing.llm,
   });
   assert.equal(recovered.status, 'supported', recovered.message);
   assert.equal(recovered.request.mode, 'projection');
-  assert.ok(recovered.request.select.some(item => item.field === '销售额'));
+  assert.ok(!recovered.request.select.some(item => item.field === '销售额'));
+  assert.equal(recovered.completion.status, 'partial');
 });
 
-test('LLM 遗漏用户明确要求的维度时归类为覆盖失败', async () => {
-  const model = modelThatChanges(intent => ({ ...intent, dimensions: [] }));
+test('LLM 将核心分组维度标为不可用时必须澄清', async () => {
+  const model = modelThatChanges(intent => ({
+    ...intent,
+    dimensions: [],
+    requestUnits: [{ id: 'province', kind: 'dimension', sourceText: '按客户省份', status: 'unsupported', criticality: 'scope-defining', field: '客户省份', reason: '核心分组不可用' }],
+  }));
   const result = await planBusinessQuestionAsync({ metadata, question: '按客户省份统计销售额', now, llm: model.llm });
-  assert.equal(result.status, 'error');
-  assert.equal(result.plannerDiagnostics.reason, 'INTENT_COVERAGE_INVALID');
-  assert.match(result.message, /客户省份|维度/);
-  assert.equal(model.calls(), 3);
+  assert.equal(result.status, 'needs_clarification');
+  assert.equal(result.plannerDiagnostics.reason, 'request-unit-blocked');
+  assert.match(result.clarification, /客户省份|核心分组/);
+  assert.equal(model.calls(), 1);
 });
 
-test('LLM 遗漏用户明确要求的筛选条件时归类为覆盖失败', async () => {
-  const model = modelThatChanges(intent => ({ ...intent, filters: [] }));
+test('LLM 将筛选条件标为不可用时不得扩大查询范围', async () => {
+  const model = modelThatChanges(intent => ({
+    ...intent,
+    filters: [],
+    requestUnits: [{ id: 'east', kind: 'filter', sourceText: '只看华东', status: 'unsupported', criticality: 'scope-defining', field: '客户地区', reason: '筛选条件不可执行' }],
+  }));
   const result = await planBusinessQuestionAsync({ metadata, question: '只看华东的销售额', now, llm: model.llm });
-  assert.equal(result.status, 'error');
-  assert.equal(result.plannerDiagnostics.reason, 'INTENT_COVERAGE_INVALID');
-  assert.match(result.message, /筛选条件|客户地区/);
-  assert.equal(model.calls(), 3);
+  assert.equal(result.status, 'needs_clarification');
+  assert.equal(result.request, undefined);
+  assert.match(result.clarification, /华东|筛选条件/);
+  assert.equal(model.calls(), 1);
 });
 
 test('仅承担筛选的维度不扩大展示粒度，明确输出或分组时仍保留', async () => {
@@ -525,7 +522,10 @@ test('仅承担筛选的维度不扩大展示粒度，明确输出或分组时�
     },
   });
 
-  const filtered = modelThatChanges(withRegionDimension);
+  const filtered = modelThatChanges(intent => {
+    const value = withRegionDimension(intent);
+    return { ...value, dimensions: value.dimensions.filter(item => item.field !== '客户地区'), expectedResult: { ...value.expectedResult, requiredDimensions: ['customer'] } };
+  });
   const filteredResult = await planBusinessQuestionAsync({
     metadata: catalog, skills: [skill], llm: filtered.llm, now,
     question: '华东和华南的客户名单',
@@ -558,7 +558,7 @@ test('数据集不支持用户要求的字段时返回能力不可用澄清', as
   const result = await planBusinessQuestionAsync({ metadata, question: '按不存在字段统计销售额', now, llm: model.llm });
   assert.equal(result.status, 'needs_clarification');
   assert.equal(result.plannerDiagnostics.failureCategory, 'capability-unavailable');
-  assert.match(result.clarification, /当前数据集不包含.*不存在字段/);
+  assert.match(result.clarification, /当前数据集.*不存在字段/);
   assert.equal(result.request, undefined);
   assert.equal(model.calls(), 3);
 });
@@ -1053,7 +1053,7 @@ test('开放式时间范围默认采用 Skill 日期字段并尊重用户显式�
   ]);
 });
 
-test('Skill 唯一实体键作为内部 Wyn 分组字段保留名单业务粒度', async () => {
+test('普通名单不由 Skill 唯一实体键被平台隐式扩展粒度', async () => {
   const catalog = {
     id: 'dataset-entity-grain', revision: 1,
     fields: [
@@ -1083,8 +1083,55 @@ test('Skill 唯一实体键作为内部 Wyn 分组字段保留名单业务粒度
     skills: [skill], now, llm: model.llm,
   });
   assert.equal(result.status, 'supported', result.message);
-  assert.ok(result.request.select.some(item => item.field === '交易编号'));
+  assert.deepEqual(result.request.select.map(item => item.field), ['客户', '商品']);
+  assert.deepEqual(result.request.measures, []);
+  assert.ok(!result.request.select.some(item => item.field === '交易编号'));
   assert.ok(!result.displayRequest.select.some(item => item.field === '交易编号'));
+});
+
+test('数值阈值字段只保留在 Wyn 源端筛选，不进入结果投影', async () => {
+  const catalog = {
+    id: 'dataset-threshold-projection', revision: 1,
+    fields: [
+      { name: '客户', role: 'dimension', type: 'String', rawType: 'String' },
+      { name: '商品', role: 'dimension', type: 'String', rawType: 'String' },
+      { name: '交易金额', role: 'measure', type: 'Number', rawType: 'Double' },
+    ],
+  };
+  const skill = {
+    id: 'generic-threshold-projection', version: '1.0.0', status: 'approved',
+    metrics: [{ id: 'transactionAmount', concept: 'revenue', name: '交易金额', field: '交易金额', aggregation: 'sum' }],
+  };
+  const model = modelThatChanges(intent => ({
+    ...intent,
+    dimensions: [
+      { field: '客户', alias: 'customer', concept: 'customer' },
+      { field: '商品', alias: 'product', concept: 'product' },
+      { field: '交易金额', alias: 'amount', concept: 'revenue' },
+    ],
+    metrics: [],
+    filters: [{ field: '交易金额', operator: 'gt', value: 200000 }],
+    expectedResult: {
+      ...intent.expectedResult,
+      shape: 'detail-table',
+      requiredDimensions: ['customer', 'product', 'amount'],
+      requiredMetrics: [],
+    },
+  }));
+  const result = await planBusinessQuestionAsync({
+    metadata: catalog,
+    question: '交易金额大于20万的交易，分别是哪些客户、商品',
+    skills: [skill],
+    now,
+    llm: model.llm,
+  });
+  assert.equal(result.status, 'supported', JSON.stringify(result));
+  assert.equal(result.request.filters[0].field, '交易金额');
+  assert.equal(result.request.filters[0].operator, 'gt');
+  assert.deepEqual(result.request.select.map(item => item.field), ['客户', '商品']);
+  assert.deepEqual(result.request.measures, []);
+  assert.ok(!result.request.select.some(item => item.field === '交易金额'));
+  assert.ok(!result.displayRequest.select.some(item => item.field === '交易金额'));
 });
 
 test('Skill 实体短名嵌在完整指标短语中时不误判为返回实体字段', () => {
@@ -1107,7 +1154,7 @@ test('Skill 实体短名嵌在完整指标短语中时不误判为返回实体�
   assert.ok(result.intent.metrics.some(item => item.field === '交易金额'));
 });
 
-test('LLM 将确定性基线聚合指标误放入投影字段时恢复统计粒度', async () => {
+test('明确原始明细语义时平台不把 LLM 投影意图重写为聚合', async () => {
   const catalog = {
     id: 'dataset-projection-role-alignment', revision: 1,
     fields: [
@@ -1131,15 +1178,15 @@ test('LLM 将确定性基线聚合指标误放入投影字段时恢复统计粒�
     },
   }));
   const result = await planBusinessQuestionAsync({
-    metadata: catalog, question: '按项目和客户统计订单金额', now, llm: model.llm,
+    metadata: catalog, question: '按项目和客户列出每条原始记录的订单金额', now, llm: model.llm,
   });
   assert.equal(result.status, 'supported', result.message);
-  assert.equal(result.request.mode, 'aggregate');
-  assert.ok(result.request.measures.some(item => item.field === '订单金额'));
-  assert.ok(!result.request.select.some(item => item.field === '订单金额'));
+  assert.equal(result.request.mode, 'projection');
+  assert.equal(result.request.measures.length, 0);
+  assert.ok(result.request.select.some(item => item.field === '订单金额'));
 });
 
-test('明确列举唯一业务实体并返回金额时保持 Wyn 源端记录投影', async () => {
+test('未明确逐条明细时列举实体并返回金额使用 Wyn 聚合', async () => {
   const catalog = {
     id: 'dataset-entity-record-projection', revision: 1,
     fields: [
@@ -1177,14 +1224,17 @@ test('明确列举唯一业务实体并返回金额时保持 Wyn 源端记录投
     metadata: catalog, question: '交易金额大于100的交易有哪些，返回客户和交易金额', skills: [skill], now, llm: model.llm,
   });
   assert.equal(result.status, 'supported', JSON.stringify(result));
-  assert.equal(result.request.mode, 'projection');
-  assert.ok(result.request.select.some(item => item.field === '交易编号'));
-  assert.ok(result.request.select.some(item => item.field === '交易金额'));
-  assert.equal(result.request.measures.length, 0);
+  assert.equal(result.request.mode, 'aggregate');
+  assert.deepEqual(result.request.measures.map(item => [item.field, item.aggregation, item.alias]), [
+    ['交易金额', 'sum', 'amount'],
+  ]);
+  assert.ok(result.request.select.some(item => item.field === '客户'));
+  assert.ok(!result.request.select.some(item => item.field === '交易编号'));
+  assert.ok(!result.request.select.some(item => item.field === '交易金额'));
   assert.ok(!result.displayRequest.select.some(item => item.field === '交易编号'));
 });
 
-test('LLM 将显式返回的源金额误标为聚合时按语义账本恢复投影', async () => {
+test('平台不以确定性语义账本把 LLM 聚合意图重写为投影', async () => {
   const catalog = {
     id: 'dataset-explicit-source-projection', revision: 1,
     fields: [
@@ -1219,9 +1269,8 @@ test('LLM 将显式返回的源金额误标为聚合时按语义账本恢复投�
     metadata: catalog, question: '哪些交易，返回客户和交易金额', skills: [skill], now, llm: model.llm,
   });
   assert.equal(result.status, 'supported', result.message);
-  assert.equal(result.request.mode, 'projection');
-  assert.equal(result.request.measures.length, 0);
-  assert.ok(result.request.select.some(item => item.field === '交易金额'));
+  assert.equal(result.request.mode, 'aggregate');
+  assert.ok(result.request.measures.some(item => item.field === '交易金额'));
 });
 
 test('最终协议不变量消除 detail-table 与聚合指标的非法组合', async () => {

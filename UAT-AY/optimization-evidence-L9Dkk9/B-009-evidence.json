@@ -1,0 +1,1073 @@
+{
+  "question": "x-ssl 项目中，MNC 客户且商机金额大于 20 万的有哪些？请列出客户名称、项目名称、产品、商机金额",
+  "startedAt": "2026-09-11T07:26:17.004Z",
+  "completedAt": "2026-09-11T07:26:34.933Z",
+  "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\nx-ssl 项目中，MNC 客户且商机金额大于 20 万的有哪些？请列出客户名称、项目名称、产品、商机金额\n问\n\n在 x-ssl 项目中，符合 MNC 客户且商机金额大于 20 万条件的记录共有 2023 条，涉及 7 个客户、2023 个项目、89 个产品。商机金额范围从约 20 万到约 7618.87 万。由于结果集较大，仅展示前 20 条记录作为示例。\n\n指标\nOpportunity_amount_CNY（求和）\n维度\n客户名称、pipelineName、产品名称\n筛选\nxssl 等于 1；客户类型 包含任一：Multinational Corporation（MNC）；Opportunity_amount_CNY 大于 200000\n排序\n按Opportunity_amount_CNY（求和）降序\n查询明细\n数据洞察\n客户名称\tpipelineName\t产品名称\tOpportunity_amount_CNY\n客户492\t订单名称14106\tFlexible Production Organization Upgrade\t76,188,728.68\n客户5\t订单名称24198\tSafety Production and Risk Control in Manufacturing\t45,117,658.11\n客户5\t订单名称17682\tMarket Launch Consulting for New Products\t26,880,000\n客户23\t订单名称17557\tQuality Compliance and ISO System Building\t24,097,920\n客户2\t订单名称22370\tUser Experience Analysis & Improvement\t15,360,000\n客户492\t订单名称11042\tSmart Factory Testing Platform Development\t14,080,000\n客户23\t订单名称18273\tGlobal Supply Chain Integration Management\t13,732,135\n客户4\t订单名称9794\tRetail Brand M&A and Integration Service\t12,800,000\n客户4\t订单名称13019\tRemote Medical Business Process Consulting\t10,240,000\n客户4\t订单名称20924\tCloud Service Platform Product Incubation\t9,201,537.28\n客户4\t订单名称481\tM&A Synergy Integration for Manufacturing\t8,960,000\n客户492\t订单名称8084\tInternet Company Acquisition Synergy Projects\t8,762,880\n客户23\t订单名称457\tFinancial Brand Upgrade and Marketing Strategy\t7,637,275.94\n客户4\t订单名称17100\tRetail Store Operation Risk Control\t7,130,081.59\n客户492\t订单名称17009\tDRGs Payment Management Optimization for Hospitals\t7,130,081.59\n客户492\t订单名称16631\tTop-Level Design for Smart Manufacturing\t7,067,121.09\n客户4\t订单名称15784\tGraded Competency Training for Medical Staff\t7,010,304\n客户492\t订单名称16353\tCybersecurity Graded Protection Project\t7,010,304\n客户4\t订单名称14057\tGraded Competency Training for Medical Staff\t6,908,630.91\n客户23\t订单名称3729\tMarket Launch Consulting for New Products\t6,400,000\n客户5\t订单名称28566\tSmart Risk Control Platform for Finance\t6,400,000\n客户4\t订单名称4144\tFMCG Financing & IPO Planning\t6,400,000\n客户23\t订单名称18534\tFMCG Financing & IPO Planning\t6,400,000\n客户4\t订单名称15232\tHospital Accreditation Risk Assessment\t6,400,000\n客户3\t订单名称20344\tInvestment and Financing Consulting for Medical Alliances\t6,272,000\n客户4\t订单名称9582\tFull-Process Lean Production Consulting\t5,827,315.2\n客户3\t订单名称21035\tInnovation Accelerator for Medical Technologies\t5,376,000\n客户5\t订单名称27943\tTraffic Growth & Conversion Consulting for Digital Products\t5,294,615.04\n客户23\t订单名称27246\tCompetency Upgrade Plan for Financial Personnel\t5,120,000\n客户5\t订单名称24461\tHospital Big Data Platform Construction\t5,120,000\n客户4\t订单名称7703\tFMCG Financing & IPO Planning\t5,120,000\n客户492\t订单名称5616\tGreen Finance Product Development Consulting\t5,120,000\n客户23\t订单名称2766\tEnterprise Data Security Risk Management\t4,994,841.6\n客户5\t订单名称18628\tAML Monitoring & Compliance Enhancement\t4,600,768.64\n客户5\t订单名称18082\tSmart Store Management System\t4,588,666.37\n客户492\t订单名称11035\tGraded Competency Training for Medical Staff\t4,480,000\n客户5\t订单名称20554\tUser Experience Analysis & Improvement\t4,480,000\n客户5\t订单名称18684\tCompetency Upgrade Plan for Financial Personnel\t4,480,000\n客户492\t订单名称20324\tMarket Launch Consulting for New Products\t4,480,000\n客户23\t订单名称7757\tIntelligent Cloud Financial Platform for Manufacturing\t4,480,000\n客户492\t订单名称19673\tNew Retail Transformation Strategy Consulting\t4,407,536.36\n客户492\t订单名称5232\tIntegrated Supply Chain & Storage Optimization\t4,381,448.77\n客户492\t订单名称26835\tRetail Store Operation Risk Control\t4,352,000\n客户4\t订单名称11167\tComprehensive Development Blueprint for Healthcare Industry\t4,118,033.92\n客户492\t订单名称11639\tFlexible Production Organization Upgrade\t4,080,782.49\n客户5\t订单名称11346\tCloud-Native Architecture & IT Governance\t3,840,000\n客户5\t订单名称18335\tGrowth Roadmap for Digital Technology Companies\t3,840,000\n客户5\t订单名称18450\tNew Market Entry Planning for Manufacturing\t3,840,000\n客户492\t订单名称14223\tRefined Cost Control for Financial Enterprises\t3,840,000\n客户492\t订单名称23003\tSmart Store Management System\t3,840,000\n客户492\t订单名称6831\tMarket Launch Consulting for New Products\t3,840,000\n客户23\t订单名称9784\tFMCG Financing & IPO Planning\t3,840,000\n客户5\t订单名称21701\tFlexible Production Organization Upgrade\t3,840,000\n客户9\t订单名称18207\tGrowth Roadmap for Digital Technology Companies\t3,840,000\n客户23\t订单名称2185\tNew Retail Transformation Strategy Consulting\t3,840,000\n客户23\t订单名称14809\tPublic Health Information System Optimization\t3,840,000\n客户492\t订单名称14648\tInternet Company Acquisition Synergy Projects\t3,840,000\n客户492\t订单名称5069\tHospital Big Data Platform Construction\t3,840,000\n客户23\t订单名称5628\tCompetency Upgrade Plan for Financial Personnel\t3,763,200\n客户4\t订单名称16893\tSupply Chain Finance Risk Assessment for Manufacturing\t3,680,614.91\n客户5\t订单名称11857\tSmart Risk Control Platform for Finance\t3,584,000\n客户5\t订单名称16639\tSpecialty Medical Brand Promotion Event Planning\t3,574,401.57\n客户4\t订单名称19130\tFull-Process Lean Production Consulting\t3,276,800\n客户3\t订单名称20848\tIntelligent Cloud Financial Platform for Manufacturing\t3,215,964.88\n客户492\t订单名称17181\tEnterprise Data Security Risk Management\t3,200,000\n客户5\t订单名称19561\tSmart Store Management System\t3,200,000\n客户4\t订单名称20406\tHigh-Value New Product Incubation Consulting\t3,200,000\n客户5\t订单名称18035\tRefined Cost Management in Retail Industry\t3,200,000\n客户492\t订单名称8363\tUser Experience Analysis & Improvement\t3,190,818.73\n客户5\t订单名称13348\tBranch Operation Efficiency Enhancement Project\t3,072,000\n客户4\t订单名称10360\tRisk Prevention in Medical Production Processes\t3,067,008\n客户3\t订单名称26368\tInnovative Investment Banking Training for Banks\t3,020,800\n客户492\t订单名称10578\tValue Management for Digital Technology Companies\t2,979,379.2\n客户5\t订单名称19939\tDigital Ecosystem Enterprise Alliances\t2,944,000\n客户23\t订单名称2459\tHigh-Performance Operations Center Optimization\t2,944,000\n客户2\t订单名称25014\tMedical Device Registration Compliance Process\t2,941,452.8\n客户492\t订单名称60\tCredit Risk Control Optimization in Banking\t2,936,746.48\n客户2\t订单名称260\tCollaborative Model for Multi-Plant Manufacturing Groups\t2,880,000\n客户2\t订单名称12337\tValue Management for Digital Technology Companies\t2,880,000\n客户492\t订单名称14228\tSpecialty Medical Brand Promotion Event Planning\t2,816,000\n客户4\t订单名称11289\tCredit Risk Control Optimization in Banking\t2,760,461.18\n客户2\t订单名称24585\tNew Retail Transformation Strategy Consulting\t2,760,461.18\n客户492\t订单名称19070\tTechnical Backbone Acceleration Program\t2,752,000\n客户5\t订单名称141\tRemote Medical Business Process Consulting\t2,707,745.58\n客户492\t订单名称25995\tOn-site Production Data Collection & Analysis Solutions\t2,706,136.58\n客户23\t订单名称21056\tSpecialty Medical Brand Promotion Event Planning\t2,589,335.04\n客户23\t订单名称3387\tHospital Big Data Platform Construction\t2,560,000\n客户4\t订单名称3009\tMarket Launch Consulting for New Products\t2,560,000\n客户492\t订单名称11942\tSupply Chain Finance Risk Assessment for Manufacturing\t2,560,000\n客户5\t订单名称26143\tGlobal Supply Chain Integration Management\t2,560,000\n客户4\t订单名称9298\tMedical Device Registration Compliance Process\t2,560,000\n客户492\t订单名称18345\tCompetency Upgrade Plan for Financial Personnel\t2,560,000\n客户3\t订单名称13278\tManufacturing Craftsman Talent Pipeline Development\t2,560,000\n客户492\t订单名称11718\tEnterprise-level AI Empowerment Consulting\t2,560,000\n客户2\t订单名称13418\tSafety Production and Risk Control in Manufacturing\t2,560,000\n客户4\t订单名称5162\tCredit Risk Control Optimization in Banking\t2,560,000\n客户2\t订单名称20262\tQuality Compliance and ISO System Building\t2,560,000\n客户492\t订单名称16087\tFlat Management Design for Chain Stores\t2,560,000\n客户492\t订单名称16289\tTraffic Growth & Conversion Consulting for Digital Products\t2,560,000\n客户492\t订单名称18034\tRisk Prevention in Medical Production Processes\t2,560,000\n上一页\n第 1 / 21 页 · 共 2,023 行\n下一页\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+  "traceId": "trace-cffdfa32-a4d6-4a5f-978b-a9544b667f52",
+  "trace": [
+    {
+      "id": "operation-event-accf461d-047b-4c5a-a27f-4213a580cc2f",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-cffdfa32-a4d6-4a5f-978b-a9544b667f52",
+      "sequence": 1,
+      "at": "2026-09-11T07:26:17.059Z",
+      "event": "request.accepted",
+      "phase": "transport",
+      "outcome": null,
+      "durationMs": null,
+      "conversationId": "conv-5fbadde8-1bdc-4aa3-9d8a-ea3195617441",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "method": "POST",
+        "path": "/api/smart-query/conversations/conv-5fbadde8-1bdc-4aa3-9d8a-ea3195617441/messages"
+      }
+    },
+    {
+      "id": "operation-event-451df100-5a44-4c82-8bad-c48574d4972a",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-cffdfa32-a4d6-4a5f-978b-a9544b667f52",
+      "sequence": 2,
+      "at": "2026-09-11T07:26:17.059Z",
+      "event": "turn.received",
+      "phase": "input",
+      "outcome": null,
+      "durationMs": null,
+      "conversationId": "conv-5fbadde8-1bdc-4aa3-9d8a-ea3195617441",
+      "turnId": "turn-6c64aaf6-bcde-49a8-9385-21e7809507a3",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "question": "x-ssl 项目中，MNC 客户且商机金额大于 20 万的有哪些？请列出客户名称、项目名称、产品、商机金额",
+        "conversationState": "ready",
+        "datasetRevision": 5
+      }
+    },
+    {
+      "id": "operation-event-03c3c5b6-ccda-43a9-a4db-5cb080edb0d8",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-cffdfa32-a4d6-4a5f-978b-a9544b667f52",
+      "sequence": 3,
+      "at": "2026-09-11T07:26:17.064Z",
+      "event": "skill.resolved",
+      "phase": "skills",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-5fbadde8-1bdc-4aa3-9d8a-ea3195617441",
+      "turnId": "turn-6c64aaf6-bcde-49a8-9385-21e7809507a3",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "skillRefs": [
+          "sales-opportunity-a53@1.3.0",
+          "temporal-semantics@1.1.0"
+        ],
+        "conflicts": []
+      }
+    },
+    {
+      "id": "operation-event-f01b3a9e-2a29-4c52-9609-10fcd791bd5f",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-cffdfa32-a4d6-4a5f-978b-a9544b667f52",
+      "sequence": 4,
+      "at": "2026-09-11T07:26:29.415Z",
+      "event": "gateway.attempt",
+      "phase": "llm",
+      "outcome": "success",
+      "durationMs": 12348,
+      "conversationId": "conv-5fbadde8-1bdc-4aa3-9d8a-ea3195617441",
+      "turnId": "turn-6c64aaf6-bcde-49a8-9385-21e7809507a3",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "operation": "intent",
+        "attempt": 1,
+        "provider": "primary",
+        "model": "deepseek-v4-flash-0731",
+        "responseStatus": 200,
+        "durationMs": 12348,
+        "timeoutClass": "completed",
+        "error": null
+      }
+    },
+    {
+      "id": "operation-event-e718d98f-9869-4873-b4bd-e40cca8717c9",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-cffdfa32-a4d6-4a5f-978b-a9544b667f52",
+      "sequence": 5,
+      "at": "2026-09-11T07:26:29.416Z",
+      "event": "planning.completed",
+      "phase": "planning",
+      "outcome": "supported",
+      "durationMs": null,
+      "conversationId": "conv-5fbadde8-1bdc-4aa3-9d8a-ea3195617441",
+      "turnId": "turn-6c64aaf6-bcde-49a8-9385-21e7809507a3",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "status": "supported",
+        "plannerMode": "llm-first",
+        "diagnostics": {
+          "route": "llm-first",
+          "planningDurationMs": 12352,
+          "llmAttempted": true,
+          "llmDurationMs": 12351,
+          "circuitOpen": false,
+          "reason": "intent-llm-validated",
+          "repairAttempted": false,
+          "llmCalls": 1
+        }
+      }
+    },
+    {
+      "id": "operation-event-58e5d01d-f795-4f47-b5b2-970976be5e20",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-cffdfa32-a4d6-4a5f-978b-a9544b667f52",
+      "sequence": 6,
+      "at": "2026-09-11T07:26:29.416Z",
+      "event": "query.planned",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-5fbadde8-1bdc-4aa3-9d8a-ea3195617441",
+      "turnId": "turn-6c64aaf6-bcde-49a8-9385-21e7809507a3",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "requestId": "qry-intent-f49d870c",
+        "mode": "aggregate",
+        "purpose": "列出 x-ssl 项目中，客户类型为 MNC（Multinational Corporation）且商机金额（CNY）大于 20 万的客户名称、项目名称、产品名称和商机金额。",
+        "select": [
+          {
+            "field": "客户名称",
+            "alias": "customer_name",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "pipelineName",
+            "alias": "project_name",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "产品名称",
+            "alias": "product_name",
+            "role": "dimension",
+            "grain": null
+          }
+        ],
+        "measures": [
+          {
+            "field": "Opportunity_amount_CNY",
+            "aggregation": "sum",
+            "alias": "revenue_cny",
+            "resultType": "number"
+          }
+        ],
+        "filters": [
+          {
+            "field": "xssl",
+            "operator": "eq",
+            "value": 1,
+            "fieldType": "measure"
+          },
+          {
+            "field": "客户类型",
+            "operator": "containsAny",
+            "value": [
+              "Multinational Corporation（MNC）"
+            ],
+            "fieldType": "dimension"
+          },
+          {
+            "field": "Opportunity_amount_CNY",
+            "operator": "gt",
+            "value": 200000,
+            "fieldType": "measure"
+          }
+        ],
+        "orderBy": [
+          {
+            "field": "revenue_cny",
+            "direction": "desc"
+          }
+        ],
+        "limit": 20000
+      }
+    },
+    {
+      "id": "operation-event-cc0b6112-766c-4f09-9bb2-72f7602f32cf",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-cffdfa32-a4d6-4a5f-978b-a9544b667f52",
+      "sequence": 7,
+      "at": "2026-09-11T07:26:29.416Z",
+      "event": "query.compiled",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-5fbadde8-1bdc-4aa3-9d8a-ea3195617441",
+      "turnId": "turn-6c64aaf6-bcde-49a8-9385-21e7809507a3",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "requestId": "qry-intent-f49d870c",
+        "queryProgram": {
+          "schema": "wynai.query-program/v1",
+          "version": 1,
+          "baseQuery": {
+            "id": "qry-intent-f49d870c",
+            "hypothesisId": null,
+            "purpose": "列出 x-ssl 项目中，客户类型为 MNC（Multinational Corporation）且商机金额（CNY）大于 20 万的客户名称、项目名称、产品名称和商机金额。",
+            "mode": "aggregate",
+            "topic": "customer",
+            "dataset": {
+              "id": "18b86197-65e3-4682-8501-6e7125afad02",
+              "revision": 5
+            },
+            "select": [
+              {
+                "field": "客户名称",
+                "alias": "customer_name",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "pipelineName",
+                "alias": "project_name",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "产品名称",
+                "alias": "product_name",
+                "role": "dimension",
+                "grain": null
+              }
+            ],
+            "measures": [
+              {
+                "field": "Opportunity_amount_CNY",
+                "aggregation": "sum",
+                "alias": "revenue_cny",
+                "resultType": "number"
+              }
+            ],
+            "filters": [
+              {
+                "field": "xssl",
+                "operator": "eq",
+                "value": 1,
+                "fieldType": "measure"
+              },
+              {
+                "field": "客户类型",
+                "operator": "containsAny",
+                "value": [
+                  "Multinational Corporation（MNC）"
+                ],
+                "fieldType": "dimension"
+              },
+              {
+                "field": "Opportunity_amount_CNY",
+                "operator": "gt",
+                "value": 200000,
+                "fieldType": "measure"
+              }
+            ],
+            "resultFilters": [],
+            "fieldComparisons": [],
+            "comparison": null,
+            "orderBy": [
+              {
+                "field": "revenue_cny",
+                "direction": "desc"
+              }
+            ],
+            "limit": 20000,
+            "limitSource": "default",
+            "expectedResult": {
+              "shape": "table",
+              "minimumRows": 0,
+              "maximumRows": 20000,
+              "requiredPeriods": [],
+              "requiredMetrics": [
+                "revenue_cny"
+              ],
+              "requiredDimensions": [
+                "customer_name",
+                "project_name",
+                "product_name"
+              ],
+              "timeZone": "Asia/Shanghai"
+            },
+            "sensitivity": "aggregate-only",
+            "lineage": null
+          },
+          "steps": [
+            {
+              "type": "validate",
+              "expectedResult": {
+                "shape": "table",
+                "minimumRows": 0,
+                "maximumRows": 20000,
+                "requiredPeriods": [],
+                "requiredMetrics": [
+                  "revenue_cny"
+                ],
+                "requiredDimensions": [
+                  "customer_name",
+                  "project_name",
+                  "product_name"
+                ],
+                "timeZone": "Asia/Shanghai"
+              }
+            }
+          ],
+          "output": {
+            "schema": "wynai.canonical-result-set/v1",
+            "requiredMetrics": [
+              "revenue_cny"
+            ],
+            "requiredDimensions": [
+              "customer_name",
+              "project_name",
+              "product_name"
+            ]
+          }
+        },
+        "plannerMode": "llm-first"
+      }
+    },
+    {
+      "id": "operation-event-4f804771-547d-4bfc-8768-9269753ee14c",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-cffdfa32-a4d6-4a5f-978b-a9544b667f52",
+      "sequence": 8,
+      "at": "2026-09-11T07:26:29.586Z",
+      "event": "query.executed",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": 170,
+      "conversationId": "conv-5fbadde8-1bdc-4aa3-9d8a-ea3195617441",
+      "turnId": "turn-6c64aaf6-bcde-49a8-9385-21e7809507a3",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "request": {
+          "id": "qry-intent-f49d870c",
+          "hypothesisId": null,
+          "purpose": "列出 x-ssl 项目中，客户类型为 MNC（Multinational Corporation）且商机金额（CNY）大于 20 万的客户名称、项目名称、产品名称和商机金额。",
+          "mode": "aggregate",
+          "topic": "customer",
+          "dataset": {
+            "id": "18b86197-65e3-4682-8501-6e7125afad02",
+            "revision": 5
+          },
+          "select": [
+            {
+              "field": "客户名称",
+              "alias": "customer_name",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "pipelineName",
+              "alias": "project_name",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "产品名称",
+              "alias": "product_name",
+              "role": "dimension",
+              "grain": null
+            }
+          ],
+          "measures": [
+            {
+              "field": "Opportunity_amount_CNY",
+              "aggregation": "sum",
+              "alias": "revenue_cny",
+              "resultType": "number"
+            }
+          ],
+          "filters": [
+            {
+              "field": "xssl",
+              "operator": "eq",
+              "value": 1,
+              "fieldType": "measure"
+            },
+            {
+              "field": "客户类型",
+              "operator": "containsAny",
+              "value": [
+                "Multinational Corporation（MNC）"
+              ],
+              "fieldType": "dimension"
+            },
+            {
+              "field": "Opportunity_amount_CNY",
+              "operator": "gt",
+              "value": 200000,
+              "fieldType": "measure"
+            }
+          ],
+          "resultFilters": [],
+          "fieldComparisons": [],
+          "comparison": null,
+          "orderBy": [
+            {
+              "field": "revenue_cny",
+              "direction": "desc"
+            }
+          ],
+          "limit": 20000,
+          "limitSource": "default",
+          "expectedResult": {
+            "shape": "table",
+            "minimumRows": 0,
+            "maximumRows": 20000,
+            "requiredPeriods": [],
+            "requiredMetrics": [
+              "revenue_cny"
+            ],
+            "requiredDimensions": [
+              "customer_name",
+              "project_name",
+              "product_name"
+            ],
+            "timeZone": "Asia/Shanghai"
+          },
+          "sensitivity": "aggregate-only",
+          "lineage": null
+        },
+        "resultSetId": "rs-qry-intent-f49d870c",
+        "rowCount": 2023
+      }
+    },
+    {
+      "id": "operation-event-29bcde1e-21c8-45fe-a49a-69a8863f17e4",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-cffdfa32-a4d6-4a5f-978b-a9544b667f52",
+      "sequence": 9,
+      "at": "2026-09-11T07:26:29.587Z",
+      "event": "result.validated",
+      "phase": "validation",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-5fbadde8-1bdc-4aa3-9d8a-ea3195617441",
+      "turnId": "turn-6c64aaf6-bcde-49a8-9385-21e7809507a3",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "valid": true,
+        "errors": [],
+        "warnings": []
+      }
+    },
+    {
+      "id": "operation-event-72b78bdf-f546-442b-88e1-c4185e3ade25",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-cffdfa32-a4d6-4a5f-978b-a9544b667f52",
+      "sequence": 10,
+      "at": "2026-09-11T07:26:33.818Z",
+      "event": "presentation.planned",
+      "phase": "presentation",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-5fbadde8-1bdc-4aa3-9d8a-ea3195617441",
+      "turnId": "turn-6c64aaf6-bcde-49a8-9385-21e7809507a3",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "documentId": "doc-49b6cb9f-20fe-4629-b681-0fb574992446",
+        "schema": "wynai.result-presentation-plan/v1",
+        "version": 1,
+        "mode": "table-only",
+        "priority": "table",
+        "chartType": null,
+        "tableColumns": [
+          "customer_name",
+          "project_name",
+          "product_name",
+          "revenue_cny"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-5fe4f306-7fb7-469e-a6ea-77569a23e57f",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-cffdfa32-a4d6-4a5f-978b-a9544b667f52",
+      "sequence": 11,
+      "at": "2026-09-11T07:26:33.818Z",
+      "event": "response.composed",
+      "phase": "response",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-5fbadde8-1bdc-4aa3-9d8a-ea3195617441",
+      "turnId": "turn-6c64aaf6-bcde-49a8-9385-21e7809507a3",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "documentId": "doc-49b6cb9f-20fe-4629-b681-0fb574992446",
+        "blockTypes": [
+          "text",
+          "text",
+          "text",
+          "text",
+          "text",
+          "warning",
+          "warning",
+          "warning",
+          "table"
+        ],
+        "resultSetIds": [
+          "rs-qry-intent-f49d870c"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-8e620a0b-0d79-4698-89b3-c59d60f4289a",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-cffdfa32-a4d6-4a5f-978b-a9544b667f52",
+      "sequence": 12,
+      "at": "2026-09-11T07:26:33.818Z",
+      "event": "turn.completed",
+      "phase": "completion",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-5fbadde8-1bdc-4aa3-9d8a-ea3195617441",
+      "turnId": "turn-6c64aaf6-bcde-49a8-9385-21e7809507a3",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "plannerMode": "llm-first"
+      }
+    },
+    {
+      "id": "operation-event-142dbe3e-4323-424f-8ebb-892f2ddaa500",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-cffdfa32-a4d6-4a5f-978b-a9544b667f52",
+      "sequence": 13,
+      "at": "2026-09-11T07:26:33.897Z",
+      "event": "platform.migration.run",
+      "phase": "migration",
+      "outcome": "selected",
+      "durationMs": null,
+      "conversationId": "conv-5fbadde8-1bdc-4aa3-9d8a-ea3195617441",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "module": "smart-query-request",
+        "mode": "platform",
+        "routing": {
+          "mode": "platform",
+          "configuredMode": "platform",
+          "module": "smart-query-request",
+          "bucket": 52,
+          "percentage": 100,
+          "allowListed": false,
+          "reason": "percentage"
+        },
+        "comparison": null,
+        "fallback": false,
+        "candidateMetadata": {
+          "schema": "wynai.platform-business-orchestrator/v1",
+          "version": 1,
+          "profile": "smart-query-platform-candidate-v1",
+          "contextAudit": {
+            "schema": "wynai.platform-context-audit/v1",
+            "version": 1,
+            "originalQuestionPresent": true,
+            "messageCount": 0,
+            "activeMetricCount": 0,
+            "activeDimensionCount": 0,
+            "activeFilterCount": 0,
+            "skillCount": 0,
+            "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+            "preservedCoreContext": [
+              "original-question",
+              "active-conversation-context",
+              "dataset-metadata",
+              "skill-references",
+              "permissions-and-scope"
+            ]
+          }
+        },
+        "schema": "wynai.platform-migration-run/v1"
+      }
+    },
+    {
+      "id": "operation-event-86f30f54-e90d-4024-8478-c45bf1d1ed89",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-cffdfa32-a4d6-4a5f-978b-a9544b667f52",
+      "sequence": 14,
+      "at": "2026-09-11T07:26:33.897Z",
+      "event": "request.completed",
+      "phase": "transport",
+      "outcome": "ok",
+      "durationMs": 16838,
+      "conversationId": "conv-5fbadde8-1bdc-4aa3-9d8a-ea3195617441",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "plannerMode": "llm-first"
+      }
+    }
+  ],
+  "conversationId": "conv-5fbadde8-1bdc-4aa3-9d8a-ea3195617441",
+  "dataset": {
+    "id": "18b86197-65e3-4682-8501-6e7125afad02",
+    "revision": 5,
+    "name": "01测试销售订单-09"
+  },
+  "skillRefs": [
+    "sales-opportunity-a53@1.3.0"
+  ],
+  "canonical": {
+    "id": "qry-intent-f49d870c",
+    "hypothesisId": null,
+    "purpose": "列出 x-ssl 项目中，客户类型为 MNC（Multinational Corporation）且商机金额（CNY）大于 20 万的客户名称、项目名称、产品名称和商机金额。",
+    "mode": "aggregate",
+    "topic": "customer",
+    "dataset": {
+      "id": "18b86197-65e3-4682-8501-6e7125afad02",
+      "revision": 5
+    },
+    "select": [
+      {
+        "field": "客户名称",
+        "alias": "customer_name",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "pipelineName",
+        "alias": "project_name",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "产品名称",
+        "alias": "product_name",
+        "role": "dimension",
+        "grain": null
+      }
+    ],
+    "measures": [
+      {
+        "field": "Opportunity_amount_CNY",
+        "aggregation": "sum",
+        "alias": "revenue_cny",
+        "resultType": "number",
+        "concept": "revenue"
+      }
+    ],
+    "filters": [
+      {
+        "field": "xssl",
+        "operator": "eq",
+        "value": 1,
+        "fieldType": "measure"
+      },
+      {
+        "field": "客户类型",
+        "operator": "containsAny",
+        "value": [
+          "Multinational Corporation（MNC）"
+        ],
+        "fieldType": "dimension"
+      },
+      {
+        "field": "Opportunity_amount_CNY",
+        "operator": "gt",
+        "value": 200000,
+        "fieldType": "measure"
+      }
+    ],
+    "resultFilters": [],
+    "fieldComparisons": [],
+    "comparison": null,
+    "orderBy": [
+      {
+        "field": "revenue_cny",
+        "direction": "desc"
+      }
+    ],
+    "limit": 20000,
+    "limitSource": "default",
+    "expectedResult": {
+      "shape": "table",
+      "minimumRows": 0,
+      "maximumRows": 20000,
+      "requiredPeriods": [],
+      "requiredMetrics": [
+        "revenue_cny"
+      ],
+      "requiredDimensions": [
+        "customer_name",
+        "project_name",
+        "product_name"
+      ],
+      "timeZone": "Asia/Shanghai"
+    },
+    "sensitivity": "aggregate-only",
+    "lineage": null
+  },
+  "intent": {
+    "schema": "wynai.business-query-intent/v2",
+    "businessQuestion": "列出 x-ssl 项目中，客户类型为 MNC（Multinational Corporation）且商机金额（CNY）大于 20 万的客户名称、项目名称、产品名称和商机金额。",
+    "metrics": [
+      {
+        "field": "Opportunity_amount_CNY",
+        "aggregation": "sum",
+        "alias": "revenue_cny",
+        "concept": "revenue",
+        "metricId": "revenueCny",
+        "internal": false,
+        "fieldRef": "Opportunity_amount_CNY",
+        "conceptId": "revenue"
+      }
+    ],
+    "derivedMetrics": [],
+    "dimensions": [
+      {
+        "field": "客户名称",
+        "alias": "customer_name",
+        "grain": null,
+        "concept": "customer",
+        "fieldRef": "客户名称",
+        "conceptId": "customer"
+      },
+      {
+        "field": "pipelineName",
+        "alias": "project_name",
+        "grain": null,
+        "concept": "projectName",
+        "fieldRef": "pipelineName",
+        "conceptId": "projectName"
+      },
+      {
+        "field": "产品名称",
+        "alias": "product_name",
+        "grain": null,
+        "concept": "product",
+        "fieldRef": "产品名称",
+        "conceptId": "product"
+      }
+    ],
+    "filters": [
+      {
+        "field": "xssl",
+        "operator": "eq",
+        "value": 1,
+        "concept": "xssl",
+        "fieldRef": "xssl"
+      },
+      {
+        "field": "客户类型",
+        "operator": "containsAny",
+        "value": "Multinational Corporation（MNC）",
+        "concept": "customerType",
+        "fieldRef": "客户类型"
+      },
+      {
+        "field": "Opportunity_amount_CNY",
+        "operator": "gt",
+        "value": 200000,
+        "concept": "revenue",
+        "fieldRef": "Opportunity_amount_CNY"
+      }
+    ],
+    "time": {
+      "field": null,
+      "calendar": "fiscal",
+      "timeZone": "Asia/Shanghai",
+      "periods": [],
+      "range": null,
+      "grain": null,
+      "grouping": null,
+      "explicit": false,
+      "modifier": null,
+      "groupedYears": false
+    },
+    "ranking": null,
+    "expectedResult": {
+      "shape": "table",
+      "minimumRows": 0,
+      "maximumRows": 20000,
+      "requiredPeriods": [],
+      "requiredMetrics": [
+        "revenue_cny"
+      ],
+      "requiredDimensions": [
+        "customer_name",
+        "project_name",
+        "product_name"
+      ],
+      "timeZone": "Asia/Shanghai"
+    },
+    "constraints": [
+      {
+        "id": "c1",
+        "type": "filter",
+        "source": "x-ssl 项目",
+        "normalized": "xssl = 1",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c2",
+        "type": "filter",
+        "source": "MNC 客户",
+        "normalized": "客户类型 containsAny 'Multinational Corporation（MNC）'",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c3",
+        "type": "filter",
+        "source": "商机金额大于 20 万",
+        "normalized": "Opportunity_amount_CNY > 200000",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c4",
+        "type": "dimension",
+        "source": "列出客户名称、项目名称、产品、商机金额",
+        "normalized": "dimensions: 客户名称, pipelineName, 产品名称; metric: revenue_cny",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-1",
+        "type": "filter",
+        "source": "列出 x-ssl 项目中，客户类型为 MNC（Multinational Corporation）且商机金额（CNY）大于 20 万的客户名称、项目名称、产品名称和商机金额。",
+        "normalized": {
+          "field": "xssl",
+          "operator": "eq",
+          "value": "1",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-2",
+        "type": "filter",
+        "source": "列出 x-ssl 项目中，客户类型为 MNC（Multinational Corporation）且商机金额（CNY）大于 20 万的客户名称、项目名称、产品名称和商机金额。",
+        "normalized": {
+          "field": "客户类型",
+          "operator": "containsAny",
+          "value": "Multinational Corporation（MNC）",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-3",
+        "type": "filter",
+        "source": "列出 x-ssl 项目中，客户类型为 MNC（Multinational Corporation）且商机金额（CNY）大于 20 万的客户名称、项目名称、产品名称和商机金额。",
+        "normalized": {
+          "field": "Opportunity_amount_CNY",
+          "operator": "gt",
+          "value": "200000",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      }
+    ],
+    "assumptions": [
+      "金额默认使用 Opportunity_amount_CNY（人民币），用户未指定 USD。",
+      "x-ssl 项目通过 xssl 字段等于 1 过滤。",
+      "MNC 映射到客户类型字段的规范成员值 'Multinational Corporation（MNC）'，使用多值字符串包含语义（containsAny）。",
+      "商机金额大于 20 万按 Opportunity_amount_CNY 大于 200000 过滤。",
+      "用户要求列出明细，因此按客户名称、项目名称、产品名称分组，并展示商机金额求和。",
+      "未指定时间范围，不添加时间过滤。"
+    ],
+    "confidence": 0.95,
+    "skillRefs": [
+      "sales-opportunity-a53@1.3.0"
+    ],
+    "mappingEvidence": [
+      "x-ssl 映射到字段 xssl，valueMappings 中 xssl=1 对应 'x-ssl'。",
+      "MNC 映射到客户类型字段，valueMappings 中 'Multinational Corporation（MNC）' 的同义词为 'MNC'。",
+      "项目名称映射到 pipelineName（businessEntity projectName）。",
+      "产品映射到产品名称（businessEntity productName）。",
+      "商机金额映射到 Opportunity_amount_CNY（metric revenueCny）。"
+    ],
+    "ambiguities": [],
+    "source": {
+      "planner": "llm-first-intent-planner",
+      "version": "3.0"
+    },
+    "semanticFrame": null
+  },
+  "ledger": [
+    {
+      "id": "c1",
+      "type": "filter",
+      "source": "x-ssl 项目",
+      "normalized": "xssl = 1",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c2",
+      "type": "filter",
+      "source": "MNC 客户",
+      "normalized": "客户类型 containsAny 'Multinational Corporation（MNC）'",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c3",
+      "type": "filter",
+      "source": "商机金额大于 20 万",
+      "normalized": "Opportunity_amount_CNY > 200000",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c4",
+      "type": "dimension",
+      "source": "列出客户名称、项目名称、产品、商机金额",
+      "normalized": "dimensions: 客户名称, pipelineName, 产品名称; metric: revenue_cny",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-1",
+      "type": "filter",
+      "source": "列出 x-ssl 项目中，客户类型为 MNC（Multinational Corporation）且商机金额（CNY）大于 20 万的客户名称、项目名称、产品名称和商机金额。",
+      "normalized": {
+        "field": "xssl",
+        "operator": "eq",
+        "value": "1",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-2",
+      "type": "filter",
+      "source": "列出 x-ssl 项目中，客户类型为 MNC（Multinational Corporation）且商机金额（CNY）大于 20 万的客户名称、项目名称、产品名称和商机金额。",
+      "normalized": {
+        "field": "客户类型",
+        "operator": "containsAny",
+        "value": "Multinational Corporation（MNC）",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-3",
+      "type": "filter",
+      "source": "列出 x-ssl 项目中，客户类型为 MNC（Multinational Corporation）且商机金额（CNY）大于 20 万的客户名称、项目名称、产品名称和商机金额。",
+      "normalized": {
+        "field": "Opportunity_amount_CNY",
+        "operator": "gt",
+        "value": "200000",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    }
+  ]
+}

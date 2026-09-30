@@ -82,6 +82,7 @@
     },
     {
       "id": "won-quarter",
+      "field": "赢单季度",
       "meaning": "赢单季度字段值1至4分别表示FY内季度：Q1为6月至8月，Q2为9月至11月，Q3为12月至次年2月，Q4为3月至5月。",
       "grain": "quarter",
       "expressions": [
@@ -92,7 +93,11 @@
         "第一季度",
         "第二季度",
         "第三季度",
-        "第四季度"
+        "第四季度",
+        "赢单季度",
+        "按赢单季度",
+        "按季度",
+        "季度统计"
       ],
       "ambiguity": "只出现季度而未出现年份时，不自动猜测年份；先确认自然季度或财年季度。"
     }
@@ -122,6 +127,16 @@
     }
   ],
   "valueMappings": [
+    {
+      "field": "产品名称",
+      "concept": "product",
+      "canonicalValue": "Safety Production and Risk Control in Manufacturing",
+      "synonyms": [
+        "Safety Production and Risk Control in Manufacturing"
+      ],
+      "matchMode": "exact",
+      "notes": "完整产品名称必须绑定产品名称字段，不得因名称包含 Manufacturing 或 Risk Management 而降级到产品层级字段。"
+    },
     {
       "field": "产品小类",
       "concept": "productSubcategory",

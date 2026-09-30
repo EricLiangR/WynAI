@@ -1,0 +1,1094 @@
+{
+  "question": "去年 Digital Ecosystem Enterprise Alliances 产品中，POE 客户有哪些？请列出客户名称、项目名称、订单金额和创建日期",
+  "startedAt": "2026-09-11T07:26:34.975Z",
+  "completedAt": "2026-09-11T07:26:51.876Z",
+  "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\n去年 Digital Ecosystem Enterprise Alliances 产品中，POE 客户有哪些？请列出客户名称、项目名称、订单金额和创建日期\n问\n\n查询结果为空，未找到符合条件（赢单财年26、产品为Digital Ecosystem Enterprise Alliances、客户类型为Private Entity（POE））的客户记录。\n\n指标\nOpportunity_amount_CNY（求和）\n维度\n客户名称、pipelineName、code_open_date\n筛选\n产品名称 等于 Digital Ecosystem Enterprise Alliances；客户类型 包含任一：Private Entity（POE）；赢单财年 等于 26\n排序\n按Opportunity_amount_CNY（求和）降序\n查询明细\n\n暂无表格数据 · 结果集 rs-qry-intent-3f8122fa\n\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+  "traceId": "trace-189dff3f-e221-429f-ae02-5e0d50f804d7",
+  "trace": [
+    {
+      "id": "operation-event-9fd53685-e5cc-4de9-acc4-f87943faa26a",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-189dff3f-e221-429f-ae02-5e0d50f804d7",
+      "sequence": 1,
+      "at": "2026-09-11T07:26:35.026Z",
+      "event": "request.accepted",
+      "phase": "transport",
+      "outcome": null,
+      "durationMs": null,
+      "conversationId": "conv-6299c10e-be23-4239-a2aa-ae5c32976f00",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "method": "POST",
+        "path": "/api/smart-query/conversations/conv-6299c10e-be23-4239-a2aa-ae5c32976f00/messages"
+      }
+    },
+    {
+      "id": "operation-event-ce6dce38-db1a-43c3-8c02-c5ab208bb3b0",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-189dff3f-e221-429f-ae02-5e0d50f804d7",
+      "sequence": 2,
+      "at": "2026-09-11T07:26:35.026Z",
+      "event": "turn.received",
+      "phase": "input",
+      "outcome": null,
+      "durationMs": null,
+      "conversationId": "conv-6299c10e-be23-4239-a2aa-ae5c32976f00",
+      "turnId": "turn-0e97211d-594a-4aa3-91d6-5ed21a9c5d64",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "question": "去年 Digital Ecosystem Enterprise Alliances 产品中，POE 客户有哪些？请列出客户名称、项目名称、订单金额和创建日期",
+        "conversationState": "ready",
+        "datasetRevision": 5
+      }
+    },
+    {
+      "id": "operation-event-09533b33-5e44-445a-9c8e-2f9349984bf6",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-189dff3f-e221-429f-ae02-5e0d50f804d7",
+      "sequence": 3,
+      "at": "2026-09-11T07:26:35.032Z",
+      "event": "skill.resolved",
+      "phase": "skills",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-6299c10e-be23-4239-a2aa-ae5c32976f00",
+      "turnId": "turn-0e97211d-594a-4aa3-91d6-5ed21a9c5d64",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "skillRefs": [
+          "sales-opportunity-a53@1.3.0",
+          "temporal-semantics@1.1.0"
+        ],
+        "conflicts": []
+      }
+    },
+    {
+      "id": "operation-event-d3c4504a-fcc7-4874-9aba-35912da49584",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-189dff3f-e221-429f-ae02-5e0d50f804d7",
+      "sequence": 4,
+      "at": "2026-09-11T07:26:48.359Z",
+      "event": "gateway.attempt",
+      "phase": "llm",
+      "outcome": "success",
+      "durationMs": 13324,
+      "conversationId": "conv-6299c10e-be23-4239-a2aa-ae5c32976f00",
+      "turnId": "turn-0e97211d-594a-4aa3-91d6-5ed21a9c5d64",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "operation": "intent",
+        "attempt": 1,
+        "provider": "primary",
+        "model": "deepseek-v4-flash-0731",
+        "responseStatus": 200,
+        "durationMs": 13324,
+        "timeoutClass": "completed",
+        "error": null
+      }
+    },
+    {
+      "id": "operation-event-546a3964-797b-43e6-8afd-95e5d8b10b2f",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-189dff3f-e221-429f-ae02-5e0d50f804d7",
+      "sequence": 5,
+      "at": "2026-09-11T07:26:48.360Z",
+      "event": "planning.completed",
+      "phase": "planning",
+      "outcome": "supported",
+      "durationMs": null,
+      "conversationId": "conv-6299c10e-be23-4239-a2aa-ae5c32976f00",
+      "turnId": "turn-0e97211d-594a-4aa3-91d6-5ed21a9c5d64",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "status": "supported",
+        "plannerMode": "llm-first",
+        "diagnostics": {
+          "route": "llm-first",
+          "planningDurationMs": 13328,
+          "llmAttempted": true,
+          "llmDurationMs": 13328,
+          "circuitOpen": false,
+          "reason": "intent-llm-validated",
+          "repairAttempted": false,
+          "llmCalls": 1
+        }
+      }
+    },
+    {
+      "id": "operation-event-0c5a59ac-5415-44e9-a772-2d843a52cec8",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-189dff3f-e221-429f-ae02-5e0d50f804d7",
+      "sequence": 6,
+      "at": "2026-09-11T07:26:48.360Z",
+      "event": "query.planned",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-6299c10e-be23-4239-a2aa-ae5c32976f00",
+      "turnId": "turn-0e97211d-594a-4aa3-91d6-5ed21a9c5d64",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "requestId": "qry-intent-3f8122fa",
+        "mode": "aggregate",
+        "purpose": "列出去年（按赢单财年口径）Digital Ecosystem Enterprise Alliances 产品中，客户类型为 POE（Private Entity）的客户，并展示客户名称、项目名称、订单金额和创建日期。",
+        "select": [
+          {
+            "field": "客户名称",
+            "alias": "customer",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "pipelineName",
+            "alias": "project",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "code_open_date",
+            "alias": "createdDate",
+            "role": "time",
+            "grain": null
+          }
+        ],
+        "measures": [
+          {
+            "field": "Opportunity_amount_CNY",
+            "aggregation": "sum",
+            "alias": "revenue",
+            "resultType": "number"
+          }
+        ],
+        "filters": [
+          {
+            "field": "产品名称",
+            "operator": "eq",
+            "value": "Digital Ecosystem Enterprise Alliances",
+            "fieldType": "dimension"
+          },
+          {
+            "field": "客户类型",
+            "operator": "containsAny",
+            "value": [
+              "Private Entity（POE）"
+            ],
+            "fieldType": "dimension"
+          },
+          {
+            "field": "赢单财年",
+            "operator": "eq",
+            "value": "26",
+            "fieldType": "dimension"
+          }
+        ],
+        "orderBy": [
+          {
+            "field": "revenue",
+            "direction": "desc"
+          }
+        ],
+        "limit": 20000
+      }
+    },
+    {
+      "id": "operation-event-4cca6c31-3d55-4200-8b11-789bc71abf4f",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-189dff3f-e221-429f-ae02-5e0d50f804d7",
+      "sequence": 7,
+      "at": "2026-09-11T07:26:48.360Z",
+      "event": "query.compiled",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-6299c10e-be23-4239-a2aa-ae5c32976f00",
+      "turnId": "turn-0e97211d-594a-4aa3-91d6-5ed21a9c5d64",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "requestId": "qry-intent-3f8122fa",
+        "queryProgram": {
+          "schema": "wynai.query-program/v1",
+          "version": 1,
+          "baseQuery": {
+            "id": "qry-intent-3f8122fa",
+            "hypothesisId": null,
+            "purpose": "列出去年（按赢单财年口径）Digital Ecosystem Enterprise Alliances 产品中，客户类型为 POE（Private Entity）的客户，并展示客户名称、项目名称、订单金额和创建日期。",
+            "mode": "aggregate",
+            "topic": "customer",
+            "dataset": {
+              "id": "18b86197-65e3-4682-8501-6e7125afad02",
+              "revision": 5
+            },
+            "select": [
+              {
+                "field": "客户名称",
+                "alias": "customer",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "pipelineName",
+                "alias": "project",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "code_open_date",
+                "alias": "createdDate",
+                "role": "time",
+                "grain": null
+              }
+            ],
+            "measures": [
+              {
+                "field": "Opportunity_amount_CNY",
+                "aggregation": "sum",
+                "alias": "revenue",
+                "resultType": "number"
+              }
+            ],
+            "filters": [
+              {
+                "field": "产品名称",
+                "operator": "eq",
+                "value": "Digital Ecosystem Enterprise Alliances",
+                "fieldType": "dimension"
+              },
+              {
+                "field": "客户类型",
+                "operator": "containsAny",
+                "value": [
+                  "Private Entity（POE）"
+                ],
+                "fieldType": "dimension"
+              },
+              {
+                "field": "赢单财年",
+                "operator": "eq",
+                "value": "26",
+                "fieldType": "dimension"
+              }
+            ],
+            "resultFilters": [],
+            "fieldComparisons": [],
+            "comparison": null,
+            "orderBy": [
+              {
+                "field": "revenue",
+                "direction": "desc"
+              }
+            ],
+            "limit": 20000,
+            "limitSource": "default",
+            "expectedResult": {
+              "shape": "table",
+              "minimumRows": 0,
+              "maximumRows": 20000,
+              "requiredPeriods": [],
+              "requiredMetrics": [
+                "revenue"
+              ],
+              "requiredDimensions": [
+                "customer",
+                "project",
+                "createdDate"
+              ],
+              "timeZone": "Asia/Shanghai"
+            },
+            "sensitivity": "aggregate-only",
+            "lineage": null
+          },
+          "steps": [
+            {
+              "type": "validate",
+              "expectedResult": {
+                "shape": "table",
+                "minimumRows": 0,
+                "maximumRows": 20000,
+                "requiredPeriods": [],
+                "requiredMetrics": [
+                  "revenue"
+                ],
+                "requiredDimensions": [
+                  "customer",
+                  "project",
+                  "createdDate"
+                ],
+                "timeZone": "Asia/Shanghai"
+              }
+            }
+          ],
+          "output": {
+            "schema": "wynai.canonical-result-set/v1",
+            "requiredMetrics": [
+              "revenue"
+            ],
+            "requiredDimensions": [
+              "customer",
+              "project",
+              "createdDate"
+            ]
+          }
+        },
+        "plannerMode": "llm-first"
+      }
+    },
+    {
+      "id": "operation-event-cfc131b6-e565-454d-9cbc-22666e9fa74f",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-189dff3f-e221-429f-ae02-5e0d50f804d7",
+      "sequence": 8,
+      "at": "2026-09-11T07:26:48.478Z",
+      "event": "query.executed",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": 118,
+      "conversationId": "conv-6299c10e-be23-4239-a2aa-ae5c32976f00",
+      "turnId": "turn-0e97211d-594a-4aa3-91d6-5ed21a9c5d64",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "request": {
+          "id": "qry-intent-3f8122fa",
+          "hypothesisId": null,
+          "purpose": "列出去年（按赢单财年口径）Digital Ecosystem Enterprise Alliances 产品中，客户类型为 POE（Private Entity）的客户，并展示客户名称、项目名称、订单金额和创建日期。",
+          "mode": "aggregate",
+          "topic": "customer",
+          "dataset": {
+            "id": "18b86197-65e3-4682-8501-6e7125afad02",
+            "revision": 5
+          },
+          "select": [
+            {
+              "field": "客户名称",
+              "alias": "customer",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "pipelineName",
+              "alias": "project",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "code_open_date",
+              "alias": "createdDate",
+              "role": "time",
+              "grain": null
+            }
+          ],
+          "measures": [
+            {
+              "field": "Opportunity_amount_CNY",
+              "aggregation": "sum",
+              "alias": "revenue",
+              "resultType": "number"
+            }
+          ],
+          "filters": [
+            {
+              "field": "产品名称",
+              "operator": "eq",
+              "value": "Digital Ecosystem Enterprise Alliances",
+              "fieldType": "dimension"
+            },
+            {
+              "field": "客户类型",
+              "operator": "containsAny",
+              "value": [
+                "Private Entity（POE）"
+              ],
+              "fieldType": "dimension"
+            },
+            {
+              "field": "赢单财年",
+              "operator": "eq",
+              "value": "26",
+              "fieldType": "dimension"
+            }
+          ],
+          "resultFilters": [],
+          "fieldComparisons": [],
+          "comparison": null,
+          "orderBy": [
+            {
+              "field": "revenue",
+              "direction": "desc"
+            }
+          ],
+          "limit": 20000,
+          "limitSource": "default",
+          "expectedResult": {
+            "shape": "table",
+            "minimumRows": 0,
+            "maximumRows": 20000,
+            "requiredPeriods": [],
+            "requiredMetrics": [
+              "revenue"
+            ],
+            "requiredDimensions": [
+              "customer",
+              "project",
+              "createdDate"
+            ],
+            "timeZone": "Asia/Shanghai"
+          },
+          "sensitivity": "aggregate-only",
+          "lineage": null
+        },
+        "resultSetId": "rs-qry-intent-3f8122fa",
+        "rowCount": 0
+      }
+    },
+    {
+      "id": "operation-event-bb84928d-99dc-4b7f-9049-7e2e5611eff5",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-189dff3f-e221-429f-ae02-5e0d50f804d7",
+      "sequence": 9,
+      "at": "2026-09-11T07:26:48.479Z",
+      "event": "result.validated",
+      "phase": "validation",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-6299c10e-be23-4239-a2aa-ae5c32976f00",
+      "turnId": "turn-0e97211d-594a-4aa3-91d6-5ed21a9c5d64",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "valid": true,
+        "errors": [],
+        "warnings": [
+          "查询范围没有匹配数据"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-4f29eaca-f0a4-4fd7-941b-dbf64450bb79",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-189dff3f-e221-429f-ae02-5e0d50f804d7",
+      "sequence": 10,
+      "at": "2026-09-11T07:26:51.021Z",
+      "event": "presentation.planned",
+      "phase": "presentation",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-6299c10e-be23-4239-a2aa-ae5c32976f00",
+      "turnId": "turn-0e97211d-594a-4aa3-91d6-5ed21a9c5d64",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "documentId": "doc-9e6fc2d9-0ced-4b28-951f-fceebb557281",
+        "schema": "wynai.result-presentation-plan/v1",
+        "version": 1,
+        "mode": "table-only",
+        "priority": "table",
+        "chartType": null,
+        "tableColumns": [
+          "customer",
+          "project",
+          "revenue"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-a5064d52-91d3-4cb6-9dd9-1d454774e52d",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-189dff3f-e221-429f-ae02-5e0d50f804d7",
+      "sequence": 11,
+      "at": "2026-09-11T07:26:51.021Z",
+      "event": "response.composed",
+      "phase": "response",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-6299c10e-be23-4239-a2aa-ae5c32976f00",
+      "turnId": "turn-0e97211d-594a-4aa3-91d6-5ed21a9c5d64",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "documentId": "doc-9e6fc2d9-0ced-4b28-951f-fceebb557281",
+        "blockTypes": [
+          "text",
+          "text",
+          "text",
+          "warning",
+          "warning",
+          "table"
+        ],
+        "resultSetIds": [
+          "rs-qry-intent-3f8122fa"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-f39bd595-f51d-4836-85b6-256f3bc530cb",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-189dff3f-e221-429f-ae02-5e0d50f804d7",
+      "sequence": 12,
+      "at": "2026-09-11T07:26:51.021Z",
+      "event": "turn.completed",
+      "phase": "completion",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-6299c10e-be23-4239-a2aa-ae5c32976f00",
+      "turnId": "turn-0e97211d-594a-4aa3-91d6-5ed21a9c5d64",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "plannerMode": "llm-first"
+      }
+    },
+    {
+      "id": "operation-event-f967b95d-846e-4504-8436-20c60cf90fff",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-189dff3f-e221-429f-ae02-5e0d50f804d7",
+      "sequence": 13,
+      "at": "2026-09-11T07:26:51.021Z",
+      "event": "platform.migration.run",
+      "phase": "migration",
+      "outcome": "selected",
+      "durationMs": null,
+      "conversationId": "conv-6299c10e-be23-4239-a2aa-ae5c32976f00",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "module": "smart-query-request",
+        "mode": "platform",
+        "routing": {
+          "mode": "platform",
+          "configuredMode": "platform",
+          "module": "smart-query-request",
+          "bucket": 52,
+          "percentage": 100,
+          "allowListed": false,
+          "reason": "percentage"
+        },
+        "comparison": null,
+        "fallback": false,
+        "candidateMetadata": {
+          "schema": "wynai.platform-business-orchestrator/v1",
+          "version": 1,
+          "profile": "smart-query-platform-candidate-v1",
+          "contextAudit": {
+            "schema": "wynai.platform-context-audit/v1",
+            "version": 1,
+            "originalQuestionPresent": true,
+            "messageCount": 0,
+            "activeMetricCount": 0,
+            "activeDimensionCount": 0,
+            "activeFilterCount": 0,
+            "skillCount": 0,
+            "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+            "preservedCoreContext": [
+              "original-question",
+              "active-conversation-context",
+              "dataset-metadata",
+              "skill-references",
+              "permissions-and-scope"
+            ]
+          }
+        },
+        "schema": "wynai.platform-migration-run/v1"
+      }
+    },
+    {
+      "id": "operation-event-a47aa7f2-7475-4e0e-ae89-aa15f4faa6ce",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-189dff3f-e221-429f-ae02-5e0d50f804d7",
+      "sequence": 14,
+      "at": "2026-09-11T07:26:51.021Z",
+      "event": "request.completed",
+      "phase": "transport",
+      "outcome": "ok",
+      "durationMs": 15996,
+      "conversationId": "conv-6299c10e-be23-4239-a2aa-ae5c32976f00",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "plannerMode": "llm-first"
+      }
+    }
+  ],
+  "conversationId": "conv-6299c10e-be23-4239-a2aa-ae5c32976f00",
+  "dataset": {
+    "id": "18b86197-65e3-4682-8501-6e7125afad02",
+    "revision": 5,
+    "name": "01测试销售订单-09"
+  },
+  "skillRefs": [
+    "sales-opportunity-a53@1.3.0",
+    "temporal-semantics@1.1.0"
+  ],
+  "canonical": {
+    "id": "qry-intent-3f8122fa",
+    "hypothesisId": null,
+    "purpose": "列出去年（按赢单财年口径）Digital Ecosystem Enterprise Alliances 产品中，客户类型为 POE（Private Entity）的客户，并展示客户名称、项目名称、订单金额和创建日期。",
+    "mode": "aggregate",
+    "topic": "customer",
+    "dataset": {
+      "id": "18b86197-65e3-4682-8501-6e7125afad02",
+      "revision": 5
+    },
+    "select": [
+      {
+        "field": "客户名称",
+        "alias": "customer",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "pipelineName",
+        "alias": "project",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "code_open_date",
+        "alias": "createdDate",
+        "role": "time",
+        "grain": null
+      }
+    ],
+    "measures": [
+      {
+        "field": "Opportunity_amount_CNY",
+        "aggregation": "sum",
+        "alias": "revenue",
+        "resultType": "number",
+        "concept": "revenue"
+      }
+    ],
+    "filters": [
+      {
+        "field": "产品名称",
+        "operator": "eq",
+        "value": "Digital Ecosystem Enterprise Alliances",
+        "fieldType": "dimension"
+      },
+      {
+        "field": "客户类型",
+        "operator": "containsAny",
+        "value": [
+          "Private Entity（POE）"
+        ],
+        "fieldType": "dimension"
+      },
+      {
+        "field": "赢单财年",
+        "operator": "eq",
+        "value": "26",
+        "fieldType": "dimension"
+      }
+    ],
+    "resultFilters": [],
+    "fieldComparisons": [],
+    "comparison": null,
+    "orderBy": [
+      {
+        "field": "revenue",
+        "direction": "desc"
+      }
+    ],
+    "limit": 20000,
+    "limitSource": "default",
+    "expectedResult": {
+      "shape": "table",
+      "minimumRows": 0,
+      "maximumRows": 20000,
+      "requiredPeriods": [],
+      "requiredMetrics": [
+        "revenue"
+      ],
+      "requiredDimensions": [
+        "customer",
+        "project",
+        "createdDate"
+      ],
+      "timeZone": "Asia/Shanghai"
+    },
+    "sensitivity": "aggregate-only",
+    "lineage": null
+  },
+  "intent": {
+    "schema": "wynai.business-query-intent/v2",
+    "businessQuestion": "列出去年（按赢单财年口径）Digital Ecosystem Enterprise Alliances 产品中，客户类型为 POE（Private Entity）的客户，并展示客户名称、项目名称、订单金额和创建日期。",
+    "metrics": [
+      {
+        "field": "Opportunity_amount_CNY",
+        "aggregation": "sum",
+        "alias": "revenue",
+        "concept": "revenue",
+        "metricId": "revenueCny",
+        "internal": false,
+        "fieldRef": "Opportunity_amount_CNY",
+        "conceptId": "revenue"
+      }
+    ],
+    "derivedMetrics": [],
+    "dimensions": [
+      {
+        "field": "客户名称",
+        "alias": "customer",
+        "grain": null,
+        "concept": "customer",
+        "fieldRef": "客户名称",
+        "conceptId": "customer"
+      },
+      {
+        "field": "pipelineName",
+        "alias": "project",
+        "grain": null,
+        "concept": "projectName",
+        "fieldRef": "pipelineName",
+        "conceptId": "projectName"
+      },
+      {
+        "field": "code_open_date",
+        "alias": "createdDate",
+        "grain": null,
+        "concept": "createdDate",
+        "fieldRef": "code_open_date",
+        "conceptId": "createdDate"
+      }
+    ],
+    "filters": [
+      {
+        "field": "产品名称",
+        "operator": "eq",
+        "value": "Digital Ecosystem Enterprise Alliances",
+        "concept": "product",
+        "fieldRef": "产品名称"
+      },
+      {
+        "field": "客户类型",
+        "operator": "containsAny",
+        "value": "Private Entity（POE）",
+        "concept": "customerType",
+        "fieldRef": "客户类型"
+      },
+      {
+        "field": "赢单财年",
+        "operator": "eq",
+        "value": "26"
+      }
+    ],
+    "time": {
+      "field": "赢单财年",
+      "calendar": "fiscal",
+      "timeZone": "Asia/Shanghai",
+      "periods": [
+        "26"
+      ],
+      "range": null,
+      "grain": null,
+      "grouping": null,
+      "explicit": false,
+      "modifier": null,
+      "groupedYears": null
+    },
+    "ranking": null,
+    "expectedResult": {
+      "shape": "table",
+      "minimumRows": 0,
+      "maximumRows": 20000,
+      "requiredPeriods": [],
+      "requiredMetrics": [
+        "revenue"
+      ],
+      "requiredDimensions": [
+        "customer",
+        "project",
+        "createdDate"
+      ],
+      "timeZone": "Asia/Shanghai"
+    },
+    "constraints": [
+      {
+        "id": "c1",
+        "type": "time",
+        "source": "去年",
+        "normalized": "上一赢单财年（FY25）",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c2",
+        "type": "filter",
+        "source": "Digital Ecosystem Enterprise Alliances 产品",
+        "normalized": "产品名称 = Digital Ecosystem Enterprise Alliances",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c3",
+        "type": "filter",
+        "source": "POE 客户",
+        "normalized": "客户类型 containsAny Private Entity（POE）",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c4",
+        "type": "dimension",
+        "source": "客户名称、项目名称、订单金额、创建日期",
+        "normalized": "输出客户名称、pipelineName、订单金额、code_open_date",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-1",
+        "type": "filter",
+        "source": "列出去年（按赢单财年口径）Digital Ecosystem Enterprise Alliances 产品中，客户类型为 POE（Private Entity）的客户，并展示客户名称、项目名称、订单金额和创建日期。",
+        "normalized": {
+          "field": "产品名称",
+          "operator": "eq",
+          "value": "Digital Ecosystem Enterprise Alliances",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-2",
+        "type": "filter",
+        "source": "列出去年（按赢单财年口径）Digital Ecosystem Enterprise Alliances 产品中，客户类型为 POE（Private Entity）的客户，并展示客户名称、项目名称、订单金额和创建日期。",
+        "normalized": {
+          "field": "客户类型",
+          "operator": "containsAny",
+          "value": "Private Entity（POE）",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-3",
+        "type": "filter",
+        "source": "列出去年（按赢单财年口径）Digital Ecosystem Enterprise Alliances 产品中，客户类型为 POE（Private Entity）的客户，并展示客户名称、项目名称、订单金额和创建日期。",
+        "normalized": {
+          "field": "赢单财年",
+          "operator": "eq",
+          "value": "26",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      }
+    ],
+    "assumptions": [
+      "未明确自然年时，'去年'按赢单财年解释，即上一财年 FY25（2025-06-01 至 2026-05-31）。",
+      "订单金额默认使用 Opportunity_amount_CNY 求和。",
+      "POE 映射为客户类型字段的规范成员值 'Private Entity（POE）'，按多值字符串包含语义筛选。",
+      "项目名称使用 pipelineName 字段。",
+      "创建日期使用 code_open_date 字段。",
+      "未明确自然年时，相对年份按赢单财年解释；用户明确自然年时使用赢单日期。",
+      "未明确自然年时，相对年份按赢单财年解释；用户明确自然年时使用赢单日期。 本次相对年份物化为 FY26。"
+    ],
+    "confidence": 0.95,
+    "skillRefs": [
+      "sales-opportunity-a53@1.3.0",
+      "temporal-semantics@1.1.0"
+    ],
+    "mappingEvidence": [
+      {
+        "source": "去年",
+        "target": "赢单财年",
+        "evidence": "sales-opportunity-a53 的 relativeTemporalSemantics 中 last-fiscal-year 定义，且 defaultCalendar=fiscal"
+      },
+      {
+        "source": "POE",
+        "target": "客户类型 = Private Entity（POE）",
+        "evidence": "sales-opportunity-a53 的 valueMappings 中客户类型第 9 行"
+      },
+      {
+        "source": "Digital Ecosystem Enterprise Alliances",
+        "target": "产品名称",
+        "evidence": "fieldCatalog 中产品名称字段，且用户明确产品名称"
+      },
+      {
+        "source": "项目名称",
+        "target": "pipelineName",
+        "evidence": "sales-opportunity-a53 的 businessEntities 中 projectName 映射"
+      },
+      {
+        "source": "创建日期",
+        "target": "code_open_date",
+        "evidence": "sales-opportunity-a53 的 businessEntities 中 createdDate 映射"
+      }
+    ],
+    "ambiguities": [],
+    "source": {
+      "planner": "llm-first-intent-planner",
+      "version": "3.0"
+    },
+    "semanticFrame": null
+  },
+  "ledger": [
+    {
+      "id": "c1",
+      "type": "time",
+      "source": "去年",
+      "normalized": "上一赢单财年（FY25）",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c2",
+      "type": "filter",
+      "source": "Digital Ecosystem Enterprise Alliances 产品",
+      "normalized": "产品名称 = Digital Ecosystem Enterprise Alliances",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c3",
+      "type": "filter",
+      "source": "POE 客户",
+      "normalized": "客户类型 containsAny Private Entity（POE）",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c4",
+      "type": "dimension",
+      "source": "客户名称、项目名称、订单金额、创建日期",
+      "normalized": "输出客户名称、pipelineName、订单金额、code_open_date",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-1",
+      "type": "filter",
+      "source": "列出去年（按赢单财年口径）Digital Ecosystem Enterprise Alliances 产品中，客户类型为 POE（Private Entity）的客户，并展示客户名称、项目名称、订单金额和创建日期。",
+      "normalized": {
+        "field": "产品名称",
+        "operator": "eq",
+        "value": "Digital Ecosystem Enterprise Alliances",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-2",
+      "type": "filter",
+      "source": "列出去年（按赢单财年口径）Digital Ecosystem Enterprise Alliances 产品中，客户类型为 POE（Private Entity）的客户，并展示客户名称、项目名称、订单金额和创建日期。",
+      "normalized": {
+        "field": "客户类型",
+        "operator": "containsAny",
+        "value": "Private Entity（POE）",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-3",
+      "type": "filter",
+      "source": "列出去年（按赢单财年口径）Digital Ecosystem Enterprise Alliances 产品中，客户类型为 POE（Private Entity）的客户，并展示客户名称、项目名称、订单金额和创建日期。",
+      "normalized": {
+        "field": "赢单财年",
+        "operator": "eq",
+        "value": "26",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    }
+  ]
+}

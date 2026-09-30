@@ -11,11 +11,18 @@ node_modules/
 
 # 本地浏览器配置与截图：包含 Cookies、Login Data 等凭据，禁止提交
 .local-browser-profile/
-.local-browser-screenshots/
+# 截图证据被文档引用（P0_WYN_LLM_PROGRESS_2026-09-14.md、WYN_API_CAPABILITY_MATRIX.md），需纳入版本控制：
+# 仅忽略临时/未经引用的抓取产物，保留已引用的 UAT 证据。
+.local-browser-screenshots/*
+!.local-browser-screenshots/codex-iab-*.png
+!.local-browser-screenshots/codex-iab-*.jpg
 
 # UAT 临时运行时目录与服务器日志
 UAT-AY/runtime-*/
 UAT-AY/server-*.err
 UAT-AY/server-*.out
+
+# UAT 一次性运行产物：结果目录默认按需提交，临时日志不入库
+UAT-AY/*.tmp
 
 release/

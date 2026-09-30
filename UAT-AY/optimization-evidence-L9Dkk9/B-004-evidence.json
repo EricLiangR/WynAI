@@ -1,0 +1,1151 @@
+{
+  "question": "今年 POE 客户中 recurring 的项目有哪些？请列出项目名称、客户名称、产品和预计结束日期",
+  "startedAt": "2026-09-11T07:24:33.008Z",
+  "completedAt": "2026-09-11T07:24:52.424Z",
+  "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\n今年 POE 客户中 recurring 的项目有哪些？请列出项目名称、客户名称、产品和预计结束日期\n问\n\n根据查询条件（赢单财年27、客户类型为Private Entity（POE）、recurring为Yes），未找到任何符合条件的项目记录。\n\n指标\n未指定\n维度\npipelineName、客户名称、产品名称、预计关闭日期\n筛选\n客户类型 包含任一：Private Entity（POE）；recurring 包含任一：Yes；赢单财年 等于 27\n排序\n未排序\n查询明细\n\n暂无表格数据 · 结果集 rs-qry-intent-8b72c89e\n\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+  "traceId": "trace-b2f90473-5107-423e-937e-e8571002ea0e",
+  "trace": [
+    {
+      "id": "operation-event-e7e9ec90-285e-465f-8d8d-18661b5e09b4",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-b2f90473-5107-423e-937e-e8571002ea0e",
+      "sequence": 1,
+      "at": "2026-09-11T07:24:33.100Z",
+      "event": "request.accepted",
+      "phase": "transport",
+      "outcome": null,
+      "durationMs": null,
+      "conversationId": "conv-51ae67e1-7f15-4b9d-9e74-a1cc665c5cfe",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "method": "POST",
+        "path": "/api/smart-query/conversations/conv-51ae67e1-7f15-4b9d-9e74-a1cc665c5cfe/messages"
+      }
+    },
+    {
+      "id": "operation-event-73f40415-5af1-4813-9e25-5d22961b9c28",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-b2f90473-5107-423e-937e-e8571002ea0e",
+      "sequence": 2,
+      "at": "2026-09-11T07:24:33.100Z",
+      "event": "turn.received",
+      "phase": "input",
+      "outcome": null,
+      "durationMs": null,
+      "conversationId": "conv-51ae67e1-7f15-4b9d-9e74-a1cc665c5cfe",
+      "turnId": "turn-bbeb848b-bb71-40cf-8dbe-9c3e55ad7d6e",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "question": "今年 POE 客户中 recurring 的项目有哪些？请列出项目名称、客户名称、产品和预计结束日期",
+        "conversationState": "ready",
+        "datasetRevision": 5
+      }
+    },
+    {
+      "id": "operation-event-04c87f98-f755-4743-9a93-a2def5d0e637",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-b2f90473-5107-423e-937e-e8571002ea0e",
+      "sequence": 3,
+      "at": "2026-09-11T07:24:33.108Z",
+      "event": "skill.resolved",
+      "phase": "skills",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-51ae67e1-7f15-4b9d-9e74-a1cc665c5cfe",
+      "turnId": "turn-bbeb848b-bb71-40cf-8dbe-9c3e55ad7d6e",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "skillRefs": [
+          "sales-opportunity-a53@1.3.0",
+          "temporal-semantics@1.1.0"
+        ],
+        "conflicts": []
+      }
+    },
+    {
+      "id": "operation-event-3080067f-6348-4e9e-930a-da5f4b053a6f",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-b2f90473-5107-423e-937e-e8571002ea0e",
+      "sequence": 4,
+      "at": "2026-09-11T07:24:48.130Z",
+      "event": "gateway.slow",
+      "phase": "llm",
+      "outcome": "warning",
+      "durationMs": 15017,
+      "conversationId": "conv-51ae67e1-7f15-4b9d-9e74-a1cc665c5cfe",
+      "turnId": "turn-bbeb848b-bb71-40cf-8dbe-9c3e55ad7d6e",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "operation": "intent",
+        "attempt": null,
+        "provider": "primary",
+        "model": "deepseek-v4-flash-0731",
+        "responseStatus": null,
+        "durationMs": null,
+        "timeoutClass": "soft-warning",
+        "error": null
+      }
+    },
+    {
+      "id": "operation-event-7604e130-3c44-4ea2-8052-0608edfceda2",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-b2f90473-5107-423e-937e-e8571002ea0e",
+      "sequence": 5,
+      "at": "2026-09-11T07:24:48.901Z",
+      "event": "gateway.attempt",
+      "phase": "llm",
+      "outcome": "success",
+      "durationMs": 15787,
+      "conversationId": "conv-51ae67e1-7f15-4b9d-9e74-a1cc665c5cfe",
+      "turnId": "turn-bbeb848b-bb71-40cf-8dbe-9c3e55ad7d6e",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "operation": "intent",
+        "attempt": 1,
+        "provider": "primary",
+        "model": "deepseek-v4-flash-0731",
+        "responseStatus": 200,
+        "durationMs": 15787,
+        "timeoutClass": "completed-after-soft-warning",
+        "error": null
+      }
+    },
+    {
+      "id": "operation-event-9abb4b52-6f7f-476f-94bb-3b5dca2e984d",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-b2f90473-5107-423e-937e-e8571002ea0e",
+      "sequence": 6,
+      "at": "2026-09-11T07:24:48.902Z",
+      "event": "planning.completed",
+      "phase": "planning",
+      "outcome": "supported",
+      "durationMs": null,
+      "conversationId": "conv-51ae67e1-7f15-4b9d-9e74-a1cc665c5cfe",
+      "turnId": "turn-bbeb848b-bb71-40cf-8dbe-9c3e55ad7d6e",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "status": "supported",
+        "plannerMode": "llm-first",
+        "diagnostics": {
+          "route": "llm-first",
+          "planningDurationMs": 15793,
+          "llmAttempted": true,
+          "llmDurationMs": 15793,
+          "circuitOpen": false,
+          "reason": "intent-llm-validated",
+          "repairAttempted": false,
+          "llmCalls": 1
+        }
+      }
+    },
+    {
+      "id": "operation-event-6606b5ac-ffe6-4fbe-b41a-0efedafd2aa6",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-b2f90473-5107-423e-937e-e8571002ea0e",
+      "sequence": 7,
+      "at": "2026-09-11T07:24:48.902Z",
+      "event": "query.planned",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-51ae67e1-7f15-4b9d-9e74-a1cc665c5cfe",
+      "turnId": "turn-bbeb848b-bb71-40cf-8dbe-9c3e55ad7d6e",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "requestId": "qry-intent-8b72c89e",
+        "mode": "aggregate",
+        "purpose": "列出今年（按赢单财年）客户类型为 POE（Private Entity）且 recurring 为 Yes 的项目的项目名称、客户名称、产品和预计结束日期。",
+        "select": [
+          {
+            "field": "pipelineName",
+            "alias": "project_name",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "客户名称",
+            "alias": "customer_name",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "产品名称",
+            "alias": "product_name",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "预计关闭日期",
+            "alias": "expected_end_date",
+            "role": "time",
+            "grain": null
+          }
+        ],
+        "measures": [
+          {
+            "field": "客户编码",
+            "aggregation": "distinctCount",
+            "alias": "record_count",
+            "resultType": "number"
+          }
+        ],
+        "filters": [
+          {
+            "field": "客户类型",
+            "operator": "containsAny",
+            "value": [
+              "Private Entity（POE）"
+            ],
+            "fieldType": "dimension"
+          },
+          {
+            "field": "recurring",
+            "operator": "containsAny",
+            "value": [
+              "Yes"
+            ],
+            "fieldType": "dimension"
+          },
+          {
+            "field": "赢单财年",
+            "operator": "eq",
+            "value": "27",
+            "fieldType": "dimension"
+          }
+        ],
+        "orderBy": [
+          {
+            "field": "record_count",
+            "direction": "desc"
+          }
+        ],
+        "limit": 20000
+      }
+    },
+    {
+      "id": "operation-event-00320632-69f8-4231-afa4-8cac557b9e0c",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-b2f90473-5107-423e-937e-e8571002ea0e",
+      "sequence": 8,
+      "at": "2026-09-11T07:24:48.902Z",
+      "event": "query.compiled",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-51ae67e1-7f15-4b9d-9e74-a1cc665c5cfe",
+      "turnId": "turn-bbeb848b-bb71-40cf-8dbe-9c3e55ad7d6e",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "requestId": "qry-intent-8b72c89e",
+        "queryProgram": {
+          "schema": "wynai.query-program/v1",
+          "version": 1,
+          "baseQuery": {
+            "id": "qry-intent-8b72c89e",
+            "hypothesisId": null,
+            "purpose": "列出今年（按赢单财年）客户类型为 POE（Private Entity）且 recurring 为 Yes 的项目的项目名称、客户名称、产品和预计结束日期。",
+            "mode": "aggregate",
+            "topic": "product",
+            "dataset": {
+              "id": "18b86197-65e3-4682-8501-6e7125afad02",
+              "revision": 5
+            },
+            "select": [
+              {
+                "field": "pipelineName",
+                "alias": "project_name",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "客户名称",
+                "alias": "customer_name",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "产品名称",
+                "alias": "product_name",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "预计关闭日期",
+                "alias": "expected_end_date",
+                "role": "time",
+                "grain": null
+              }
+            ],
+            "measures": [
+              {
+                "field": "客户编码",
+                "aggregation": "distinctCount",
+                "alias": "record_count",
+                "resultType": "number"
+              }
+            ],
+            "filters": [
+              {
+                "field": "客户类型",
+                "operator": "containsAny",
+                "value": [
+                  "Private Entity（POE）"
+                ],
+                "fieldType": "dimension"
+              },
+              {
+                "field": "recurring",
+                "operator": "containsAny",
+                "value": [
+                  "Yes"
+                ],
+                "fieldType": "dimension"
+              },
+              {
+                "field": "赢单财年",
+                "operator": "eq",
+                "value": "27",
+                "fieldType": "dimension"
+              }
+            ],
+            "resultFilters": [],
+            "fieldComparisons": [],
+            "comparison": null,
+            "orderBy": [
+              {
+                "field": "record_count",
+                "direction": "desc"
+              }
+            ],
+            "limit": 20000,
+            "limitSource": "default",
+            "expectedResult": {
+              "shape": "table",
+              "minimumRows": 0,
+              "maximumRows": 20000,
+              "requiredPeriods": [],
+              "requiredMetrics": [],
+              "requiredDimensions": [
+                "project_name",
+                "customer_name",
+                "product_name",
+                "expected_end_date"
+              ],
+              "timeZone": "Asia/Shanghai"
+            },
+            "sensitivity": "aggregate-only",
+            "lineage": null
+          },
+          "steps": [
+            {
+              "type": "drop-internal-metrics",
+              "aliases": [
+                "record_count"
+              ]
+            },
+            {
+              "type": "validate",
+              "expectedResult": {
+                "shape": "table",
+                "minimumRows": 0,
+                "maximumRows": 20000,
+                "requiredPeriods": [],
+                "requiredMetrics": [],
+                "requiredDimensions": [
+                  "project_name",
+                  "customer_name",
+                  "product_name",
+                  "expected_end_date"
+                ],
+                "timeZone": "Asia/Shanghai"
+              }
+            }
+          ],
+          "output": {
+            "schema": "wynai.canonical-result-set/v1",
+            "requiredMetrics": [],
+            "requiredDimensions": [
+              "project_name",
+              "customer_name",
+              "product_name",
+              "expected_end_date"
+            ]
+          }
+        },
+        "plannerMode": "llm-first"
+      }
+    },
+    {
+      "id": "operation-event-60f48405-4b1a-40ae-9f76-7fe65cdea738",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-b2f90473-5107-423e-937e-e8571002ea0e",
+      "sequence": 9,
+      "at": "2026-09-11T07:24:49.001Z",
+      "event": "query.executed",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": 99,
+      "conversationId": "conv-51ae67e1-7f15-4b9d-9e74-a1cc665c5cfe",
+      "turnId": "turn-bbeb848b-bb71-40cf-8dbe-9c3e55ad7d6e",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "request": {
+          "id": "qry-intent-8b72c89e",
+          "hypothesisId": null,
+          "purpose": "列出今年（按赢单财年）客户类型为 POE（Private Entity）且 recurring 为 Yes 的项目的项目名称、客户名称、产品和预计结束日期。",
+          "mode": "aggregate",
+          "topic": "product",
+          "dataset": {
+            "id": "18b86197-65e3-4682-8501-6e7125afad02",
+            "revision": 5
+          },
+          "select": [
+            {
+              "field": "pipelineName",
+              "alias": "project_name",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "客户名称",
+              "alias": "customer_name",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "产品名称",
+              "alias": "product_name",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "预计关闭日期",
+              "alias": "expected_end_date",
+              "role": "time",
+              "grain": null
+            }
+          ],
+          "measures": [
+            {
+              "field": "客户编码",
+              "aggregation": "distinctCount",
+              "alias": "record_count",
+              "resultType": "number"
+            }
+          ],
+          "filters": [
+            {
+              "field": "客户类型",
+              "operator": "containsAny",
+              "value": [
+                "Private Entity（POE）"
+              ],
+              "fieldType": "dimension"
+            },
+            {
+              "field": "recurring",
+              "operator": "containsAny",
+              "value": [
+                "Yes"
+              ],
+              "fieldType": "dimension"
+            },
+            {
+              "field": "赢单财年",
+              "operator": "eq",
+              "value": "27",
+              "fieldType": "dimension"
+            }
+          ],
+          "resultFilters": [],
+          "fieldComparisons": [],
+          "comparison": null,
+          "orderBy": [
+            {
+              "field": "record_count",
+              "direction": "desc"
+            }
+          ],
+          "limit": 20000,
+          "limitSource": "default",
+          "expectedResult": {
+            "shape": "table",
+            "minimumRows": 0,
+            "maximumRows": 20000,
+            "requiredPeriods": [],
+            "requiredMetrics": [],
+            "requiredDimensions": [
+              "project_name",
+              "customer_name",
+              "product_name",
+              "expected_end_date"
+            ],
+            "timeZone": "Asia/Shanghai"
+          },
+          "sensitivity": "aggregate-only",
+          "lineage": null
+        },
+        "resultSetId": "rs-qry-intent-8b72c89e",
+        "rowCount": 0
+      }
+    },
+    {
+      "id": "operation-event-ebb04675-d478-4ee4-83aa-0eae140510fc",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-b2f90473-5107-423e-937e-e8571002ea0e",
+      "sequence": 10,
+      "at": "2026-09-11T07:24:49.001Z",
+      "event": "result.validated",
+      "phase": "validation",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-51ae67e1-7f15-4b9d-9e74-a1cc665c5cfe",
+      "turnId": "turn-bbeb848b-bb71-40cf-8dbe-9c3e55ad7d6e",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "valid": true,
+        "errors": [],
+        "warnings": [
+          "查询范围没有匹配数据"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-9f2b2929-f306-4c44-a7f8-9d9962130084",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-b2f90473-5107-423e-937e-e8571002ea0e",
+      "sequence": 11,
+      "at": "2026-09-11T07:24:51.634Z",
+      "event": "presentation.planned",
+      "phase": "presentation",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-51ae67e1-7f15-4b9d-9e74-a1cc665c5cfe",
+      "turnId": "turn-bbeb848b-bb71-40cf-8dbe-9c3e55ad7d6e",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "documentId": "doc-6efa742b-9c7e-4e57-9244-05722ec8e242",
+        "schema": "wynai.result-presentation-plan/v1",
+        "version": 1,
+        "mode": "table-only",
+        "priority": "table",
+        "chartType": null,
+        "tableColumns": [
+          "customer_name",
+          "project_name",
+          "product_name"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-3f04a46e-ea1c-44b7-b456-f0520d7febf7",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-b2f90473-5107-423e-937e-e8571002ea0e",
+      "sequence": 12,
+      "at": "2026-09-11T07:24:51.634Z",
+      "event": "response.composed",
+      "phase": "response",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-51ae67e1-7f15-4b9d-9e74-a1cc665c5cfe",
+      "turnId": "turn-bbeb848b-bb71-40cf-8dbe-9c3e55ad7d6e",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "documentId": "doc-6efa742b-9c7e-4e57-9244-05722ec8e242",
+        "blockTypes": [
+          "text",
+          "text",
+          "text",
+          "warning",
+          "warning",
+          "table"
+        ],
+        "resultSetIds": [
+          "rs-qry-intent-8b72c89e"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-f76f5795-2708-45b1-8bb2-3dc94d9510f2",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-b2f90473-5107-423e-937e-e8571002ea0e",
+      "sequence": 13,
+      "at": "2026-09-11T07:24:51.634Z",
+      "event": "turn.completed",
+      "phase": "completion",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-51ae67e1-7f15-4b9d-9e74-a1cc665c5cfe",
+      "turnId": "turn-bbeb848b-bb71-40cf-8dbe-9c3e55ad7d6e",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "plannerMode": "llm-first"
+      }
+    },
+    {
+      "id": "operation-event-366db2d7-c9f6-4a0f-9166-170e622039cc",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-b2f90473-5107-423e-937e-e8571002ea0e",
+      "sequence": 14,
+      "at": "2026-09-11T07:24:51.635Z",
+      "event": "platform.migration.run",
+      "phase": "migration",
+      "outcome": "selected",
+      "durationMs": null,
+      "conversationId": "conv-51ae67e1-7f15-4b9d-9e74-a1cc665c5cfe",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "module": "smart-query-request",
+        "mode": "platform",
+        "routing": {
+          "mode": "platform",
+          "configuredMode": "platform",
+          "module": "smart-query-request",
+          "bucket": 52,
+          "percentage": 100,
+          "allowListed": false,
+          "reason": "percentage"
+        },
+        "comparison": null,
+        "fallback": false,
+        "candidateMetadata": {
+          "schema": "wynai.platform-business-orchestrator/v1",
+          "version": 1,
+          "profile": "smart-query-platform-candidate-v1",
+          "contextAudit": {
+            "schema": "wynai.platform-context-audit/v1",
+            "version": 1,
+            "originalQuestionPresent": true,
+            "messageCount": 0,
+            "activeMetricCount": 0,
+            "activeDimensionCount": 0,
+            "activeFilterCount": 0,
+            "skillCount": 0,
+            "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+            "preservedCoreContext": [
+              "original-question",
+              "active-conversation-context",
+              "dataset-metadata",
+              "skill-references",
+              "permissions-and-scope"
+            ]
+          }
+        },
+        "schema": "wynai.platform-migration-run/v1"
+      }
+    },
+    {
+      "id": "operation-event-0b25e929-1c70-44d2-a0e2-c3edd9db77c2",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-b2f90473-5107-423e-937e-e8571002ea0e",
+      "sequence": 15,
+      "at": "2026-09-11T07:24:51.635Z",
+      "event": "request.completed",
+      "phase": "transport",
+      "outcome": "ok",
+      "durationMs": 18536,
+      "conversationId": "conv-51ae67e1-7f15-4b9d-9e74-a1cc665c5cfe",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "plannerMode": "llm-first"
+      }
+    }
+  ],
+  "conversationId": "conv-51ae67e1-7f15-4b9d-9e74-a1cc665c5cfe",
+  "dataset": {
+    "id": "18b86197-65e3-4682-8501-6e7125afad02",
+    "revision": 5,
+    "name": "01测试销售订单-09"
+  },
+  "skillRefs": [
+    "sales-opportunity-a53@1.3.0",
+    "temporal-semantics@1.1.0"
+  ],
+  "canonical": {
+    "id": "qry-intent-8b72c89e",
+    "hypothesisId": null,
+    "purpose": "列出今年（按赢单财年）客户类型为 POE（Private Entity）且 recurring 为 Yes 的项目的项目名称、客户名称、产品和预计结束日期。",
+    "mode": "aggregate",
+    "topic": "product",
+    "dataset": {
+      "id": "18b86197-65e3-4682-8501-6e7125afad02",
+      "revision": 5
+    },
+    "select": [
+      {
+        "field": "pipelineName",
+        "alias": "project_name",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "客户名称",
+        "alias": "customer_name",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "产品名称",
+        "alias": "product_name",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "预计关闭日期",
+        "alias": "expected_end_date",
+        "role": "time",
+        "grain": null
+      }
+    ],
+    "measures": [],
+    "filters": [
+      {
+        "field": "客户类型",
+        "operator": "containsAny",
+        "value": [
+          "Private Entity（POE）"
+        ],
+        "fieldType": "dimension"
+      },
+      {
+        "field": "recurring",
+        "operator": "containsAny",
+        "value": [
+          "Yes"
+        ],
+        "fieldType": "dimension"
+      },
+      {
+        "field": "赢单财年",
+        "operator": "eq",
+        "value": "27",
+        "fieldType": "dimension"
+      }
+    ],
+    "resultFilters": [],
+    "fieldComparisons": [],
+    "comparison": null,
+    "orderBy": [],
+    "limit": 20000,
+    "limitSource": "default",
+    "expectedResult": {
+      "shape": "table",
+      "minimumRows": 0,
+      "maximumRows": 20000,
+      "requiredPeriods": [],
+      "requiredMetrics": [],
+      "requiredDimensions": [
+        "project_name",
+        "customer_name",
+        "product_name",
+        "expected_end_date"
+      ],
+      "timeZone": "Asia/Shanghai"
+    },
+    "sensitivity": "aggregate-only",
+    "lineage": null
+  },
+  "intent": {
+    "schema": "wynai.business-query-intent/v2",
+    "businessQuestion": "列出今年（按赢单财年）客户类型为 POE（Private Entity）且 recurring 为 Yes 的项目的项目名称、客户名称、产品和预计结束日期。",
+    "metrics": [
+      {
+        "field": "客户编码",
+        "fieldRef": "客户编码",
+        "aggregation": "distinctCount",
+        "alias": "record_count",
+        "concept": "recordCount",
+        "internal": true
+      }
+    ],
+    "derivedMetrics": [],
+    "dimensions": [
+      {
+        "field": "pipelineName",
+        "alias": "project_name",
+        "grain": null,
+        "concept": "projectName",
+        "fieldRef": "pipelineName",
+        "conceptId": "projectName"
+      },
+      {
+        "field": "客户名称",
+        "alias": "customer_name",
+        "grain": null,
+        "concept": "customer",
+        "fieldRef": "客户名称",
+        "conceptId": "customer"
+      },
+      {
+        "field": "产品名称",
+        "alias": "product_name",
+        "grain": null,
+        "concept": "product",
+        "fieldRef": "产品名称",
+        "conceptId": "product"
+      },
+      {
+        "field": "预计关闭日期",
+        "alias": "expected_end_date",
+        "grain": null,
+        "concept": "expectedEndDate",
+        "fieldRef": "预计关闭日期",
+        "conceptId": "expectedEndDate"
+      }
+    ],
+    "filters": [
+      {
+        "field": "客户类型",
+        "operator": "containsAny",
+        "value": "Private Entity（POE）",
+        "concept": "customerType",
+        "fieldRef": "客户类型"
+      },
+      {
+        "field": "recurring",
+        "operator": "containsAny",
+        "value": "Yes",
+        "concept": "recurring",
+        "fieldRef": "recurring"
+      },
+      {
+        "field": "赢单财年",
+        "operator": "eq",
+        "value": "27"
+      }
+    ],
+    "time": {
+      "field": "赢单财年",
+      "calendar": "fiscal",
+      "timeZone": "Asia/Shanghai",
+      "periods": [
+        "27"
+      ],
+      "range": null,
+      "grain": null,
+      "grouping": null,
+      "explicit": false,
+      "modifier": null,
+      "groupedYears": null
+    },
+    "ranking": null,
+    "expectedResult": {
+      "shape": "table",
+      "minimumRows": 0,
+      "maximumRows": 20000,
+      "requiredPeriods": [],
+      "requiredMetrics": [],
+      "requiredDimensions": [
+        "project_name",
+        "customer_name",
+        "product_name",
+        "expected_end_date"
+      ],
+      "timeZone": "Asia/Shanghai"
+    },
+    "constraints": [
+      {
+        "id": "c1",
+        "type": "time",
+        "source": "今年",
+        "normalized": "当前赢单财年（FY26，2025-06-01 至 2026-05-31）",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c2",
+        "type": "filter",
+        "source": "POE 客户",
+        "normalized": "客户类型包含 Private Entity（POE）",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c3",
+        "type": "filter",
+        "source": "recurring 的项目",
+        "normalized": "recurring 字段包含 Yes",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c4",
+        "type": "dimension",
+        "source": "项目名称、客户名称、产品和预计结束日期",
+        "normalized": "输出 pipelineName、客户名称、产品名称、预计关闭日期",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-1",
+        "type": "filter",
+        "source": "列出今年（按赢单财年）客户类型为 POE（Private Entity）且 recurring 为 Yes 的项目的项目名称、客户名称、产品和预计结束日期。",
+        "normalized": {
+          "field": "客户类型",
+          "operator": "containsAny",
+          "value": "Private Entity（POE）",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-2",
+        "type": "filter",
+        "source": "列出今年（按赢单财年）客户类型为 POE（Private Entity）且 recurring 为 Yes 的项目的项目名称、客户名称、产品和预计结束日期。",
+        "normalized": {
+          "field": "recurring",
+          "operator": "containsAny",
+          "value": "Yes",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-3",
+        "type": "filter",
+        "source": "列出今年（按赢单财年）客户类型为 POE（Private Entity）且 recurring 为 Yes 的项目的项目名称、客户名称、产品和预计结束日期。",
+        "normalized": {
+          "field": "赢单财年",
+          "operator": "eq",
+          "value": "27",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      }
+    ],
+    "assumptions": [
+      "未明确自然年时，'今年'按赢单财年解释，即 FY26（2025-06-01 至 2026-05-31），使用赢单日期字段过滤。",
+      "POE 映射为客户类型字段的规范成员值 'Private Entity（POE）'，按多值字符串包含语义筛选。",
+      "recurring 裸词按 recurring 字段包含 Yes 处理，不使用商机来源字段。",
+      "预计结束日期使用预计关闭日期字段。",
+      "不排除测试、删除或未审批记录，除非用户明确要求。",
+      "未明确自然年时，相对年份按赢单财年解释；用户明确自然年时使用赢单日期。",
+      "未明确自然年时，相对年份按赢单财年解释；用户明确自然年时使用赢单日期。 本次相对年份物化为 FY27。"
+    ],
+    "confidence": 0.95,
+    "skillRefs": [
+      "sales-opportunity-a53@1.3.0",
+      "temporal-semantics@1.1.0"
+    ],
+    "mappingEvidence": [
+      {
+        "source": "POE",
+        "target": "客户类型",
+        "evidence": "valueMappings 中 POE 映射到 Private Entity（POE）"
+      },
+      {
+        "source": "recurring",
+        "target": "recurring",
+        "evidence": "fieldSemantics 中裸词 recurring 使用 containsAny=Yes"
+      },
+      {
+        "source": "今年",
+        "target": "赢单财年",
+        "evidence": "defaultCalendar=fiscal，未明确自然年时按赢单财年解释"
+      },
+      {
+        "source": "项目名称",
+        "target": "pipelineName",
+        "evidence": "businessEntities 中 projectName 映射到 pipelineName"
+      },
+      {
+        "source": "预计结束日期",
+        "target": "预计关闭日期",
+        "evidence": "businessEntities 中 expectedEndDate 映射到预计关闭日期"
+      }
+    ],
+    "ambiguities": [],
+    "source": {
+      "planner": "llm-first-intent-planner",
+      "version": "3.0"
+    },
+    "semanticFrame": null
+  },
+  "ledger": [
+    {
+      "id": "c1",
+      "type": "time",
+      "source": "今年",
+      "normalized": "当前赢单财年（FY26，2025-06-01 至 2026-05-31）",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c2",
+      "type": "filter",
+      "source": "POE 客户",
+      "normalized": "客户类型包含 Private Entity（POE）",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c3",
+      "type": "filter",
+      "source": "recurring 的项目",
+      "normalized": "recurring 字段包含 Yes",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c4",
+      "type": "dimension",
+      "source": "项目名称、客户名称、产品和预计结束日期",
+      "normalized": "输出 pipelineName、客户名称、产品名称、预计关闭日期",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-1",
+      "type": "filter",
+      "source": "列出今年（按赢单财年）客户类型为 POE（Private Entity）且 recurring 为 Yes 的项目的项目名称、客户名称、产品和预计结束日期。",
+      "normalized": {
+        "field": "客户类型",
+        "operator": "containsAny",
+        "value": "Private Entity（POE）",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-2",
+      "type": "filter",
+      "source": "列出今年（按赢单财年）客户类型为 POE（Private Entity）且 recurring 为 Yes 的项目的项目名称、客户名称、产品和预计结束日期。",
+      "normalized": {
+        "field": "recurring",
+        "operator": "containsAny",
+        "value": "Yes",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-3",
+      "type": "filter",
+      "source": "列出今年（按赢单财年）客户类型为 POE（Private Entity）且 recurring 为 Yes 的项目的项目名称、客户名称、产品和预计结束日期。",
+      "normalized": {
+        "field": "赢单财年",
+        "operator": "eq",
+        "value": "27",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    }
+  ]
+}

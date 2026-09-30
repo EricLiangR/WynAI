@@ -150,3 +150,50 @@ UAT-AY/server-*.out
 1. 事件流建议改为「单文件 / 单日 + 追加写」，避免数万个小文件带来的目录扫描开销。
 2. `insight-diagnostics` 单条记录最大 13MB，建议对 `events` 内的 `data` 做体积上限或字段裁剪。
 3. 可在服务启动时增加一次「磁盘文件数 vs 内存索引数」一致性校验，超出阈值时告警。
+
+## 6. UAT 过程数据清理与纳入版本控制（2026-09-30）
+
+### 6.1 清理原则
+
+对 `UAT-AY/`、`uat/` 下的过程数据按「**是否被引用**」二选一处理：
+
+- **被引用 → 纳入版本控制**：从全部受控文件、所有 `.md`/`.mjs`（文档与脚本视为知识资产）出发，
+  计算引用关系的**传递闭包**；闭包内的资产一律保留并提交。
+- **无任何引用 → 删除**：一次性浏览器跑批的临时产物、重复跑批目录、服务器日志等。
+
+引用关系按「相对引用方文件解析相对路径」判定，因此 UAT 报告里 `[截图](screenshots/xxx.png)`
+这类**相对链接**也能被正确识别；`runtime-*` 等临时目录不参与引用判定（不可作为引用来源）。
+
+### 6.2 清理结果
+
+| 项目 | 清理前 | 清理后 |
+| --- | --- | --- |
+| `UAT-AY/` | 317.15MB | 65.13MB |
+| `uat/` | 4.97MB | 0（未被任何文件引用，与 `UAT-AY/uat-20260928-request-units` 重复） |
+| 删除总量 | — | 244 项 / 256.98MB |
+
+被删除的均为无引用产物，例如重复跑批目录
+`release-gate-1.0.0-2026-09-21-*`（14 个）、`current-api-release-gate-2026-09-29*`（5 个）、
+`runtime-*` 临时目录、`rerun-UAT-AY-*.json`、`browser-results-*.json` 等。
+
+### 6.3 关键修复：被引用却未受控的资产
+
+清理过程中发现三类「代码已引用、但未纳入版本控制」的资产，若单独删除会导致引用悬空，
+本次一并纳入：
+
+| 资产 | 引用方 |
+| --- | --- |
+| `lib/semantics/request-unit-policy.mjs` | `lib/conversation/question-planner.mjs`（**服务器运行依赖**） |
+| `UAT-AY/optimization-evidence-L9Dkk9/uat-results.json`、`B-010-evidence.json` | `verify-b-runtime-regression*.mjs`、`verify-uat-fiscal-source.mjs`（**读取**） |
+| `UAT-AY/screenshots/`、`.local-browser-screenshots/codex-iab-*` | `postfix-browser-uat/results.json`、`WYN_API_CAPABILITY_MATRIX.md`、`P0_WYN_LLM_PROGRESS_2026-09-14.md` |
+
+`.local-browser-screenshots/` 此前被整体忽略，与受控文档的引用冲突；现改为
+「默认忽略、白名单保留被引用的 `codex-iab-*` 证据」，`.local-browser-profile/`
+（含 Cookies/Login Data）继续整体忽略。
+
+### 6.4 验证
+
+- 505 个受控文件全部保留，无任何受控文件被删除；
+- 删除集静态校验「位于仓库内且未受版本控制」通过（越界/受控冲突 = 0）；
+- `npm run check`、`npm test`（584 项）全部通过；
+- 清理后 `git ls-files` 与工作区一致，无引用悬空。

@@ -98,7 +98,47 @@ multiValue: false
 
 维护规则：用户说“recurring”时按 `recurring` 字段做模糊筛选，条件为包含 `Yes`；用户明确老客户、老合同续约时使用 `Yes - Continuous`，明确老客户、新合同时使用 `Yes - New Win`，明确不是 recurring 时使用 `No`。不得把 recurring 映射为商机来源，也不得把用户词直接作为枚举值。
 
+## recurring 查询语义映射
+
+<!-- dictionary
+id: recurring-query
+version: 1.0.0
+field: recurring
+concept: recurring
+sourceColumn: 查询值
+canonicalColumn: 查询值
+aliasColumn: 用户表达
+matchMode: containsAny
+multiValue: false
+-->
+
+| 查询值 | 用户表达 |
+| --- | --- |
+| Yes | recurring |
+
+维护规则：该表不是新增数据枚举，而是把旧描述中的“裸词 recurring 使用包含 Yes”固化为可审计的 Skill 映射。精确业务含义仍使用上表的 `Yes - Continuous`、`Yes - New Win` 和 `No`。
+
 ## 产品大类
+
+## 产品名称
+
+<!-- dictionary
+id: product-name
+version: 1.0.0
+field: 产品名称
+concept: product
+sourceColumn: 数据值
+canonicalColumn: 数据值
+aliasColumn: 用户称呼
+matchMode: exact
+multiValue: false
+-->
+
+| 数据值 | 用户称呼 |
+| --- | --- |
+| Safety Production and Risk Control in Manufacturing | Safety Production and Risk Control in Manufacturing |
+
+维护规则：完整产品名称必须绑定到“产品名称”字段。即使名称包含产品大类或产品小类词语，也不得降级为“产品大类”或“产品小类”筛选。
 
 <!-- dictionary
 id: product-category

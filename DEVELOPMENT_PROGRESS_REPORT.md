@@ -838,3 +838,15 @@ BusinessQueryIntent 新链路不生成或依赖 `queryMode`；Canonical 执行�
 - 专项与全量自动化：`npm test` 539/539，`npm run check` 和 `git diff --check` 通过。
 - 真实浏览器 UAT：合法 MNC + `partner` 返回 5 行，详情确认客户类型使用“包含任一”、`partner` 绑定 `Opportunity_partner`，筛选/分组/聚合/排序由 Wyn 执行，结果完整、非样本且未使用替代结果；未知 MCN、POC 均进入澄清，不生成错误结果表。浏览器控制台 warning/error 为 0。
 - 截图与验收报告：`UAT-AY/governed-semantic-mapping-2026-09-22/`。
+# 2026-09-28 本轮实施状态（2026-09-29 验收收口）
+
+| 能力 | 状态 | 证据 |
+| --- | --- | --- |
+| 单一 LLM 语义权威 | 自动化与动态真实 UAT 通过 | 12 条动态问题修复后全部通过；LLM 负责业务语义，Skill/协议只做治理校验 |
+| 最大可信可执行子集 | 自动化与动态真实 UAT 通过 | 结果由 Wyn 执行；DYN-07/DYN-09 修复为正确业务粒度；DYN-10 合法空结果无 fallback |
+| 用户可见部分完成提示 | 真实 UAT 已验证 | DYN-10 页面显示 FY26、赢单季度分组、0 行完整结果和技术详情；未使用 fallback |
+| 历史回归与动态新问题门禁 | 当前门禁通过 | 动态 12/12 截图、DOM、控制台证据；全量自动化 `573/573`，`npm run check` 和 `git diff --check` 通过 |
+
+动态真实浏览器证据：`UAT-AY/dynamic-semantic-uat-2026-09-29/DYNAMIC-SEMANTIC-UAT-REPORT-2026-09-29.md`。修复前失败截图和最终截图均保留；本轮不得通过 AY 专用关键词、Skill 文本补丁或业务 fallback 绕过，最终动态门禁已通过。
+
+本轮属于平台级语义架构修复，不是 AY 数据集或 Skill 单点修复。权限穿透、非索引数据集和 Wyn 原生分页仍按既有范围保持未验证，不在本轮扩展。

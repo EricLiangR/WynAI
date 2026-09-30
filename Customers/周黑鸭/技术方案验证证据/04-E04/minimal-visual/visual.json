@@ -1,0 +1,16 @@
+{
+    "id": "ef299dc0-bbb6-11f1-9128-0d44bdd59754",
+    "name": "wynai-dashboard-insight-probe",
+    "displayName": "",
+    "displayNameKey": "",
+    "icon": "assets/icon.png",
+    "description": "",
+    "externalJs": [],
+    "externalCss": [],
+    "dependencies": [],
+    "assets": {
+        "images": {}
+    },
+    "configuration": {},
+    "cliVersion": "6.1.8"
+}

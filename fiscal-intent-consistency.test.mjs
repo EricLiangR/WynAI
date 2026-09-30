@@ -34,8 +34,15 @@ for (const part of ['filter', 'ledger', 'assumption']) {
     if (part === 'assumption') wrong.assumptions = ['今年对应 FY26。'];
     const { result, calls } = await plan(wrong);
     assert.equal(result.status, 'supported', result.message);
-    assert.equal(calls.length, 2);
-    assert.match(calls[1].repairFeedback, /FY27/);
+    // A stale source filter is materialized from the approved Skill calendar
+    // before coverage validation. Ledger and assumption contradictions still
+    // require an LLM repair because they are not executable filters.
+    if (part === 'filter') {
+      assert.equal(calls.length, 1);
+    } else {
+      assert.equal(calls.length, 2);
+      assert.match(calls[1].repairFeedback, /FY27/);
+    }
     assert.equal(JSON.stringify(result.intent).includes('FY26'), false);
   });
 }

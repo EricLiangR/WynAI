@@ -109,7 +109,7 @@ test('明确纠正会替换待确认意图，并在一轮内完成占比饼图',
   assert.equal(second.response.intentPatch.transition.mode, 'correction-replace');
   assert.equal(second.conversation.committedContext.intent.businessQuestion, correction);
   assert.deepEqual(second.conversation.committedContext.intent.derivedMetrics.map(item => item.type), ['share-of-total']);
-  assert.equal(second.conversation.committedContext.intent.semanticFrame.derivedMetrics.some(item => item.alias === 'unresolved_formula_metric'), false);
+  assert.equal(second.conversation.committedContext.intent.semanticFrame, null);
   assert.ok(events.some(event => event.event === 'clarification.corrected' && event.outcome === 'success'));
   const chart = second.response.document.blocks.find(block => block.type === 'chart');
   assert.equal(chart.visualization.type, 'pie');

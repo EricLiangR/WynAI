@@ -1,0 +1,1065 @@
+{
+  "question": "今年 x-ssl 项目中，产品是 Safety Production and Risk Control in Manufacturing 的有哪些？请列出项目名称、客户名称、客户类型和商机金额",
+  "startedAt": "2026-09-11T07:25:29.424Z",
+  "completedAt": "2026-09-11T07:25:45.811Z",
+  "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\n今年 x-ssl 项目中，产品是 Safety Production and Risk Control in Manufacturing 的有哪些？请列出项目名称、客户名称、客户类型和商机金额\n问\n\n在赢单财年27（FY27）的x-ssl项目中，未找到产品为“Safety Production and Risk Control in Manufacturing”的商机记录，因此无法列出项目名称、客户名称、客户类型和商机金额。\n\n指标\nOpportunity_amount_CNY（求和）\n维度\npipelineName、客户名称、客户类型\n筛选\nxssl 等于 1；产品名称 等于 Safety Production and Risk Control in Manufacturing；赢单财年 等于 27\n排序\n按Opportunity_amount_CNY（求和）降序\n查询明细\n\n暂无表格数据 · 结果集 rs-qry-intent-5dc27ffb\n\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+  "traceId": "trace-7947f1c9-63e1-48f0-98a0-e307f92b9410",
+  "trace": [
+    {
+      "id": "operation-event-5ee42d3e-8dc2-4a50-9153-f67b48f74645",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7947f1c9-63e1-48f0-98a0-e307f92b9410",
+      "sequence": 1,
+      "at": "2026-09-11T07:25:29.478Z",
+      "event": "request.accepted",
+      "phase": "transport",
+      "outcome": null,
+      "durationMs": null,
+      "conversationId": "conv-3f423e62-1333-46fb-ac8c-0161d9fd326b",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "method": "POST",
+        "path": "/api/smart-query/conversations/conv-3f423e62-1333-46fb-ac8c-0161d9fd326b/messages"
+      }
+    },
+    {
+      "id": "operation-event-a514a206-3b8d-490f-b535-4b3b7aaac9b2",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7947f1c9-63e1-48f0-98a0-e307f92b9410",
+      "sequence": 2,
+      "at": "2026-09-11T07:25:29.478Z",
+      "event": "turn.received",
+      "phase": "input",
+      "outcome": null,
+      "durationMs": null,
+      "conversationId": "conv-3f423e62-1333-46fb-ac8c-0161d9fd326b",
+      "turnId": "turn-b6026497-2e9e-4ab0-86bc-2152df38a28c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "question": "今年 x-ssl 项目中，产品是 Safety Production and Risk Control in Manufacturing 的有哪些？请列出项目名称、客户名称、客户类型和商机金额",
+        "conversationState": "ready",
+        "datasetRevision": 5
+      }
+    },
+    {
+      "id": "operation-event-fe73a36d-e330-4d54-8b6e-d1d4fa821a0d",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7947f1c9-63e1-48f0-98a0-e307f92b9410",
+      "sequence": 3,
+      "at": "2026-09-11T07:25:29.486Z",
+      "event": "skill.resolved",
+      "phase": "skills",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-3f423e62-1333-46fb-ac8c-0161d9fd326b",
+      "turnId": "turn-b6026497-2e9e-4ab0-86bc-2152df38a28c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "skillRefs": [
+          "sales-opportunity-a53@1.3.0",
+          "temporal-semantics@1.1.0"
+        ],
+        "conflicts": []
+      }
+    },
+    {
+      "id": "operation-event-b6df3244-b05f-4a0a-95e8-39882e7ede38",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7947f1c9-63e1-48f0-98a0-e307f92b9410",
+      "sequence": 4,
+      "at": "2026-09-11T07:25:41.393Z",
+      "event": "gateway.attempt",
+      "phase": "llm",
+      "outcome": "success",
+      "durationMs": 11902,
+      "conversationId": "conv-3f423e62-1333-46fb-ac8c-0161d9fd326b",
+      "turnId": "turn-b6026497-2e9e-4ab0-86bc-2152df38a28c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "operation": "intent",
+        "attempt": 1,
+        "provider": "primary",
+        "model": "deepseek-v4-flash-0731",
+        "responseStatus": 200,
+        "durationMs": 11902,
+        "timeoutClass": "completed",
+        "error": null
+      }
+    },
+    {
+      "id": "operation-event-7901e346-d5f1-4855-be7b-3bf34b656e6e",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7947f1c9-63e1-48f0-98a0-e307f92b9410",
+      "sequence": 5,
+      "at": "2026-09-11T07:25:41.395Z",
+      "event": "planning.completed",
+      "phase": "planning",
+      "outcome": "supported",
+      "durationMs": null,
+      "conversationId": "conv-3f423e62-1333-46fb-ac8c-0161d9fd326b",
+      "turnId": "turn-b6026497-2e9e-4ab0-86bc-2152df38a28c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "status": "supported",
+        "plannerMode": "llm-first",
+        "diagnostics": {
+          "route": "llm-first",
+          "planningDurationMs": 11909,
+          "llmAttempted": true,
+          "llmDurationMs": 11909,
+          "circuitOpen": false,
+          "reason": "intent-llm-validated",
+          "repairAttempted": false,
+          "llmCalls": 1
+        }
+      }
+    },
+    {
+      "id": "operation-event-b1d98e29-cc6f-487a-beaa-a24090cecdae",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7947f1c9-63e1-48f0-98a0-e307f92b9410",
+      "sequence": 6,
+      "at": "2026-09-11T07:25:41.395Z",
+      "event": "query.planned",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-3f423e62-1333-46fb-ac8c-0161d9fd326b",
+      "turnId": "turn-b6026497-2e9e-4ab0-86bc-2152df38a28c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "requestId": "qry-intent-5dc27ffb",
+        "mode": "aggregate",
+        "purpose": "今年（按赢单财年）x-ssl 项目中，产品是 Safety Production and Risk Control in Manufacturing 的商机，列出项目名称、客户名称、客户类型和商机金额。",
+        "select": [
+          {
+            "field": "pipelineName",
+            "alias": "project_name",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "客户名称",
+            "alias": "customer_name",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "客户类型",
+            "alias": "customer_type",
+            "role": "dimension",
+            "grain": null
+          }
+        ],
+        "measures": [
+          {
+            "field": "Opportunity_amount_CNY",
+            "aggregation": "sum",
+            "alias": "revenue_cny",
+            "resultType": "number"
+          }
+        ],
+        "filters": [
+          {
+            "field": "xssl",
+            "operator": "eq",
+            "value": 1,
+            "fieldType": "measure"
+          },
+          {
+            "field": "产品名称",
+            "operator": "eq",
+            "value": "Safety Production and Risk Control in Manufacturing",
+            "fieldType": "dimension"
+          },
+          {
+            "field": "赢单财年",
+            "operator": "eq",
+            "value": "27",
+            "fieldType": "dimension"
+          }
+        ],
+        "orderBy": [
+          {
+            "field": "revenue_cny",
+            "direction": "desc"
+          }
+        ],
+        "limit": 20000
+      }
+    },
+    {
+      "id": "operation-event-badb7bf8-7040-4c34-9f41-3615be5186e5",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7947f1c9-63e1-48f0-98a0-e307f92b9410",
+      "sequence": 7,
+      "at": "2026-09-11T07:25:41.395Z",
+      "event": "query.compiled",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-3f423e62-1333-46fb-ac8c-0161d9fd326b",
+      "turnId": "turn-b6026497-2e9e-4ab0-86bc-2152df38a28c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "requestId": "qry-intent-5dc27ffb",
+        "queryProgram": {
+          "schema": "wynai.query-program/v1",
+          "version": 1,
+          "baseQuery": {
+            "id": "qry-intent-5dc27ffb",
+            "hypothesisId": null,
+            "purpose": "今年（按赢单财年）x-ssl 项目中，产品是 Safety Production and Risk Control in Manufacturing 的商机，列出项目名称、客户名称、客户类型和商机金额。",
+            "mode": "aggregate",
+            "topic": "product",
+            "dataset": {
+              "id": "18b86197-65e3-4682-8501-6e7125afad02",
+              "revision": 5
+            },
+            "select": [
+              {
+                "field": "pipelineName",
+                "alias": "project_name",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "客户名称",
+                "alias": "customer_name",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "客户类型",
+                "alias": "customer_type",
+                "role": "dimension",
+                "grain": null
+              }
+            ],
+            "measures": [
+              {
+                "field": "Opportunity_amount_CNY",
+                "aggregation": "sum",
+                "alias": "revenue_cny",
+                "resultType": "number"
+              }
+            ],
+            "filters": [
+              {
+                "field": "xssl",
+                "operator": "eq",
+                "value": 1,
+                "fieldType": "measure"
+              },
+              {
+                "field": "产品名称",
+                "operator": "eq",
+                "value": "Safety Production and Risk Control in Manufacturing",
+                "fieldType": "dimension"
+              },
+              {
+                "field": "赢单财年",
+                "operator": "eq",
+                "value": "27",
+                "fieldType": "dimension"
+              }
+            ],
+            "resultFilters": [],
+            "fieldComparisons": [],
+            "comparison": null,
+            "orderBy": [
+              {
+                "field": "revenue_cny",
+                "direction": "desc"
+              }
+            ],
+            "limit": 20000,
+            "limitSource": "default",
+            "expectedResult": {
+              "shape": "table",
+              "minimumRows": 0,
+              "maximumRows": 20000,
+              "requiredPeriods": [],
+              "requiredMetrics": [
+                "revenue_cny"
+              ],
+              "requiredDimensions": [
+                "project_name",
+                "customer_name",
+                "customer_type"
+              ],
+              "timeZone": "Asia/Shanghai"
+            },
+            "sensitivity": "aggregate-only",
+            "lineage": null
+          },
+          "steps": [
+            {
+              "type": "validate",
+              "expectedResult": {
+                "shape": "table",
+                "minimumRows": 0,
+                "maximumRows": 20000,
+                "requiredPeriods": [],
+                "requiredMetrics": [
+                  "revenue_cny"
+                ],
+                "requiredDimensions": [
+                  "project_name",
+                  "customer_name",
+                  "customer_type"
+                ],
+                "timeZone": "Asia/Shanghai"
+              }
+            }
+          ],
+          "output": {
+            "schema": "wynai.canonical-result-set/v1",
+            "requiredMetrics": [
+              "revenue_cny"
+            ],
+            "requiredDimensions": [
+              "project_name",
+              "customer_name",
+              "customer_type"
+            ]
+          }
+        },
+        "plannerMode": "llm-first"
+      }
+    },
+    {
+      "id": "operation-event-bb3e3cb3-9960-46f4-976c-717d78baf570",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7947f1c9-63e1-48f0-98a0-e307f92b9410",
+      "sequence": 8,
+      "at": "2026-09-11T07:25:41.504Z",
+      "event": "query.executed",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": 109,
+      "conversationId": "conv-3f423e62-1333-46fb-ac8c-0161d9fd326b",
+      "turnId": "turn-b6026497-2e9e-4ab0-86bc-2152df38a28c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "request": {
+          "id": "qry-intent-5dc27ffb",
+          "hypothesisId": null,
+          "purpose": "今年（按赢单财年）x-ssl 项目中，产品是 Safety Production and Risk Control in Manufacturing 的商机，列出项目名称、客户名称、客户类型和商机金额。",
+          "mode": "aggregate",
+          "topic": "product",
+          "dataset": {
+            "id": "18b86197-65e3-4682-8501-6e7125afad02",
+            "revision": 5
+          },
+          "select": [
+            {
+              "field": "pipelineName",
+              "alias": "project_name",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "客户名称",
+              "alias": "customer_name",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "客户类型",
+              "alias": "customer_type",
+              "role": "dimension",
+              "grain": null
+            }
+          ],
+          "measures": [
+            {
+              "field": "Opportunity_amount_CNY",
+              "aggregation": "sum",
+              "alias": "revenue_cny",
+              "resultType": "number"
+            }
+          ],
+          "filters": [
+            {
+              "field": "xssl",
+              "operator": "eq",
+              "value": 1,
+              "fieldType": "measure"
+            },
+            {
+              "field": "产品名称",
+              "operator": "eq",
+              "value": "Safety Production and Risk Control in Manufacturing",
+              "fieldType": "dimension"
+            },
+            {
+              "field": "赢单财年",
+              "operator": "eq",
+              "value": "27",
+              "fieldType": "dimension"
+            }
+          ],
+          "resultFilters": [],
+          "fieldComparisons": [],
+          "comparison": null,
+          "orderBy": [
+            {
+              "field": "revenue_cny",
+              "direction": "desc"
+            }
+          ],
+          "limit": 20000,
+          "limitSource": "default",
+          "expectedResult": {
+            "shape": "table",
+            "minimumRows": 0,
+            "maximumRows": 20000,
+            "requiredPeriods": [],
+            "requiredMetrics": [
+              "revenue_cny"
+            ],
+            "requiredDimensions": [
+              "project_name",
+              "customer_name",
+              "customer_type"
+            ],
+            "timeZone": "Asia/Shanghai"
+          },
+          "sensitivity": "aggregate-only",
+          "lineage": null
+        },
+        "resultSetId": "rs-qry-intent-5dc27ffb",
+        "rowCount": 0
+      }
+    },
+    {
+      "id": "operation-event-2ac9059b-a722-4986-8c6b-a63d65e41793",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7947f1c9-63e1-48f0-98a0-e307f92b9410",
+      "sequence": 9,
+      "at": "2026-09-11T07:25:41.504Z",
+      "event": "result.validated",
+      "phase": "validation",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-3f423e62-1333-46fb-ac8c-0161d9fd326b",
+      "turnId": "turn-b6026497-2e9e-4ab0-86bc-2152df38a28c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "valid": true,
+        "errors": [],
+        "warnings": [
+          "查询范围没有匹配数据"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-1ff49c3a-0013-4d49-8793-bd5f04c85fef",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7947f1c9-63e1-48f0-98a0-e307f92b9410",
+      "sequence": 10,
+      "at": "2026-09-11T07:25:44.666Z",
+      "event": "presentation.planned",
+      "phase": "presentation",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-3f423e62-1333-46fb-ac8c-0161d9fd326b",
+      "turnId": "turn-b6026497-2e9e-4ab0-86bc-2152df38a28c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "documentId": "doc-8f494fbd-a7c0-4fd1-ae12-95e374cea7b3",
+        "schema": "wynai.result-presentation-plan/v1",
+        "version": 1,
+        "mode": "table-only",
+        "priority": "table",
+        "chartType": null,
+        "tableColumns": [
+          "customer_name",
+          "customer_type",
+          "project_name",
+          "revenue_cny"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-6e2c857f-615b-4292-ab46-f544032dcaec",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7947f1c9-63e1-48f0-98a0-e307f92b9410",
+      "sequence": 11,
+      "at": "2026-09-11T07:25:44.666Z",
+      "event": "response.composed",
+      "phase": "response",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-3f423e62-1333-46fb-ac8c-0161d9fd326b",
+      "turnId": "turn-b6026497-2e9e-4ab0-86bc-2152df38a28c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "documentId": "doc-8f494fbd-a7c0-4fd1-ae12-95e374cea7b3",
+        "blockTypes": [
+          "text",
+          "text",
+          "text",
+          "text",
+          "warning",
+          "warning",
+          "table"
+        ],
+        "resultSetIds": [
+          "rs-qry-intent-5dc27ffb"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-dc6dfa60-b5af-448b-bda0-2ebeafec3b1b",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7947f1c9-63e1-48f0-98a0-e307f92b9410",
+      "sequence": 12,
+      "at": "2026-09-11T07:25:44.666Z",
+      "event": "turn.completed",
+      "phase": "completion",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-3f423e62-1333-46fb-ac8c-0161d9fd326b",
+      "turnId": "turn-b6026497-2e9e-4ab0-86bc-2152df38a28c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "plannerMode": "llm-first"
+      }
+    },
+    {
+      "id": "operation-event-45759256-3c8b-4808-8a3d-2420c9885208",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7947f1c9-63e1-48f0-98a0-e307f92b9410",
+      "sequence": 13,
+      "at": "2026-09-11T07:25:44.666Z",
+      "event": "platform.migration.run",
+      "phase": "migration",
+      "outcome": "selected",
+      "durationMs": null,
+      "conversationId": "conv-3f423e62-1333-46fb-ac8c-0161d9fd326b",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "module": "smart-query-request",
+        "mode": "platform",
+        "routing": {
+          "mode": "platform",
+          "configuredMode": "platform",
+          "module": "smart-query-request",
+          "bucket": 52,
+          "percentage": 100,
+          "allowListed": false,
+          "reason": "percentage"
+        },
+        "comparison": null,
+        "fallback": false,
+        "candidateMetadata": {
+          "schema": "wynai.platform-business-orchestrator/v1",
+          "version": 1,
+          "profile": "smart-query-platform-candidate-v1",
+          "contextAudit": {
+            "schema": "wynai.platform-context-audit/v1",
+            "version": 1,
+            "originalQuestionPresent": true,
+            "messageCount": 0,
+            "activeMetricCount": 0,
+            "activeDimensionCount": 0,
+            "activeFilterCount": 0,
+            "skillCount": 0,
+            "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+            "preservedCoreContext": [
+              "original-question",
+              "active-conversation-context",
+              "dataset-metadata",
+              "skill-references",
+              "permissions-and-scope"
+            ]
+          }
+        },
+        "schema": "wynai.platform-migration-run/v1"
+      }
+    },
+    {
+      "id": "operation-event-7cc712d7-1526-4f1e-9b74-345aa3f36a00",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7947f1c9-63e1-48f0-98a0-e307f92b9410",
+      "sequence": 14,
+      "at": "2026-09-11T07:25:44.666Z",
+      "event": "request.completed",
+      "phase": "transport",
+      "outcome": "ok",
+      "durationMs": 15188,
+      "conversationId": "conv-3f423e62-1333-46fb-ac8c-0161d9fd326b",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "plannerMode": "llm-first"
+      }
+    }
+  ],
+  "conversationId": "conv-3f423e62-1333-46fb-ac8c-0161d9fd326b",
+  "dataset": {
+    "id": "18b86197-65e3-4682-8501-6e7125afad02",
+    "revision": 5,
+    "name": "01测试销售订单-09"
+  },
+  "skillRefs": [
+    "sales-opportunity-a53@1.3.0"
+  ],
+  "canonical": {
+    "id": "qry-intent-5dc27ffb",
+    "hypothesisId": null,
+    "purpose": "今年（按赢单财年）x-ssl 项目中，产品是 Safety Production and Risk Control in Manufacturing 的商机，列出项目名称、客户名称、客户类型和商机金额。",
+    "mode": "aggregate",
+    "topic": "product",
+    "dataset": {
+      "id": "18b86197-65e3-4682-8501-6e7125afad02",
+      "revision": 5
+    },
+    "select": [
+      {
+        "field": "pipelineName",
+        "alias": "project_name",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "客户名称",
+        "alias": "customer_name",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "客户类型",
+        "alias": "customer_type",
+        "role": "dimension",
+        "grain": null
+      }
+    ],
+    "measures": [
+      {
+        "field": "Opportunity_amount_CNY",
+        "aggregation": "sum",
+        "alias": "revenue_cny",
+        "resultType": "number",
+        "concept": "revenue"
+      }
+    ],
+    "filters": [
+      {
+        "field": "xssl",
+        "operator": "eq",
+        "value": 1,
+        "fieldType": "measure"
+      },
+      {
+        "field": "产品名称",
+        "operator": "eq",
+        "value": "Safety Production and Risk Control in Manufacturing",
+        "fieldType": "dimension"
+      },
+      {
+        "field": "赢单财年",
+        "operator": "eq",
+        "value": "27",
+        "fieldType": "dimension"
+      }
+    ],
+    "resultFilters": [],
+    "fieldComparisons": [],
+    "comparison": null,
+    "orderBy": [
+      {
+        "field": "revenue_cny",
+        "direction": "desc"
+      }
+    ],
+    "limit": 20000,
+    "limitSource": "default",
+    "expectedResult": {
+      "shape": "table",
+      "minimumRows": 0,
+      "maximumRows": 20000,
+      "requiredPeriods": [],
+      "requiredMetrics": [
+        "revenue_cny"
+      ],
+      "requiredDimensions": [
+        "project_name",
+        "customer_name",
+        "customer_type"
+      ],
+      "timeZone": "Asia/Shanghai"
+    },
+    "sensitivity": "aggregate-only",
+    "lineage": null
+  },
+  "intent": {
+    "schema": "wynai.business-query-intent/v2",
+    "businessQuestion": "今年（按赢单财年）x-ssl 项目中，产品是 Safety Production and Risk Control in Manufacturing 的商机，列出项目名称、客户名称、客户类型和商机金额。",
+    "metrics": [
+      {
+        "field": "Opportunity_amount_CNY",
+        "aggregation": "sum",
+        "alias": "revenue_cny",
+        "concept": "revenue",
+        "metricId": "revenueCny",
+        "internal": false,
+        "fieldRef": "Opportunity_amount_CNY",
+        "conceptId": "revenue"
+      }
+    ],
+    "derivedMetrics": [],
+    "dimensions": [
+      {
+        "field": "pipelineName",
+        "alias": "project_name",
+        "grain": null,
+        "concept": "projectName",
+        "fieldRef": "pipelineName",
+        "conceptId": "projectName"
+      },
+      {
+        "field": "客户名称",
+        "alias": "customer_name",
+        "grain": null,
+        "concept": "customer",
+        "fieldRef": "客户名称",
+        "conceptId": "customer"
+      },
+      {
+        "field": "客户类型",
+        "alias": "customer_type",
+        "grain": null,
+        "concept": "customerType",
+        "fieldRef": "客户类型",
+        "conceptId": "customerType"
+      }
+    ],
+    "filters": [
+      {
+        "field": "xssl",
+        "operator": "eq",
+        "value": 1,
+        "fieldRef": "xssl"
+      },
+      {
+        "field": "产品名称",
+        "operator": "eq",
+        "value": "Safety Production and Risk Control in Manufacturing",
+        "fieldRef": "产品名称"
+      },
+      {
+        "field": "赢单财年",
+        "operator": "eq",
+        "value": "27"
+      }
+    ],
+    "time": {
+      "field": "赢单财年",
+      "calendar": "fiscal",
+      "timeZone": "Asia/Shanghai",
+      "periods": [
+        "27"
+      ],
+      "range": null,
+      "grain": null,
+      "grouping": null,
+      "explicit": false,
+      "modifier": null,
+      "groupedYears": null
+    },
+    "ranking": null,
+    "expectedResult": {
+      "shape": "table",
+      "minimumRows": 0,
+      "maximumRows": 20000,
+      "requiredPeriods": [],
+      "requiredMetrics": [
+        "revenue_cny"
+      ],
+      "requiredDimensions": [
+        "project_name",
+        "customer_name",
+        "customer_type"
+      ],
+      "timeZone": "Asia/Shanghai"
+    },
+    "constraints": [
+      {
+        "id": "c1",
+        "type": "time",
+        "source": "今年",
+        "normalized": "当前赢单财年（FY26，2025-06-01 至 2026-05-31）",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c2",
+        "type": "filter",
+        "source": "x-ssl 项目",
+        "normalized": "xssl = 1",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c3",
+        "type": "filter",
+        "source": "产品是 Safety Production and Risk Control in Manufacturing",
+        "normalized": "产品名称 = 'Safety Production and Risk Control in Manufacturing'",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c4",
+        "type": "dimension",
+        "source": "项目名称、客户名称、客户类型和商机金额",
+        "normalized": "输出 pipelineName、客户名称、客户类型、Opportunity_amount_CNY 求和",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-1",
+        "type": "filter",
+        "source": "今年（按赢单财年）x-ssl 项目中，产品是 Safety Production and Risk Control in Manufacturing 的商机，列出项目名称、客户名称、客户类型和商机金额。",
+        "normalized": {
+          "field": "xssl",
+          "operator": "eq",
+          "value": "1",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-2",
+        "type": "filter",
+        "source": "今年（按赢单财年）x-ssl 项目中，产品是 Safety Production and Risk Control in Manufacturing 的商机，列出项目名称、客户名称、客户类型和商机金额。",
+        "normalized": {
+          "field": "产品名称",
+          "operator": "eq",
+          "value": "Safety Production and Risk Control in Manufacturing",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-3",
+        "type": "filter",
+        "source": "今年（按赢单财年）x-ssl 项目中，产品是 Safety Production and Risk Control in Manufacturing 的商机，列出项目名称、客户名称、客户类型和商机金额。",
+        "normalized": {
+          "field": "赢单财年",
+          "operator": "eq",
+          "value": "27",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      }
+    ],
+    "assumptions": [
+      "未明确自然年时，'今年'按赢单财年解释，即 FY26（2025-06-01 至 2026-05-31）。",
+      "商机金额默认使用 Opportunity_amount_CNY 求和。",
+      "客户类型为多值字段，此处仅展示，不进行筛选。",
+      "未指定是否排除测试或删除记录，按数据集默认返回。",
+      "未明确自然年时，相对年份按赢单财年解释；用户明确自然年时使用赢单日期。",
+      "未明确自然年时，相对年份按赢单财年解释；用户明确自然年时使用赢单日期。 本次相对年份物化为 FY27。"
+    ],
+    "confidence": 0.95,
+    "skillRefs": [
+      "sales-opportunity-a53@1.3.0"
+    ],
+    "mappingEvidence": [
+      "x-ssl 映射到 xssl 字段，值 1（来自 valueMappings）。",
+      "产品名称映射到产品名称字段。",
+      "项目名称映射到 pipelineName（businessEntity projectName）。",
+      "客户名称映射到客户名称字段。",
+      "客户类型映射到客户类型字段。",
+      "商机金额映射到 Opportunity_amount_CNY（metric revenueCny）。",
+      "今年按赢单财年，使用赢单日期字段，范围 2025-06-01 至 2026-06-01。"
+    ],
+    "ambiguities": [],
+    "source": {
+      "planner": "llm-first-intent-planner",
+      "version": "3.0"
+    },
+    "semanticFrame": null
+  },
+  "ledger": [
+    {
+      "id": "c1",
+      "type": "time",
+      "source": "今年",
+      "normalized": "当前赢单财年（FY26，2025-06-01 至 2026-05-31）",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c2",
+      "type": "filter",
+      "source": "x-ssl 项目",
+      "normalized": "xssl = 1",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c3",
+      "type": "filter",
+      "source": "产品是 Safety Production and Risk Control in Manufacturing",
+      "normalized": "产品名称 = 'Safety Production and Risk Control in Manufacturing'",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c4",
+      "type": "dimension",
+      "source": "项目名称、客户名称、客户类型和商机金额",
+      "normalized": "输出 pipelineName、客户名称、客户类型、Opportunity_amount_CNY 求和",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-1",
+      "type": "filter",
+      "source": "今年（按赢单财年）x-ssl 项目中，产品是 Safety Production and Risk Control in Manufacturing 的商机，列出项目名称、客户名称、客户类型和商机金额。",
+      "normalized": {
+        "field": "xssl",
+        "operator": "eq",
+        "value": "1",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-2",
+      "type": "filter",
+      "source": "今年（按赢单财年）x-ssl 项目中，产品是 Safety Production and Risk Control in Manufacturing 的商机，列出项目名称、客户名称、客户类型和商机金额。",
+      "normalized": {
+        "field": "产品名称",
+        "operator": "eq",
+        "value": "Safety Production and Risk Control in Manufacturing",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-3",
+      "type": "filter",
+      "source": "今年（按赢单财年）x-ssl 项目中，产品是 Safety Production and Risk Control in Manufacturing 的商机，列出项目名称、客户名称、客户类型和商机金额。",
+      "normalized": {
+        "field": "赢单财年",
+        "operator": "eq",
+        "value": "27",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    }
+  ]
+}

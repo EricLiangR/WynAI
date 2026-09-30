@@ -253,6 +253,68 @@ test('低风险问题也必须调用 LLM，模型失败时不走旧快路径', a
   assert.equal(plan.request, undefined);
 });
 
+test('首轮意图成功后不再由隐式审计重写业务语义', async () => {
+  const metadata = {
+    id: 'dataset-single-authority',
+    revision: 1,
+    fields: [
+      { name: '产品名称', role: 'dimension', type: 'String', rawType: 'String' },
+      { name: '产品小类', role: 'dimension', type: 'String', rawType: 'String' },
+      { name: '客户名称', role: 'dimension', type: 'String', rawType: 'String' },
+      { name: 'Opportunity_amount_CNY', role: 'measure', type: 'Number', rawType: 'Double' },
+      { name: '赢单财年', role: 'dimension', type: 'String', rawType: 'String' },
+    ],
+  };
+  const firstIntent = {
+    schema: 'wynai.business-query-intent/v2',
+    businessQuestion: '列出产品名称为 Digital Ecosystem Enterprise Alliances 的客户及订单金额',
+    metrics: [{ field: 'Opportunity_amount_CNY', aggregation: 'sum', alias: 'revenue', concept: 'revenue', internal: false }],
+    derivedMetrics: [],
+    dimensions: [{ field: '客户名称', alias: 'customer', grain: null, concept: 'customer' }],
+    filters: [{ field: '产品名称', operator: 'eq', value: 'Digital Ecosystem Enterprise Alliances' }],
+    resultFilters: [],
+    time: null,
+    ranking: null,
+    expectedResult: { shape: 'grouped-table', minimumRows: 1, maximumRows: 20000, requiredPeriods: [], requiredMetrics: ['revenue'], requiredDimensions: ['customer'], timeZone: 'Asia/Shanghai' },
+    constraints: [],
+    requestUnits: [
+      { id: 'filter-product', kind: 'filter', sourceText: 'Digital Ecosystem Enterprise Alliances', status: 'executable', criticality: 'scope-defining', field: '产品名称', alias: '产品名称', dependencies: [] },
+      { id: 'dimension-customer', kind: 'dimension', sourceText: '客户名单', status: 'executable', criticality: 'required-output', field: '客户名称', alias: 'customer', dependencies: [] },
+      { id: 'metric-revenue', kind: 'metric', sourceText: '订单金额', status: 'executable', criticality: 'required-output', field: 'Opportunity_amount_CNY', alias: 'revenue', dependencies: [] },
+    ],
+    assumptions: [],
+    confidence: 0.95,
+    skillRefs: [],
+    mappingEvidence: [],
+    ambiguities: [],
+  };
+  let planCalls = 0;
+  let reviewCalls = 0;
+  const llm = {
+    enabled: true,
+    async planQueryIntent() {
+      planCalls += 1;
+      return firstIntent;
+    },
+    async reviewQueryIntent() {
+      reviewCalls += 1;
+      return { ...firstIntent, filters: [{ field: '产品小类', operator: 'eq', value: 'Ecosystem Collaboration' }] };
+    },
+  };
+  const result = await planBusinessQuestionAsync({
+    metadata,
+    question: '请列举 Digital Ecosystem Enterprise Alliances 产品的客户名单，及每个客户的订单金额',
+    skills: [],
+    llm,
+    now: new Date('2026-09-29T00:00:00Z'),
+  });
+  assert.equal(result.status, 'supported');
+  assert.equal(planCalls, 1);
+  assert.equal(reviewCalls, 0);
+  assert.equal(result.intent.filters[0].field, '产品名称');
+  assert.equal(result.intent.filters[0].value, 'Digital Ecosystem Enterprise Alliances');
+});
+
 test('意图大模型失败不触发确定性熔断回退', async () => {
   let llmCalls = 0;
   const llm = {
@@ -386,7 +448,7 @@ test('追加式多轮追问继承已有上下文并增加指标', () => {
   assert.equal(second.intent.time.grain, 'year');
 });
 
-test('模型语义覆盖失败不会被计为供应商熔断故障', async () => {
+test('模型没有形成可执行单元时澄清且不会被计为供应商熔断故障', async () => {
   let calls = 0;
   const llm = {
     enabled: true,
@@ -405,15 +467,13 @@ test('模型语义覆盖失败不会被计为供应商熔断故障', async () =>
   };
   const first = await planBusinessQuestionAsync(input);
   const second = await planBusinessQuestionAsync(input);
-  assert.equal(first.plannerDiagnostics.reason, 'INTENT_COVERAGE_INVALID');
+  assert.equal(first.plannerDiagnostics.reason, 'request-unit-blocked');
   assert.equal(second.plannerDiagnostics.llmAttempted, true);
   assert.equal(second.plannerDiagnostics.circuitOpen, false);
-  assert.equal(calls, 6);
-  assert.equal(first.status, 'error');
-  assert.equal(first.code, 'INTENT_VALIDATION_FAILED');
+  assert.equal(calls, 2);
+  assert.equal(first.status, 'needs_clarification');
   assert.equal(first.request, undefined);
-  assert.equal(second.status, 'error');
-  assert.equal(second.code, 'INTENT_VALIDATION_FAILED');
+  assert.equal(second.status, 'needs_clarification');
   assert.equal(second.request, undefined);
 });
 test('模型不得把同比计算依赖扩张为用户可见时间维度', async () => {

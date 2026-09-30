@@ -180,7 +180,7 @@ test('本地意图处理异常不会被误报为大模型服务不可用', async
   assert.doesNotMatch(plan.message, /大模型服务暂时不可用/);
 });
 
-test('纯名单意图由平台补充内部执行计数且不要求 LLM 发明业务指标', async () => {
+test('纯名单意图不要求 LLM 发明指标且平台不追加隐藏执行计数', async () => {
   const metadata = {
     id: 'llm-list-query',
     fields: [
@@ -203,8 +203,10 @@ test('纯名单意图由平台补充内部执行计数且不要求 LLM 发明业
   const plan = await planBusinessQuestionAsync({ metadata, question: '列出项目名称', llm });
   assert.equal(plan.status, 'supported');
   assert.deepEqual(plan.displayRequest.measures, []);
-  assert.equal(plan.request.measures[0].aggregation, 'distinctCount');
-  assert.equal(plan.request.measures[0].field, 'pipelineCode');
+  assert.deepEqual(plan.request.measures, []);
+  assert.equal(plan.request.mode, 'projection');
+  assert.deepEqual(plan.request.select.map(item => item.field), ['pipelineName']);
+  assert.equal(plan.request.select.some(item => item.field === 'pipelineCode'), false);
 });
 
 test('命中进程内缓存且不持久化调用结果', async () => {

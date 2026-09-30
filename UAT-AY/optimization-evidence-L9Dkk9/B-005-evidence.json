@@ -1,0 +1,1147 @@
+{
+  "question": "x-ssl 项目中，哪些是 PSM？请列出项目名称、客户名称、客户类型、prime office 和产品",
+  "startedAt": "2026-09-11T07:24:52.473Z",
+  "completedAt": "2026-09-11T07:25:11.902Z",
+  "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\nx-ssl 项目中，哪些是 PSM？请列出项目名称、客户名称、客户类型、prime office 和产品\n问\n\n在x-ssl项目中，共有3744条PSM项目记录，涉及项目名称、客户名称、客户类型、prime office和产品等维度。由于数据量较大，仅展示部分预览行，无法列出所有项目。\n\n指标\n未指定\n维度\npipelineName、客户名称、客户类型、primeOffice、产品名称\n筛选\nxssl 等于 1；is_subcode 等于 1\n排序\n未排序\n查询明细\n数据洞察\n客户名称\t客户类型\tpipelineName\tprimeOffice\t产品名称\n客户23\t[\"Private Equity\"]\t订单名称20393\tMainland China\tComprehensive Development Blueprint for Healthcare Industry\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称9794\tGermany\tRetail Brand M&A and Integration Service\n客户23\t[\"Private Entity（POE）\"]\t订单名称5764\tMainland China\tRefined Cost Control for Financial Enterprises\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称7020\tAustralia\tInternational Strategy Roadmap for Manufacturing\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称7193\tNorway\tRisk Prevention in Medical Production Processes\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称13026\tNew York City\tUser Experience Analysis & Improvement\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称1846\tUK&I\tRisk Prevention in Medical Production Processes\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称10130\tMainland China\tComprehensive Development Blueprint for Healthcare Industry\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称15831\tStamford\tCustom Delivery Experience Optimization\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称988\tAmericas/New Yor\tCompetency Upgrade Plan for Financial Personnel\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称2101\tNew York City\tNew Market Entry Planning for Manufacturing\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称5160\tItaly\tSupply Chain Finance Risk Assessment for Manufacturing\n客户492\t[\"Private Entity（POE）\"]\t订单名称23095\t—\tOn-site Production Data Collection & Analysis Solutions\n客户3\t[\"Private Entity（POE）\"]\t订单名称1783\tMainland China\tCredit Risk Control Optimization in Banking\n客户5\t[\"Private Entity（POE）\"]\t订单名称12924\t—\tOmni-channel Distribution Model Building\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称21532\tNew York City\tSmart Manufacturing Project Financing Solutions\n客户3\t[\"Multinational Corporation（MNC）\"]\t订单名称27467\tCanada\tCustom Delivery Experience Optimization\n客户4\t[\"State-Owned Enterprise（SOE）\"]\t订单名称2552\tMainland China\tRemote Medical Business Process Consulting\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称24120\tPoland\tInnovative Investment Banking Training for Banks\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称12120\tCincinnati\tManufacturing Craftsman Talent Pipeline Development\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称23133\tFrance\tAML Monitoring & Compliance Enhancement\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称27892\tIselin\tGroup Hospital Development Strategy Design\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称4938\tUnited Arab Emirates\tIntelligent Cloud Financial Platform for Manufacturing\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称8962\tChicago\tConsumer Data Security & Compliance\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称14368\tSingapore\tData Compliance & Privacy Protection Consulting\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称15971\tNew York City\tGlobal Supply Chain Integration Management\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称2815\tHong Kong\tSpecialty Medical Brand Promotion Event Planning\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称12136\tAmericas/Charlot\tFlat Management Design for Chain Stores\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称22771\tTampa\tR&D Team Performance Enhancement\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称15383\tUnited Kingdom\tCybersecurity Graded Protection Project\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称27462\tNetherlands\tFinancial Brand Upgrade and Marketing Strategy\n客户4\t[\"Private Entity（POE）\"]\t订单名称740\tMainland China\tOrganizational Restructuring for Financial Holding Groups\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称20337\tFrance\tCompetency Upgrade Plan for Financial Personnel\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称26174\tDallas\tHigh-Efficiency Scheduling for Operating Rooms\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称23676\tNew York City\tTechnical Backbone Acceleration Program\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称26859\tLos Angeles\tOn-site Production Data Collection & Analysis Solutions\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称721\tItaly\tIntelligent Cloud Financial Platform for Manufacturing\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称24370\tUnited Kingdom\tHot Product Development & Launch Planning\n客户4\t[\"Private Entity（POE）\"]\t订单名称4869\tMainland China\tIntelligent Cloud Financial Platform for Manufacturing\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称26065\tSeattle\tDRGs Payment Management Optimization for Hospitals\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称11769\tNew York City\tCompliance and Internal Control Process Construction\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称6240\tSpain\tOrganizational Capacity Building for Medical Equipment Enterprises\n客户2\t[\"Private Entity（POE）\"]\t订单名称11512\tUnited Kingdom\tCybersecurity Graded Protection Project\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称25559\tBelgium\tFull-Process Lean Production Consulting\n客户23\t[\"Private Entity（POE）\"]\t订单名称3270\tMainland China\tCompliance and Internal Control Process Construction\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称12037\tJapan\tTraffic Growth & Conversion Consulting for Digital Products\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称19366\tSan Diego\tEnterprise-level AI Empowerment Consulting\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称9609\tIselin\tIntegrated Supply Chain & Storage Optimization\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称20011\tUS-Central\tTechnical Backbone Acceleration Program\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称8648\tNetherlands\tRisk Prevention in Medical Production Processes\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称8361\tGermany\tIntegrated Supply Chain & Storage Optimization\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称3051\tSwitzerland\tSmart Store Management System\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称8285\tSwitzerland\tCompliance and Internal Control Process Construction\n客户492\t[\"Private Entity（POE）\"]\t订单名称5423\tNew Zealand\tOn-site Production Data Collection & Analysis Solutions\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称8759\tDallas\tRetail Brand M&A and Integration Service\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称3327\tUS-East\tHierarchical Hospital Management System Design\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称15654\tMainland China\tRetail Brand M&A and Integration Service\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称630\tSacramento\tIntelligent Cloud Financial Platform for Manufacturing\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称15566\tGermany\tAML Monitoring & Compliance Enhancement\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称27475\tGermany\tTechnical Backbone Acceleration Program\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称19334\tAmericas\tValue Management for Digital Technology Companies\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称12763\tHong Kong\tDigital Ecosystem Enterprise Alliances\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称17099\tSalt Lake City\tGreen Finance Product Development Consulting\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称3594\tJapan\tRetail Brand M&A and Integration Service\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称14511\tFrance\tFull-Process Lean Production Consulting\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称13193\tTysons\tToB Tech Financing Roadshow Support\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称18424\tChicago\tInnovation Accelerator for Medical Technologies\n客户5\t[\"State-Owned Enterprise（SOE）\"]\t订单名称1299\t—\tOmni-channel Distribution Model Building\n客户4\t[\"Private Entity（POE）\"]\t订单名称2796\tNetherlands\tIntelligent Cloud Financial Platform for Manufacturing\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称12711\tNew York City\tSpecialty Medical Brand Promotion Event Planning\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称27506\tNew York City\tTechnical Backbone Acceleration Program\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称9268\tMainland China\tGrowth Roadmap for Digital Technology Companies\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称16141\tNew York City\tQuality Compliance and ISO System Building\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称24357\tBelgium\tComprehensive Development Blueprint for Healthcare Industry\n客户492\t[\"State-Owned Enterprise（SOE）\"]\t订单名称2133\tMainland China\tSmart Store Management System\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称9605\tNew York City\tHospital Big Data Platform Construction\n客户492\t[\"State-Owned Enterprise（SOE）\"]\t订单名称16636\t—\tCompliance and Internal Control Process Construction\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称18514\tIselin\tRefined Cost Control for Financial Enterprises\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称2398\tUS-Central\tOmni-channel Distribution Model Building\n客户23\t[\"Private Entity（POE）\"]\t订单名称3082\tMainland China\tGrowth Roadmap for Digital Technology Companies\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称22413\tAsia-Pacific/Aus\tHigh-Efficiency Scheduling for Operating Rooms\n客户4\t[\"Private Entity（POE）\"]\t订单名称4021\tMainland China\tOmni-channel Distribution Model Building\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称1863\tJapan\tHot Product Development & Launch Planning\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称25507\tBoston\tAML Monitoring & Compliance Enhancement\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称6477\tAustralia\tCost Analysis Services for Manufacturing\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称5090\tNew York City\tCustom Delivery Experience Optimization\n客户492\t[\"Private Entity（POE）\"]\t订单名称16503\tHong Kong\tRefined Cost Management in Retail Industry\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称10245\tUnited Kingdom\tRefined Cost Management in Retail Industry\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称21431\tChicago\tFull-Cycle Patient Service Experience Enhancement\n客户23\t[\"Private Entity（POE）\"]\t订单名称22464\tMainland China\tGroup Hospital Development Strategy Design\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称14574\tNetherlands\tFull-Cycle Member Service Experience Enhancement\n客户4\t[\"Private Entity（POE）\"]\t订单名称19929\t—\tGraded Competency Training for Medical Staff\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称20924\tUS-Central\tCloud Service Platform Product Incubation\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称21321\tGermany\tComprehensive Development Blueprint for Healthcare Industry\n客户5\t[\"Private Entity（POE）\"]\t订单名称24048\tHong Kong\tValue Management for Digital Technology Companies\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称5707\tMainland China\tNew Retail Transformation Strategy Consulting\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称9594\tUnited Kingdom\tGreen Finance Product Development Consulting\n客户23\t[\"Private Entity（POE）\"]\t订单名称15229\tSeattle\tSmart Manufacturing Project Financing Solutions\n客户23\t[\"State-Owned Enterprise（SOE）\"]\t订单名称1589\tMainland China\tManufacturing Craftsman Talent Pipeline Development\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称25136\tChicago\tFull-Process Lean Production Consulting\n上一页\n第 1 / 38 页 · 共 3,744 行\n下一页\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+  "traceId": "trace-d382ab9f-9f1a-4f92-8d61-43aa46da4763",
+  "trace": [
+    {
+      "id": "operation-event-29ab2dbc-5524-48fd-8ef7-85a7620c8944",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-d382ab9f-9f1a-4f92-8d61-43aa46da4763",
+      "sequence": 1,
+      "at": "2026-09-11T07:24:52.513Z",
+      "event": "request.accepted",
+      "phase": "transport",
+      "outcome": null,
+      "durationMs": null,
+      "conversationId": "conv-34090673-0853-40a6-aea5-01445ef3c3ee",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "method": "POST",
+        "path": "/api/smart-query/conversations/conv-34090673-0853-40a6-aea5-01445ef3c3ee/messages"
+      }
+    },
+    {
+      "id": "operation-event-3bfca3b1-3989-499e-be3b-fa9cdd1a4c72",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-d382ab9f-9f1a-4f92-8d61-43aa46da4763",
+      "sequence": 2,
+      "at": "2026-09-11T07:24:52.513Z",
+      "event": "turn.received",
+      "phase": "input",
+      "outcome": null,
+      "durationMs": null,
+      "conversationId": "conv-34090673-0853-40a6-aea5-01445ef3c3ee",
+      "turnId": "turn-f208c82b-45aa-433d-8997-632377cabb5c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "question": "x-ssl 项目中，哪些是 PSM？请列出项目名称、客户名称、客户类型、prime office 和产品",
+        "conversationState": "ready",
+        "datasetRevision": 5
+      }
+    },
+    {
+      "id": "operation-event-ef2870bc-eb1d-4734-98a8-8ae6f221a507",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-d382ab9f-9f1a-4f92-8d61-43aa46da4763",
+      "sequence": 3,
+      "at": "2026-09-11T07:24:52.520Z",
+      "event": "skill.resolved",
+      "phase": "skills",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-34090673-0853-40a6-aea5-01445ef3c3ee",
+      "turnId": "turn-f208c82b-45aa-433d-8997-632377cabb5c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "skillRefs": [
+          "sales-opportunity-a53@1.3.0",
+          "temporal-semantics@1.1.0"
+        ],
+        "conflicts": []
+      }
+    },
+    {
+      "id": "operation-event-3734c819-cc7e-4a83-9749-ac5b57a46e24",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-d382ab9f-9f1a-4f92-8d61-43aa46da4763",
+      "sequence": 4,
+      "at": "2026-09-11T07:25:05.687Z",
+      "event": "gateway.attempt",
+      "phase": "llm",
+      "outcome": "success",
+      "durationMs": 13164,
+      "conversationId": "conv-34090673-0853-40a6-aea5-01445ef3c3ee",
+      "turnId": "turn-f208c82b-45aa-433d-8997-632377cabb5c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "operation": "intent",
+        "attempt": 1,
+        "provider": "primary",
+        "model": "deepseek-v4-flash-0731",
+        "responseStatus": 200,
+        "durationMs": 13164,
+        "timeoutClass": "completed",
+        "error": null
+      }
+    },
+    {
+      "id": "operation-event-9c559cbd-5d93-429f-87c5-a263caa6e80d",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-d382ab9f-9f1a-4f92-8d61-43aa46da4763",
+      "sequence": 5,
+      "at": "2026-09-11T07:25:05.688Z",
+      "event": "planning.completed",
+      "phase": "planning",
+      "outcome": "supported",
+      "durationMs": null,
+      "conversationId": "conv-34090673-0853-40a6-aea5-01445ef3c3ee",
+      "turnId": "turn-f208c82b-45aa-433d-8997-632377cabb5c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "status": "supported",
+        "plannerMode": "llm-first",
+        "diagnostics": {
+          "route": "llm-first",
+          "planningDurationMs": 13168,
+          "llmAttempted": true,
+          "llmDurationMs": 13168,
+          "circuitOpen": false,
+          "reason": "intent-llm-validated",
+          "repairAttempted": false,
+          "llmCalls": 1
+        }
+      }
+    },
+    {
+      "id": "operation-event-ca0c1e50-e33a-45ee-8bcf-33885a3539f2",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-d382ab9f-9f1a-4f92-8d61-43aa46da4763",
+      "sequence": 6,
+      "at": "2026-09-11T07:25:05.688Z",
+      "event": "query.planned",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-34090673-0853-40a6-aea5-01445ef3c3ee",
+      "turnId": "turn-f208c82b-45aa-433d-8997-632377cabb5c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "requestId": "qry-intent-1635b8ee",
+        "mode": "aggregate",
+        "purpose": "在x-ssl项目中，列出所有PSM项目，并展示项目名称、客户名称、客户类型、prime office和产品。",
+        "select": [
+          {
+            "field": "pipelineName",
+            "alias": "project_name",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "客户名称",
+            "alias": "customer_name",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "客户类型",
+            "alias": "customer_type",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "primeOffice",
+            "alias": "prime_office",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "产品名称",
+            "alias": "product",
+            "role": "dimension",
+            "grain": null
+          }
+        ],
+        "measures": [
+          {
+            "field": "客户编码",
+            "aggregation": "distinctCount",
+            "alias": "record_count",
+            "resultType": "number"
+          }
+        ],
+        "filters": [
+          {
+            "field": "xssl",
+            "operator": "eq",
+            "value": 1,
+            "fieldType": "measure"
+          },
+          {
+            "field": "is_subcode",
+            "operator": "eq",
+            "value": 1,
+            "fieldType": "measure"
+          }
+        ],
+        "orderBy": [
+          {
+            "field": "record_count",
+            "direction": "desc"
+          }
+        ],
+        "limit": 20000
+      }
+    },
+    {
+      "id": "operation-event-b4e23523-d639-47b8-ae52-a02472e9b84a",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-d382ab9f-9f1a-4f92-8d61-43aa46da4763",
+      "sequence": 7,
+      "at": "2026-09-11T07:25:05.688Z",
+      "event": "query.compiled",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-34090673-0853-40a6-aea5-01445ef3c3ee",
+      "turnId": "turn-f208c82b-45aa-433d-8997-632377cabb5c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "requestId": "qry-intent-1635b8ee",
+        "queryProgram": {
+          "schema": "wynai.query-program/v1",
+          "version": 1,
+          "baseQuery": {
+            "id": "qry-intent-1635b8ee",
+            "hypothesisId": null,
+            "purpose": "在x-ssl项目中，列出所有PSM项目，并展示项目名称、客户名称、客户类型、prime office和产品。",
+            "mode": "aggregate",
+            "topic": "product",
+            "dataset": {
+              "id": "18b86197-65e3-4682-8501-6e7125afad02",
+              "revision": 5
+            },
+            "select": [
+              {
+                "field": "pipelineName",
+                "alias": "project_name",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "客户名称",
+                "alias": "customer_name",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "客户类型",
+                "alias": "customer_type",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "primeOffice",
+                "alias": "prime_office",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "产品名称",
+                "alias": "product",
+                "role": "dimension",
+                "grain": null
+              }
+            ],
+            "measures": [
+              {
+                "field": "客户编码",
+                "aggregation": "distinctCount",
+                "alias": "record_count",
+                "resultType": "number"
+              }
+            ],
+            "filters": [
+              {
+                "field": "xssl",
+                "operator": "eq",
+                "value": 1,
+                "fieldType": "measure"
+              },
+              {
+                "field": "is_subcode",
+                "operator": "eq",
+                "value": 1,
+                "fieldType": "measure"
+              }
+            ],
+            "resultFilters": [],
+            "fieldComparisons": [],
+            "comparison": null,
+            "orderBy": [
+              {
+                "field": "record_count",
+                "direction": "desc"
+              }
+            ],
+            "limit": 20000,
+            "limitSource": "default",
+            "expectedResult": {
+              "shape": "table",
+              "minimumRows": 1,
+              "maximumRows": 20000,
+              "requiredPeriods": [],
+              "requiredMetrics": [],
+              "requiredDimensions": [
+                "project_name",
+                "customer_name",
+                "customer_type",
+                "prime_office",
+                "product"
+              ],
+              "timeZone": "Asia/Shanghai"
+            },
+            "sensitivity": "aggregate-only",
+            "lineage": null
+          },
+          "steps": [
+            {
+              "type": "drop-internal-metrics",
+              "aliases": [
+                "record_count"
+              ]
+            },
+            {
+              "type": "validate",
+              "expectedResult": {
+                "shape": "table",
+                "minimumRows": 1,
+                "maximumRows": 20000,
+                "requiredPeriods": [],
+                "requiredMetrics": [],
+                "requiredDimensions": [
+                  "project_name",
+                  "customer_name",
+                  "customer_type",
+                  "prime_office",
+                  "product"
+                ],
+                "timeZone": "Asia/Shanghai"
+              }
+            }
+          ],
+          "output": {
+            "schema": "wynai.canonical-result-set/v1",
+            "requiredMetrics": [],
+            "requiredDimensions": [
+              "project_name",
+              "customer_name",
+              "customer_type",
+              "prime_office",
+              "product"
+            ]
+          }
+        },
+        "plannerMode": "llm-first"
+      }
+    },
+    {
+      "id": "operation-event-33a11334-b89c-42e7-9793-c62f07c4fb04",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-d382ab9f-9f1a-4f92-8d61-43aa46da4763",
+      "sequence": 8,
+      "at": "2026-09-11T07:25:05.981Z",
+      "event": "query.executed",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": 293,
+      "conversationId": "conv-34090673-0853-40a6-aea5-01445ef3c3ee",
+      "turnId": "turn-f208c82b-45aa-433d-8997-632377cabb5c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "request": {
+          "id": "qry-intent-1635b8ee",
+          "hypothesisId": null,
+          "purpose": "在x-ssl项目中，列出所有PSM项目，并展示项目名称、客户名称、客户类型、prime office和产品。",
+          "mode": "aggregate",
+          "topic": "product",
+          "dataset": {
+            "id": "18b86197-65e3-4682-8501-6e7125afad02",
+            "revision": 5
+          },
+          "select": [
+            {
+              "field": "pipelineName",
+              "alias": "project_name",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "客户名称",
+              "alias": "customer_name",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "客户类型",
+              "alias": "customer_type",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "primeOffice",
+              "alias": "prime_office",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "产品名称",
+              "alias": "product",
+              "role": "dimension",
+              "grain": null
+            }
+          ],
+          "measures": [
+            {
+              "field": "客户编码",
+              "aggregation": "distinctCount",
+              "alias": "record_count",
+              "resultType": "number"
+            }
+          ],
+          "filters": [
+            {
+              "field": "xssl",
+              "operator": "eq",
+              "value": 1,
+              "fieldType": "measure"
+            },
+            {
+              "field": "is_subcode",
+              "operator": "eq",
+              "value": 1,
+              "fieldType": "measure"
+            }
+          ],
+          "resultFilters": [],
+          "fieldComparisons": [],
+          "comparison": null,
+          "orderBy": [
+            {
+              "field": "record_count",
+              "direction": "desc"
+            }
+          ],
+          "limit": 20000,
+          "limitSource": "default",
+          "expectedResult": {
+            "shape": "table",
+            "minimumRows": 1,
+            "maximumRows": 20000,
+            "requiredPeriods": [],
+            "requiredMetrics": [],
+            "requiredDimensions": [
+              "project_name",
+              "customer_name",
+              "customer_type",
+              "prime_office",
+              "product"
+            ],
+            "timeZone": "Asia/Shanghai"
+          },
+          "sensitivity": "aggregate-only",
+          "lineage": null
+        },
+        "resultSetId": "rs-qry-intent-1635b8ee",
+        "rowCount": 3744
+      }
+    },
+    {
+      "id": "operation-event-52569010-053f-488e-a406-86e03142c46f",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-d382ab9f-9f1a-4f92-8d61-43aa46da4763",
+      "sequence": 9,
+      "at": "2026-09-11T07:25:05.989Z",
+      "event": "result.validated",
+      "phase": "validation",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-34090673-0853-40a6-aea5-01445ef3c3ee",
+      "turnId": "turn-f208c82b-45aa-433d-8997-632377cabb5c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "valid": true,
+        "errors": [],
+        "warnings": [
+          "结果包含空的客户类型",
+          "结果包含空的primeOffice"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-7c3e6aec-33c4-4e14-8d92-153cea85ab39",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-d382ab9f-9f1a-4f92-8d61-43aa46da4763",
+      "sequence": 10,
+      "at": "2026-09-11T07:25:10.818Z",
+      "event": "presentation.planned",
+      "phase": "presentation",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-34090673-0853-40a6-aea5-01445ef3c3ee",
+      "turnId": "turn-f208c82b-45aa-433d-8997-632377cabb5c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "documentId": "doc-5b574c5e-aab9-4b38-9ccb-35ad92e7ddc1",
+        "schema": "wynai.result-presentation-plan/v1",
+        "version": 1,
+        "mode": "table-only",
+        "priority": "table",
+        "chartType": null,
+        "tableColumns": [
+          "customer_name",
+          "customer_type",
+          "project_name",
+          "prime_office",
+          "product"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-8ef3e516-6fdc-4efe-9530-571c6156a8f6",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-d382ab9f-9f1a-4f92-8d61-43aa46da4763",
+      "sequence": 11,
+      "at": "2026-09-11T07:25:10.818Z",
+      "event": "response.composed",
+      "phase": "response",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-34090673-0853-40a6-aea5-01445ef3c3ee",
+      "turnId": "turn-f208c82b-45aa-433d-8997-632377cabb5c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "documentId": "doc-5b574c5e-aab9-4b38-9ccb-35ad92e7ddc1",
+        "blockTypes": [
+          "text",
+          "text",
+          "text",
+          "text",
+          "text",
+          "text",
+          "text",
+          "warning",
+          "warning",
+          "warning",
+          "warning",
+          "table"
+        ],
+        "resultSetIds": [
+          "rs-qry-intent-1635b8ee"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-f18ded26-7b24-4887-9129-bb3cb245728a",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-d382ab9f-9f1a-4f92-8d61-43aa46da4763",
+      "sequence": 12,
+      "at": "2026-09-11T07:25:10.818Z",
+      "event": "turn.completed",
+      "phase": "completion",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-34090673-0853-40a6-aea5-01445ef3c3ee",
+      "turnId": "turn-f208c82b-45aa-433d-8997-632377cabb5c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "plannerMode": "llm-first"
+      }
+    },
+    {
+      "id": "operation-event-3757ea83-72b5-4897-81cf-6914c9f3c4c7",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-d382ab9f-9f1a-4f92-8d61-43aa46da4763",
+      "sequence": 13,
+      "at": "2026-09-11T07:25:10.991Z",
+      "event": "platform.migration.run",
+      "phase": "migration",
+      "outcome": "selected",
+      "durationMs": null,
+      "conversationId": "conv-34090673-0853-40a6-aea5-01445ef3c3ee",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "module": "smart-query-request",
+        "mode": "platform",
+        "routing": {
+          "mode": "platform",
+          "configuredMode": "platform",
+          "module": "smart-query-request",
+          "bucket": 52,
+          "percentage": 100,
+          "allowListed": false,
+          "reason": "percentage"
+        },
+        "comparison": null,
+        "fallback": false,
+        "candidateMetadata": {
+          "schema": "wynai.platform-business-orchestrator/v1",
+          "version": 1,
+          "profile": "smart-query-platform-candidate-v1",
+          "contextAudit": {
+            "schema": "wynai.platform-context-audit/v1",
+            "version": 1,
+            "originalQuestionPresent": true,
+            "messageCount": 0,
+            "activeMetricCount": 0,
+            "activeDimensionCount": 0,
+            "activeFilterCount": 0,
+            "skillCount": 0,
+            "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+            "preservedCoreContext": [
+              "original-question",
+              "active-conversation-context",
+              "dataset-metadata",
+              "skill-references",
+              "permissions-and-scope"
+            ]
+          }
+        },
+        "schema": "wynai.platform-migration-run/v1"
+      }
+    },
+    {
+      "id": "operation-event-70d268e1-2d6d-4327-98ae-3689a9b86fc1",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-d382ab9f-9f1a-4f92-8d61-43aa46da4763",
+      "sequence": 14,
+      "at": "2026-09-11T07:25:10.991Z",
+      "event": "request.completed",
+      "phase": "transport",
+      "outcome": "ok",
+      "durationMs": 18479,
+      "conversationId": "conv-34090673-0853-40a6-aea5-01445ef3c3ee",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "plannerMode": "llm-first"
+      }
+    }
+  ],
+  "conversationId": "conv-34090673-0853-40a6-aea5-01445ef3c3ee",
+  "dataset": {
+    "id": "18b86197-65e3-4682-8501-6e7125afad02",
+    "revision": 5,
+    "name": "01测试销售订单-09"
+  },
+  "skillRefs": [
+    "sales-opportunity-a53@1.3.0"
+  ],
+  "canonical": {
+    "id": "qry-intent-1635b8ee",
+    "hypothesisId": null,
+    "purpose": "在x-ssl项目中，列出所有PSM项目，并展示项目名称、客户名称、客户类型、prime office和产品。",
+    "mode": "aggregate",
+    "topic": "product",
+    "dataset": {
+      "id": "18b86197-65e3-4682-8501-6e7125afad02",
+      "revision": 5
+    },
+    "select": [
+      {
+        "field": "pipelineName",
+        "alias": "project_name",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "客户名称",
+        "alias": "customer_name",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "客户类型",
+        "alias": "customer_type",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "primeOffice",
+        "alias": "prime_office",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "产品名称",
+        "alias": "product",
+        "role": "dimension",
+        "grain": null
+      }
+    ],
+    "measures": [],
+    "filters": [
+      {
+        "field": "xssl",
+        "operator": "eq",
+        "value": 1,
+        "fieldType": "measure"
+      },
+      {
+        "field": "is_subcode",
+        "operator": "eq",
+        "value": 1,
+        "fieldType": "measure"
+      }
+    ],
+    "resultFilters": [],
+    "fieldComparisons": [],
+    "comparison": null,
+    "orderBy": [],
+    "limit": 20000,
+    "limitSource": "default",
+    "expectedResult": {
+      "shape": "table",
+      "minimumRows": 1,
+      "maximumRows": 20000,
+      "requiredPeriods": [],
+      "requiredMetrics": [],
+      "requiredDimensions": [
+        "project_name",
+        "customer_name",
+        "customer_type",
+        "prime_office",
+        "product"
+      ],
+      "timeZone": "Asia/Shanghai"
+    },
+    "sensitivity": "aggregate-only",
+    "lineage": null
+  },
+  "intent": {
+    "schema": "wynai.business-query-intent/v2",
+    "businessQuestion": "在x-ssl项目中，列出所有PSM项目，并展示项目名称、客户名称、客户类型、prime office和产品。",
+    "metrics": [
+      {
+        "field": "客户编码",
+        "fieldRef": "客户编码",
+        "aggregation": "distinctCount",
+        "alias": "record_count",
+        "concept": "recordCount",
+        "internal": true
+      }
+    ],
+    "derivedMetrics": [],
+    "dimensions": [
+      {
+        "field": "pipelineName",
+        "alias": "project_name",
+        "grain": null,
+        "concept": "projectName",
+        "fieldRef": "pipelineName",
+        "conceptId": "projectName"
+      },
+      {
+        "field": "客户名称",
+        "alias": "customer_name",
+        "grain": null,
+        "concept": "customer",
+        "fieldRef": "客户名称",
+        "conceptId": "customer"
+      },
+      {
+        "field": "客户类型",
+        "alias": "customer_type",
+        "grain": null,
+        "concept": "customerType",
+        "fieldRef": "客户类型",
+        "conceptId": "customerType"
+      },
+      {
+        "field": "primeOffice",
+        "alias": "prime_office",
+        "grain": null,
+        "concept": "primeOffice",
+        "fieldRef": "primeOffice",
+        "conceptId": "primeOffice"
+      },
+      {
+        "field": "产品名称",
+        "alias": "product",
+        "grain": null,
+        "concept": "product",
+        "fieldRef": "产品名称",
+        "conceptId": "product"
+      }
+    ],
+    "filters": [
+      {
+        "field": "xssl",
+        "operator": "eq",
+        "value": 1,
+        "concept": "xssl",
+        "fieldRef": "xssl"
+      },
+      {
+        "field": "is_subcode",
+        "operator": "eq",
+        "value": 1,
+        "concept": "psm",
+        "fieldRef": "is_subcode"
+      }
+    ],
+    "time": {
+      "field": null,
+      "calendar": null,
+      "timeZone": "Asia/Shanghai",
+      "periods": [],
+      "range": null,
+      "grain": null,
+      "grouping": null,
+      "explicit": false,
+      "modifier": null,
+      "groupedYears": null
+    },
+    "ranking": null,
+    "expectedResult": {
+      "shape": "table",
+      "minimumRows": 1,
+      "maximumRows": 20000,
+      "requiredPeriods": [],
+      "requiredMetrics": [],
+      "requiredDimensions": [
+        "project_name",
+        "customer_name",
+        "customer_type",
+        "prime_office",
+        "product"
+      ],
+      "timeZone": "Asia/Shanghai"
+    },
+    "constraints": [
+      {
+        "id": "c1",
+        "type": "filter",
+        "source": "x-ssl 项目",
+        "normalized": "xssl = 1",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c2",
+        "type": "filter",
+        "source": "PSM",
+        "normalized": "is_subcode = 1",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c3",
+        "type": "dimension",
+        "source": "项目名称",
+        "normalized": "pipelineName",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c4",
+        "type": "dimension",
+        "source": "客户名称",
+        "normalized": "客户名称",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c5",
+        "type": "dimension",
+        "source": "客户类型",
+        "normalized": "客户类型",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c6",
+        "type": "dimension",
+        "source": "prime office",
+        "normalized": "primeOffice",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c7",
+        "type": "dimension",
+        "source": "产品",
+        "normalized": "产品名称",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-1",
+        "type": "filter",
+        "source": "在x-ssl项目中，列出所有PSM项目，并展示项目名称、客户名称、客户类型、prime office和产品。",
+        "normalized": {
+          "field": "xssl",
+          "operator": "eq",
+          "value": "1",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-2",
+        "type": "filter",
+        "source": "在x-ssl项目中，列出所有PSM项目，并展示项目名称、客户名称、客户类型、prime office和产品。",
+        "normalized": {
+          "field": "is_subcode",
+          "operator": "eq",
+          "value": "1",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      }
+    ],
+    "assumptions": [
+      "PSM 映射为 is_subcode = 1，依据 Skill valueMappings。",
+      "x-ssl 映射为 xssl = 1，依据 Skill valueMappings。",
+      "用户说“产品”时，按产品名称理解。",
+      "未指定时间范围，不添加时间过滤。",
+      "未指定金额指标，不输出任何指标。"
+    ],
+    "confidence": 0.95,
+    "skillRefs": [
+      "sales-opportunity-a53@1.3.0"
+    ],
+    "mappingEvidence": [
+      {
+        "source": "x-ssl",
+        "target": "xssl",
+        "evidence": "Skill valueMappings: xssl=1 synonyms x-ssl"
+      },
+      {
+        "source": "PSM",
+        "target": "is_subcode",
+        "evidence": "Skill valueMappings: is_subcode=1 synonyms PSM"
+      },
+      {
+        "source": "项目名称",
+        "target": "pipelineName",
+        "evidence": "businessEntity projectName field pipelineName"
+      },
+      {
+        "source": "客户名称",
+        "target": "客户名称",
+        "evidence": "businessEntity customer field 客户名称"
+      },
+      {
+        "source": "客户类型",
+        "target": "客户类型",
+        "evidence": "businessEntity customerType field 客户类型"
+      },
+      {
+        "source": "prime office",
+        "target": "primeOffice",
+        "evidence": "businessEntity primeOffice field primeOffice"
+      },
+      {
+        "source": "产品",
+        "target": "产品名称",
+        "evidence": "businessEntity productName field 产品名称"
+      }
+    ],
+    "ambiguities": [],
+    "source": {
+      "planner": "llm-first-intent-planner",
+      "version": "3.0"
+    },
+    "semanticFrame": null
+  },
+  "ledger": [
+    {
+      "id": "c1",
+      "type": "filter",
+      "source": "x-ssl 项目",
+      "normalized": "xssl = 1",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c2",
+      "type": "filter",
+      "source": "PSM",
+      "normalized": "is_subcode = 1",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c3",
+      "type": "dimension",
+      "source": "项目名称",
+      "normalized": "pipelineName",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c4",
+      "type": "dimension",
+      "source": "客户名称",
+      "normalized": "客户名称",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c5",
+      "type": "dimension",
+      "source": "客户类型",
+      "normalized": "客户类型",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c6",
+      "type": "dimension",
+      "source": "prime office",
+      "normalized": "primeOffice",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c7",
+      "type": "dimension",
+      "source": "产品",
+      "normalized": "产品名称",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-1",
+      "type": "filter",
+      "source": "在x-ssl项目中，列出所有PSM项目，并展示项目名称、客户名称、客户类型、prime office和产品。",
+      "normalized": {
+        "field": "xssl",
+        "operator": "eq",
+        "value": "1",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-2",
+      "type": "filter",
+      "source": "在x-ssl项目中，列出所有PSM项目，并展示项目名称、客户名称、客户类型、prime office和产品。",
+      "normalized": {
+        "field": "is_subcode",
+        "operator": "eq",
+        "value": "1",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    }
+  ]
+}

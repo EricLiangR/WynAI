@@ -1,0 +1,98 @@
+- complementary:
+  - link "Atlas AI 首页":
+    - /url: "#"
+    - generic: AtlasAI
+  - button "展开左侧菜单":
+  - navigation "主导航":
+    - button "自建":
+      - generic: 自建
+    - button "Wyn":
+      - generic: Wyn
+    - button:
+    - button "新":
+      - generic: 新
+    - button:
+    - button "能力中心即将开放" [disabled]:
+  - generic: 林
+- main:
+  - complementary:
+    - generic: 分析上下文
+    - generic "Wyn 服务连接正常":
+      - generic: 已连接
+    - generic: 选择数据
+    - combobox "选择智能问数数据集":
+      - option "对话分析-销售数据"
+      - option "智慧试验室运营中心数据AI"
+      - option "对话分析-零售数据-202605"
+      - option "01测试销售订单-0723 Dataset-无数据集描述"
+      - option "01测试销售订单-09" [selected]
+    - generic: 切换数据集将开始新的对话
+    - text: ›
+    - generic: 语义目录
+    - generic: 86 字段
+    - term: 业务描述
+    - definition: "本数据集用于分析销售商机和销售订单业务，主业务实体为商机（pipeline）。每条记录描述一个商机或销售订单在客户、产品、金额、状态、赢单时间、销售区域和负责人等方面的信息。 ## 数据范围与粒度 - 数据集包含销售商机/销售订单相关记录，实际可见数据范围以 Wyn 平台返回结果为准。 - 业务主标识为 `pipelineCode`；需要统计商机数量时，应按 `pipelineCode` 去重计数。 - 客户、产品、地区、销售负责人等字段用于分组、筛选和下钻；金额字段用于销售额或预计收入分析。 - Wyn 平台返回的数据集、字段和数据行已经是当前用户的最终授权范围，本项目不在本描述中重复定义权限规则。 ## 时间口径 - `赢单日期` 是商机实际赢单的自然日期，可用于自然年、自然月和自然日期范围分析。 - `赢单财年` 是商机实际赢单财年，通常用财年末两位数字表示，例如 25 表示 FY25；财年按每年 6 月 1 日至次年 5 月 31 日划分。 - `赢单季度` 是赢单财年季度，1 至 4 分别对应 6-8 月、9-11 月、12 月至次年 2 月、3-5 月。 - 自然年与财年同时可能成立时，以用户明确口径或澄清结果为准，不自动替换。 ## 金额与产品 - `Opportunity_amount_CNY` 是商机人民币金额，默认用于销售额/商机金额求和。 - `Opportunity_amount_USD` 是商机美元金额，只有用户明确指定 USD/美元时使用。 - `预计收入_CNY` 和 `预计收入_USD` 表示预计收入，不等同于已赢单销售额。 - 产品层级包括产品大类、产品小类和产品名称；用户只说“产品”时通常按产品名称理解。 ## 语义来源 字段的事实含义、别名、类型和枚举值以 Wyn 字段语义为准；销售额、预计收入、商机数量、财年、产品层级、筛选组合、排名下钻和切片占比等业务分析口径以绑定的销售 Skill 为准。字段语义和 Skill 存在冲突时，不应在本数据集描述中追加规则，而应通过字段语义或 Skill 版本治理解决。 ## 数据质量说明 空值、测试标记、删除标记、审批状态和业务状态均按字段实际返回值解释。除非用户或上游查询明确提出，不自动新增删除、测试、审批或状态过滤条件。"
+    - term: 指标
+    - definition: 是否删除、测试标记、客户是否上市公司、win_rate、IsEICOwnEffort、Opportunity_amount_CNY、Opportunity_amount_USD、是否包含增值税、是否关闭、是否外包、is_subcode、contractor_rate、pace_status、amount_currency、kpi_amount、is_same、is_same_kpi、is_blank、nquarter、xssl、创建财年季度、预计收入_CNY、预计收入_USD
+    - term: 维度
+    - definition: 更新人、客户名称、客户所属行业、客户所属子行业、客户类型、上市地点、客户母公司所在地、ClientChannel、客户特征、pipelineCode、pipelineName、产品名称、商机来源、赢单原因、描述、effortDescription、商机状态、primeOffice、交付风险、Opportunity_pursuitLeader、Opportunity_partner、Opportunity_manager、币种、Opportunity_Event、审批状态、创建财年、won_fy、efforts_approve、other_event、crm、客户是否上市、项目类型、项目状态、遇到的争议类型、具体的争议情况、the_advisor_s_contuibution_to_this_case、resources_province_city、resources_tax_authority、engagement_code、投标类型、recurring、update_fy、source_type、master_code、出海类型、outbound_country、coe_approve、tpc_approve、account_code、产品大类、产品小类、create_uid、赢单财年、赢单季度、销售城市、销售地区
+    - term: 时间
+    - definition: 预计赢单日期、预计开始日期、预计关闭日期、code_open_date、赢单日期
+    - term: 已描述字段
+    - definition: "72"
+  - strong: 智能问数对话
+  - generic: 查询由 Wyn 数据集语义和受控查询内核执行
+  - generic: 1 个数据集 · 精确结果
+  - article:
+    - button "复制问题":
+    - generic: 去年按产品大类统计销售额，列出金额最高的前三个产品大类
+  - article:
+    - generic: 问
+    - article:
+      - paragraph: 去年（FY26）按产品大类统计销售额，金额最高的前三个产品大类为：Digital Technology（约18.98亿元）、Manufacturing（约6618万元）、Healthcare（约578万元）。
+      - button "复制回答":
+      - generic "详情"
+    - article:
+      - heading "去年按产品大类统计销售额，列出金额最高的前三个产品大类" [level=4]
+      - button "数据洞察":
+        - generic: 数据洞察
+      - group "切换图表类型":
+        - button "条形图" [pressed]:
+        - button "折线图":
+        - button "柱形图":
+        - button "饼图":
+        - button "环形图":
+      - button "下载图表图片":
+      - button "复制全部数据":
+      - button "下载全部数据":
+      - button "最大化图表和表格":
+      - img "去年按产品大类统计销售额，列出金额最高的前三个产品大类，条形图"
+      - table:
+        - rowgroup:
+          - row "产品大类 金额":
+            - columnheader "产品大类"
+            - columnheader "金额"
+        - rowgroup:
+          - row "Digital Technology 1,897,687,040":
+            - cell "Digital Technology"
+            - cell "1,897,687,040"
+          - row "Manufacturing 66,184,542.28":
+            - cell "Manufacturing"
+            - cell "66,184,542.28"
+          - row "Healthcare 5,783,981.6":
+            - cell "Healthcare"
+            - cell "5,783,981.6"
+    - button "改看是否删除"
+    - button "按更新人查看"
+    - button "按月查看趋势"
+    - paragraph: 本轮由大模型理解并通过查询约束校验
+    - generic: 这次回答是否有帮助？
+    - button "有帮助":
+      - generic: 有帮助
+    - button "回答有问题":
+      - generic: 回答有问题
+  - button "新建会话":
+    - generic: 新建会话
+  - textbox "输入业务问题，Enter 发送，Shift + Enter 换行"
+  - generic: 已完成，可以继续追问
+  - button "发送问题" [active]:

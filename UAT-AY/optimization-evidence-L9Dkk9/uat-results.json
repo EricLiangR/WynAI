@@ -1,0 +1,108 @@
+{
+  "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+  "collectedAt": "2026-09-11T07:50:10.045Z",
+  "browserBatchExecutedAt": "2026-09-11T07:23:27.903Z",
+  "mobileVerified": false,
+  "results": [
+    {
+      "id": "B-001",
+      "question": "今年 x-ssl 的项目，而且是 POE 类型的有哪些，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期",
+      "executionStatus": "completed",
+      "acceptanceStatus": "pending-verification",
+      "reason": "UI reached completion; independent data and full result-contract checks pending",
+      "screenshot": "B-001.png",
+      "traceId": "trace-6d61a39f-5604-4ce9-b4eb-04268da7a45b",
+      "evidence": "B-001-evidence.json"
+    },
+    {
+      "id": "B-002",
+      "question": "今年 x-ssl 的 MNC 项目有哪些？请列出项目名称、客户名称、产品、销售总监和商机金额",
+      "executionStatus": "completed",
+      "acceptanceStatus": "pending-verification",
+      "reason": "UI reached completion; independent data and full result-contract checks pending",
+      "screenshot": "B-002.png",
+      "traceId": "trace-bac7646c-3e8a-4e2c-bac6-f7a1a02b21fb",
+      "evidence": "B-002-evidence.json"
+    },
+    {
+      "id": "B-003",
+      "question": "去年 x-ssl 且 recurring 的项目有哪些？请返回项目名称、客户名称、recurring 类型和订单金额",
+      "executionStatus": "needs-confirmation",
+      "acceptanceStatus": "failed",
+      "reason": "Filter/output scope false rejection; code fixed, browser retest pending",
+      "screenshot": "B-003.png",
+      "traceId": "trace-39bd22cf-90cd-46e2-a95d-80c69b8b3224",
+      "evidence": "B-003-evidence.json"
+    },
+    {
+      "id": "B-004",
+      "question": "今年 POE 客户中 recurring 的项目有哪些？请列出项目名称、客户名称、产品和预计结束日期",
+      "executionStatus": "completed",
+      "acceptanceStatus": "pending-verification",
+      "reason": "UI reached completion; independent data and full result-contract checks pending",
+      "screenshot": "B-004.png",
+      "traceId": "trace-b2f90473-5107-423e-937e-e8571002ea0e",
+      "evidence": "B-004-evidence.json"
+    },
+    {
+      "id": "B-005",
+      "question": "x-ssl 项目中，哪些是 PSM？请列出项目名称、客户名称、客户类型、prime office 和产品",
+      "executionStatus": "completed",
+      "acceptanceStatus": "failed",
+      "reason": "Narrative contradicts delivered-result scope; code fixed, browser retest pending",
+      "screenshot": "B-005.png",
+      "traceId": "trace-d382ab9f-9f1a-4f92-8d61-43aa46da4763",
+      "evidence": "B-005-evidence.json"
+    },
+    {
+      "id": "B-006",
+      "question": "今年属于 PSM 的 x-ssl 项目有哪些？返回项目名称、客户名称、销售总监、合作伙伴和 prime office",
+      "executionStatus": "completed",
+      "acceptanceStatus": "pending-verification",
+      "reason": "UI reached completion; independent data and full result-contract checks pending",
+      "screenshot": "B-006.png",
+      "traceId": "trace-9edb9547-0d66-4f7d-a459-7c6fa13460f3",
+      "evidence": "B-006-evidence.json"
+    },
+    {
+      "id": "B-007",
+      "question": "今年 x-ssl 项目中，产品是 Safety Production and Risk Control in Manufacturing 的有哪些？请列出项目名称、客户名称、客户类型和商机金额",
+      "executionStatus": "completed",
+      "acceptanceStatus": "pending-verification",
+      "reason": "UI reached completion; independent data and full result-contract checks pending",
+      "screenshot": "B-007.png",
+      "traceId": "trace-7947f1c9-63e1-48f0-98a0-e307f92b9410",
+      "evidence": "B-007-evidence.json"
+    },
+    {
+      "id": "B-008",
+      "question": "今年 MNC 和 POE 客户的 x-ssl 项目，按产品统计商机金额和项目数量",
+      "executionStatus": "completed",
+      "acceptanceStatus": "pending-verification",
+      "reason": "UI reached completion; independent data and full result-contract checks pending",
+      "screenshot": "B-008.png",
+      "traceId": "trace-7ea44370-171a-4f41-a5a9-c01899a9a004",
+      "evidence": "B-008-evidence.json"
+    },
+    {
+      "id": "B-009",
+      "question": "x-ssl 项目中，MNC 客户且商机金额大于 20 万的有哪些？请列出客户名称、项目名称、产品、商机金额",
+      "executionStatus": "completed",
+      "acceptanceStatus": "failed",
+      "reason": "Narrative contradicts delivered-result scope; code fixed, browser retest pending",
+      "screenshot": "B-009.png",
+      "traceId": "trace-cffdfa32-a4d6-4a5f-978b-a9544b667f52",
+      "evidence": "B-009-evidence.json"
+    },
+    {
+      "id": "B-010",
+      "question": "去年 Digital Ecosystem Enterprise Alliances 产品中，POE 客户有哪些？请列出客户名称、项目名称、订单金额和创建日期",
+      "executionStatus": "completed",
+      "acceptanceStatus": "pending-verification",
+      "reason": "UI reached completion; independent data and full result-contract checks pending",
+      "screenshot": "B-010.png",
+      "traceId": "trace-189dff3f-e221-429f-ae02-5e0d50f804d7",
+      "evidence": "B-010-evidence.json"
+    }
+  ]
+}

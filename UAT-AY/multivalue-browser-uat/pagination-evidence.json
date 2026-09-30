@@ -1,0 +1,15 @@
+{
+  "question": "我的POE、MNC客户名单",
+  "dataset": "01测试销售订单-09",
+  "totalRows": 20000,
+  "pageCount": 200,
+  "pageOneVisible": true,
+  "pageTwoVisible": true,
+  "firstRowPageOne": "客户492\t订单名称13441\t2",
+  "firstRowPageTwo": "客户4\t订单名称14391\t1",
+  "rowsChanged": true,
+  "screenshots": [
+    "UAT-AY/multivalue-browser-uat/screenshots/MV-003-page-1.png",
+    "UAT-AY/multivalue-browser-uat/screenshots/MV-003-page-2.png"
+  ]
+}

@@ -69,12 +69,15 @@ export function validateSemanticMapping({ intent = null, metadata = null, skills
   }
   for (const ref of intent?.skillRefs || []) if (skillRefs.size && !skillRefs.has(ref)) errors.push(`Skill 引用未加载：${ref}`);
   const mappings = skills.flatMap(skill => skill.valueMappings || []);
+  const memberOperators = new Set(['containsAny', 'containsAll', 'notContainsAny', 'notContainsAll']);
   for (const filter of intent?.filters || []) {
     const values = Array.isArray(filter.value) ? filter.value : [filter.value];
     for (const value of values) {
       if (value == null) continue;
       const canonicalMappings = mappings.filter(item => String(item.canonicalValue) === String(value));
-      if (canonicalMappings.length && !canonicalMappings.some(item => item.field === filter.field)) {
+      if (memberOperators.has(filter.operator)
+        && canonicalMappings.length
+        && !canonicalMappings.some(item => item.field === filter.field)) {
         errors.push(`Skill 规范值字段绑定冲突：${filter.field}=${value}；该值只允许绑定到 ${[...new Set(canonicalMappings.map(item => item.field))].join('、')}`);
       }
     }
@@ -85,7 +88,7 @@ export function validateSemanticMapping({ intent = null, metadata = null, skills
       if (aliases.length) errors.push(`筛选值未使用 Skill 源值：${filter.field}=${value}；候选源值：${[...new Set(aliases.map(item => item.canonicalValue))].join('、')}`);
     }
     for (const mapping of fieldMappings.filter(item => values.some(value => String(value) === String(item.canonicalValue)))) {
-      const containsOperator = ['containsAny', 'containsAll', 'notContainsAny', 'notContainsAll'].includes(filter.operator);
+      const containsOperator = memberOperators.has(filter.operator);
       if (['containsAny', 'containsAll'].includes(mapping.matchMode) && !containsOperator) {
         errors.push(`Skill 规范值操作符不匹配：${filter.field}=${mapping.canonicalValue} 必须使用多值成员操作符`);
       }

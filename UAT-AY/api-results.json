@@ -1,0 +1,1054 @@
+{
+  "schema": "wynai.uat-ay-api-run/v1",
+  "startedAt": "2026-09-06T14:30:11.768Z",
+  "completedAt": "2026-09-06T14:30:12.977Z",
+  "baseUrl": "http://127.0.0.1:8811",
+  "dataset": {
+    "id": "18b86197-65e3-4682-8501-6e7125afad02",
+    "name": "01测试销售订单-09",
+    "revision": 4
+  },
+  "health": {
+    "connected": true,
+    "server": "http://localhost:51980",
+    "listenHost": "0.0.0.0",
+    "viewProxyPort": 8812,
+    "llmConfigured": true,
+    "runtimeDataDir": "D:\\工作计划\\20251210-AIGC\\WynAI\\UAT-AY\\runtime-data-8811",
+    "runtimeDataFallback": false,
+    "llmModel": "deepseek-v4-flash-0731",
+    "llmProvider": "llm-gateway",
+    "platformMigrationMode": "platform",
+    "llmEndpointHost": "dashscope.aliyuncs.com",
+    "llmHealthStatus": "not_checked",
+    "platformGateway": {
+      "schema": "wynai.platform-gateway-manager/v1",
+      "version": 1,
+      "enabled": true,
+      "status": "available",
+      "operationBudgets": {
+        "exploration": 360000,
+        "intent": 60000
+      },
+      "operations": {
+        "exploration": {
+          "gateway": {
+            "metrics": {
+              "calls": 0,
+              "successes": 0,
+              "failures": 0,
+              "timeouts": 0,
+              "connectTimeouts": 0,
+              "responseHeaderTimeouts": 0,
+              "responseBodyTimeouts": 0,
+              "responseHeaderWarnings": 0,
+              "retries": 0,
+              "retryDelayMs": 0,
+              "fallbacks": 0,
+              "cacheHits": 0,
+              "circuitOpen": 0
+            },
+            "providers": [
+              {
+                "id": "primary",
+                "model": "deepseek-v4-flash-0731",
+                "open": false,
+                "state": {
+                  "failures": 0,
+                  "openUntil": 0,
+                  "lastError": null
+                }
+              }
+            ],
+            "cacheSize": 0,
+            "lastCall": null
+          },
+          "manager": {
+            "calls": 0,
+            "failures": 0,
+            "successes": 0
+          }
+        },
+        "intent": {
+          "gateway": {
+            "metrics": {
+              "calls": 0,
+              "successes": 0,
+              "failures": 0,
+              "timeouts": 0,
+              "connectTimeouts": 0,
+              "responseHeaderTimeouts": 0,
+              "responseBodyTimeouts": 0,
+              "responseHeaderWarnings": 0,
+              "retries": 0,
+              "retryDelayMs": 0,
+              "fallbacks": 0,
+              "cacheHits": 0,
+              "circuitOpen": 0
+            },
+            "providers": [
+              {
+                "id": "primary",
+                "model": "deepseek-v4-flash-0731",
+                "open": false,
+                "state": {
+                  "failures": 0,
+                  "openUntil": 0,
+                  "lastError": null
+                }
+              }
+            ],
+            "cacheSize": 0,
+            "lastCall": null
+          },
+          "manager": {
+            "calls": 0,
+            "failures": 0,
+            "successes": 0
+          }
+        }
+      }
+    },
+    "llmGateway": {
+      "version": "wynai.llm-gateway/v1",
+      "exploration": {
+        "metrics": {
+          "calls": 0,
+          "successes": 0,
+          "failures": 0,
+          "timeouts": 0,
+          "connectTimeouts": 0,
+          "responseHeaderTimeouts": 0,
+          "responseBodyTimeouts": 0,
+          "responseHeaderWarnings": 0,
+          "retries": 0,
+          "retryDelayMs": 0,
+          "fallbacks": 0,
+          "cacheHits": 0,
+          "circuitOpen": 0
+        },
+        "providers": [
+          {
+            "id": "primary",
+            "model": "deepseek-v4-flash-0731",
+            "open": false,
+            "state": {
+              "failures": 0,
+              "openUntil": 0,
+              "lastError": null
+            }
+          }
+        ],
+        "cacheSize": 0,
+        "lastCall": null
+      },
+      "intent": {
+        "metrics": {
+          "calls": 0,
+          "successes": 0,
+          "failures": 0,
+          "timeouts": 0,
+          "connectTimeouts": 0,
+          "responseHeaderTimeouts": 0,
+          "responseBodyTimeouts": 0,
+          "responseHeaderWarnings": 0,
+          "retries": 0,
+          "retryDelayMs": 0,
+          "fallbacks": 0,
+          "cacheHits": 0,
+          "circuitOpen": 0
+        },
+        "providers": [
+          {
+            "id": "primary",
+            "model": "deepseek-v4-flash-0731",
+            "open": false,
+            "state": {
+              "failures": 0,
+              "openUntil": 0,
+              "lastError": null
+            }
+          }
+        ],
+        "cacheSize": 0,
+        "lastCall": null
+      },
+      "policy": {
+        "requestTimeoutMs": 180000,
+        "intentRequestTimeoutMs": 30000,
+        "connectTimeoutMs": 3000,
+        "responseHeaderWarningMs": 15000,
+        "responseHeaderTimeoutMs": 180000,
+        "responseBodyTimeoutMs": 180000,
+        "operationTimeoutMs": {
+          "insightPlanner": 45000,
+          "insightCritic": 35000,
+          "insightNarrator": 45000,
+          "insightNarratorRepair": 90000,
+          "agentReport": 45000
+        },
+        "maxAttempts": 2,
+        "retryBaseDelayMs": 250,
+        "retryMaxDelayMs": 4000,
+        "retryJitterMs": 150
+      }
+    },
+    "intentLlmTimeoutMs": 30000,
+    "status": 200,
+    "message": "Wyn 服务连接正常"
+  },
+  "skillCatalog": {
+    "schema": "wynai.skill-catalog/v1",
+    "items": [
+      {
+        "id": "laboratory-baseline",
+        "version": "1.0.0",
+        "name": "实验室运营基础分析",
+        "scope": "dataset",
+        "status": "approved",
+        "datasetIds": [
+          "ebbbbf49-60dd-4761-9722-fa6543eac4a9"
+        ],
+        "triggers": [
+          "实验室",
+          "科室",
+          "TAT",
+          "周转时间",
+          "标本",
+          "检验"
+        ]
+      },
+      {
+        "id": "retail-baseline",
+        "version": "1.0.0",
+        "name": "零售经营基础分析",
+        "scope": "dataset",
+        "status": "approved",
+        "datasetIds": [
+          "8875ab24-8d24-4a9e-be39-01e44a5678a9"
+        ],
+        "triggers": [
+          "零售",
+          "销售",
+          "销售额",
+          "收入",
+          "利润",
+          "类别",
+          "商品",
+          "产品"
+        ]
+      },
+      {
+        "id": "sales-baseline",
+        "version": "1.3.0",
+        "name": "销售基础分析",
+        "scope": "dataset",
+        "status": "approved",
+        "datasetIds": [
+          "2b445034-38fe-4350-9cab-b7684c28b5f8"
+        ],
+        "triggers": [
+          "销售",
+          "销售额",
+          "收入",
+          "利润",
+          "客户地区",
+          "客户集中度",
+          "销售经理",
+          "销售员",
+          "业务员",
+          "销售代表",
+          "订单数",
+          "订单数量",
+          "大区",
+          "毛利率",
+          "客单价"
+        ]
+      },
+      {
+        "id": "sales-opportunity-a53",
+        "version": "1.0.0",
+        "name": "销售商机分析（a53 数据集）",
+        "scope": "dataset",
+        "status": "approved",
+        "datasetIds": [
+          "a53ec17a-a8e7-43ce-8552-ec4805071efa",
+          "18b86197-65e3-4682-8501-6e7125afad02"
+        ],
+        "triggers": [
+          "销售",
+          "销售额",
+          "销售收入",
+          "收入",
+          "营收",
+          "商机",
+          "订单",
+          "pipeline",
+          "product",
+          "产品",
+          "客户",
+          "MNC",
+          "Consumer Products",
+          "Risk Management",
+          "财年",
+          "去年",
+          "前年",
+          "同比",
+          "占比",
+          "排名",
+          "最热卖",
+          "最畅销"
+        ]
+      },
+      {
+        "id": "temporal-semantics",
+        "version": "1.1.0",
+        "name": "平台时间语义",
+        "scope": "system",
+        "status": "approved",
+        "datasetIds": [],
+        "triggers": []
+      },
+      {
+        "id": "sales-policy-conflict",
+        "version": "0.1.0",
+        "name": "销售口径冲突验收夹具",
+        "scope": "organization",
+        "status": "approved",
+        "datasetIds": [],
+        "triggers": [
+          "销售额",
+          "收入"
+        ]
+      }
+    ],
+    "total": 6
+  },
+  "summary": {
+    "total": 34,
+    "ok": 0,
+    "clarification": 0,
+    "failed": 34,
+    "skillBound": 0
+  },
+  "results": [
+    {
+      "id": "UAT-AY-001",
+      "question": "订单名称15247的商机金额是多少",
+      "category": "订单金额",
+      "startedAt": "2026-09-06T14:30:12.294Z",
+      "durationMs": 439,
+      "conversationId": "conv-007b6b7e-451b-4fba-9796-699617a4d5d8",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-002",
+      "question": "某个客户的商机金额是多少",
+      "category": "歧义澄清",
+      "startedAt": "2026-09-06T14:30:12.694Z",
+      "durationMs": 399,
+      "conversationId": "conv-f584f7de-feb4-4eb3-bc8c-e3bea05bc7ca",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-003",
+      "question": "截止目前，Manufacturing product的占比是多少，具体金额是多少",
+      "category": "产品占比",
+      "startedAt": "2026-09-06T14:30:12.707Z",
+      "durationMs": 13,
+      "conversationId": "conv-143b5b44-73b2-4f48-96ab-c2f39afcafa6",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-004",
+      "question": "我的客户中head_office_location是美国的名单",
+      "category": "客户名单",
+      "startedAt": "2026-09-06T14:30:12.718Z",
+      "durationMs": 10,
+      "conversationId": "conv-db55be6b-a133-4936-a978-b43c710a9491",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-005",
+      "question": "所有财年中，我的客户中head_office_location是美国和法国的名单",
+      "category": "客户名单/多国家",
+      "startedAt": "2026-09-06T14:30:12.729Z",
+      "durationMs": 11,
+      "conversationId": "conv-285d9ef6-9089-4366-9690-4e35ce23b3aa",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-006",
+      "question": "所有财年中，我的客户中HQ是美国和法国的名单",
+      "category": "客户名单/字段语义",
+      "startedAt": "2026-09-06T14:30:12.743Z",
+      "durationMs": 14,
+      "conversationId": "conv-f55b1a78-a538-4347-9cb9-23bd59ab0ff7",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-007",
+      "question": "我的POE客户名单",
+      "category": "客户类型",
+      "startedAt": "2026-09-06T14:30:12.753Z",
+      "durationMs": 10,
+      "conversationId": "conv-13f49146-1bd8-4f30-aba5-a0a781b566b9",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-008",
+      "question": "我的POE、MNC客户名单",
+      "category": "客户类型/多值",
+      "startedAt": "2026-09-06T14:30:12.764Z",
+      "durationMs": 11,
+      "conversationId": "conv-636bb280-f2a8-4910-a5ae-db94ee794e77",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-009",
+      "question": "所有财年中，我的POE客户名单",
+      "category": "客户类型/时间",
+      "startedAt": "2026-09-06T14:30:12.774Z",
+      "durationMs": 10,
+      "conversationId": "conv-1e606f11-a5ff-43e3-85a5-d945a0eed0ec",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-010",
+      "question": "我最热卖的product是什么，是哪些客户",
+      "category": "产品排名/下钻",
+      "startedAt": "2026-09-06T14:30:12.785Z",
+      "durationMs": 10,
+      "conversationId": "conv-3073aab1-7cf5-4eab-a1c7-130db0adf45d",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-011",
+      "question": "请列举去年Digital Ecosystem Enterprise Alliances 产品的客户名单，及每个客户的订单金额",
+      "category": "产品/去年",
+      "startedAt": "2026-09-06T14:30:12.795Z",
+      "durationMs": 10,
+      "conversationId": "conv-57501e96-6d1e-4e33-9310-596a0adc229a",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-012",
+      "question": "x-ssl的项目有哪些",
+      "category": "项目属性",
+      "startedAt": "2026-09-06T14:30:12.804Z",
+      "durationMs": 9,
+      "conversationId": "conv-d4c53034-fb29-49c9-8ce4-9f241e6cf77e",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-013",
+      "question": "今年x-ssl的项目有哪些，请列出项目的名称，pursuit leader、oppo partner、product、client等信息",
+      "category": "项目属性/今年",
+      "startedAt": "2026-09-06T14:30:12.813Z",
+      "durationMs": 9,
+      "conversationId": "conv-1cf4fd17-11c4-458d-98fb-17a724f57fd1",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-014",
+      "question": "有什么recurring的项目",
+      "category": "项目属性",
+      "startedAt": "2026-09-06T14:30:12.822Z",
+      "durationMs": 9,
+      "conversationId": "conv-4ec4e460-d9dd-49b4-b693-2266d5e4509d",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-015",
+      "question": "有哪些商机是 PSM的，prime office 是哪里",
+      "category": "项目属性/地点",
+      "startedAt": "2026-09-06T14:30:12.831Z",
+      "durationMs": 9,
+      "conversationId": "conv-c3271f5e-8241-4be8-8d43-b1c32c0de727",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-016",
+      "question": "今年，有哪些商机是 PSM的，prime office 是哪里，请列出项目名称、client等信息",
+      "category": "项目属性/今年",
+      "startedAt": "2026-09-06T14:30:12.841Z",
+      "durationMs": 10,
+      "conversationId": "conv-4807c2fa-7fca-41aa-a382-9d3034bd3782",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-017",
+      "question": "有哪些商机是 PSM的，prime office 是哪里，请列出项目名称、client name、客户类型、product等信息",
+      "category": "项目属性/多字段",
+      "startedAt": "2026-09-06T14:30:12.851Z",
+      "durationMs": 10,
+      "conversationId": "conv-e38d1847-b896-407c-87cd-69fc3453dabf",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-018",
+      "question": "MNC、POE客户的商机金额是多少",
+      "category": "客户类型/金额",
+      "startedAt": "2026-09-06T14:30:12.860Z",
+      "durationMs": 9,
+      "conversationId": "conv-25568b94-6caf-4068-a6a0-3b4c1d46fe66",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-019",
+      "question": "MNC 客户的商机金额 大于20万的商机有几个",
+      "category": "客户类型/阈值计数",
+      "startedAt": "2026-09-06T14:30:12.869Z",
+      "durationMs": 9,
+      "conversationId": "conv-b9e42534-d09c-4210-aec9-72e1072d78ab",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-020",
+      "question": "MNC 客户的商机金额 大于20万的商机，分别是哪些客户、product",
+      "category": "客户类型/阈值明细",
+      "startedAt": "2026-09-06T14:30:12.878Z",
+      "durationMs": 9,
+      "conversationId": "conv-95bfa430-c30b-437b-be31-f701ceb0340f",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-021",
+      "question": "MNC 客户 且 subsector是Food 的商机有多少个",
+      "category": "多条件/计数",
+      "startedAt": "2026-09-06T14:30:12.887Z",
+      "durationMs": 8,
+      "conversationId": "conv-ce559af1-d8ca-46e4-9b6b-3c4afa52a6bc",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-022",
+      "question": "MNC 客户 是Consumer Products 行业 的商机有多少个",
+      "category": "多条件/计数",
+      "startedAt": "2026-09-06T14:30:12.897Z",
+      "durationMs": 10,
+      "conversationId": "conv-a3192ec7-dc3e-4a10-8acf-d2f7b47f2a23",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-023",
+      "question": "不是 MNC 和 POE 客户的商机金额是多少",
+      "category": "客户类型/排除",
+      "startedAt": "2026-09-06T14:30:12.907Z",
+      "durationMs": 10,
+      "conversationId": "conv-68580268-36c2-4615-a935-3c0d28d730a7",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-024",
+      "question": "x-ssl的项目有哪些",
+      "category": "重复问题",
+      "startedAt": "2026-09-06T14:30:12.916Z",
+      "durationMs": 9,
+      "conversationId": "conv-ea202dc3-1fe5-4ffa-a1d6-0587b6bbae35",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-025",
+      "question": "x-ssl的项目有哪些",
+      "category": "重复问题",
+      "startedAt": "2026-09-06T14:30:12.925Z",
+      "durationMs": 9,
+      "conversationId": "conv-5e9d8b26-fa41-4713-8998-ba59aca0a5b7",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-026",
+      "question": "今年x-ssl的项目有哪些",
+      "category": "重复问题/今年",
+      "startedAt": "2026-09-06T14:30:12.934Z",
+      "durationMs": 9,
+      "conversationId": "conv-4ed9f7ad-389e-41f8-81c8-f8ab8fdd7041",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-027",
+      "question": "Risk Management product的占比是多少，具体金额是多少",
+      "category": "产品占比",
+      "startedAt": "2026-09-06T14:30:12.943Z",
+      "durationMs": 9,
+      "conversationId": "conv-3a35c0c4-9292-49d8-8531-c445e8eb192c",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-028",
+      "question": "我的POE客户名单",
+      "category": "重复问题",
+      "startedAt": "2026-09-06T14:30:12.952Z",
+      "durationMs": 8,
+      "conversationId": "conv-cb5b38d2-8b64-4037-9aa2-482c98236180",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-029",
+      "question": "我最热卖的product是什么，是哪些客户",
+      "category": "重复问题/排名",
+      "startedAt": "2026-09-06T14:30:12.963Z",
+      "durationMs": 11,
+      "conversationId": "conv-9e66258c-ec5c-430f-8c91-78349aa36e1d",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-030",
+      "question": "请列举去年Risk Management 产品的客户名单，及每个客户的订单金额",
+      "category": "产品/去年",
+      "startedAt": "2026-09-06T14:30:12.971Z",
+      "durationMs": 8,
+      "conversationId": "conv-9a911a4b-7436-48d8-94c0-f90011baf48b",
+      "httpStatus": 503,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "大模型服务暂时不可用，请稍后重试。"
+      }
+    },
+    {
+      "id": "UAT-AY-031",
+      "question": "recurring的商机，产品是 Safety Production and Risk Control in Manufacturing 的有哪些",
+      "category": "项目属性/产品",
+      "startedAt": "2026-09-06T14:30:12.973Z",
+      "durationMs": 2,
+      "conversationId": null,
+      "httpStatus": 429,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "智能问数请求过于频繁，请稍后重试",
+        "retryAfterMs": 58887
+      }
+    },
+    {
+      "id": "UAT-AY-032",
+      "question": "按产品level0 统计今年的总商机金额和商机数量",
+      "category": "分组聚合/今年",
+      "startedAt": "2026-09-06T14:30:12.974Z",
+      "durationMs": 1,
+      "conversationId": null,
+      "httpStatus": 429,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "智能问数请求过于频繁，请稍后重试",
+        "retryAfterMs": 58886
+      }
+    },
+    {
+      "id": "UAT-AY-033",
+      "question": "按产品大类统计财年26的总商机金额，并筛选总金额大于1000万",
+      "category": "分组聚合/阈值",
+      "startedAt": "2026-09-06T14:30:12.976Z",
+      "durationMs": 2,
+      "conversationId": null,
+      "httpStatus": 429,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "智能问数请求过于频繁，请稍后重试",
+        "retryAfterMs": 58884
+      }
+    },
+    {
+      "id": "UAT-AY-034",
+      "question": "按产品大类统计财年26的总商机金额和商机数量，并筛选总金额大于1000万且商机数量大于3",
+      "category": "分组聚合/双阈值",
+      "startedAt": "2026-09-06T14:30:12.977Z",
+      "durationMs": 1,
+      "conversationId": null,
+      "httpStatus": 429,
+      "actualStatus": "transport_error",
+      "loadedSkillRefs": null,
+      "skillRefs": [],
+      "semanticValidation": null,
+      "businessIntent": null,
+      "queryRequests": [],
+      "resultSets": [],
+      "clarification": null,
+      "document": null,
+      "error": {
+        "message": "智能问数请求过于频繁，请稍后重试",
+        "retryAfterMs": 58883
+      }
+    }
+  ]
+}

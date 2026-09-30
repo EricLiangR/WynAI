@@ -1,0 +1,1152 @@
+{
+  "question": "今年属于 PSM 的 x-ssl 项目有哪些？返回项目名称、客户名称、销售总监、合作伙伴和 prime office",
+  "startedAt": "2026-09-11T07:25:11.941Z",
+  "completedAt": "2026-09-11T07:25:29.387Z",
+  "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\n今年属于 PSM 的 x-ssl 项目有哪些？返回项目名称、客户名称、销售总监、合作伙伴和 prime office\n问\n\n查询结果为空，未找到满足条件（赢单财年=27、is_subcode=1、xssl=1）的项目记录。\n\n指标\n未指定\n维度\npipelineName、客户名称、Opportunity_manager、Opportunity_partner、primeOffice\n筛选\nis_subcode 等于 1；xssl 等于 1；赢单财年 等于 27\n排序\n未排序\n查询明细\n\n暂无表格数据 · 结果集 rs-qry-intent-0c349c63\n\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+  "traceId": "trace-9edb9547-0d66-4f7d-a459-7c6fa13460f3",
+  "trace": [
+    {
+      "id": "operation-event-acf1bccc-d157-4e69-9f4e-282a99c004c4",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-9edb9547-0d66-4f7d-a459-7c6fa13460f3",
+      "sequence": 1,
+      "at": "2026-09-11T07:25:11.996Z",
+      "event": "request.accepted",
+      "phase": "transport",
+      "outcome": null,
+      "durationMs": null,
+      "conversationId": "conv-4d980ffb-5861-429b-a511-459e4dab1e51",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "method": "POST",
+        "path": "/api/smart-query/conversations/conv-4d980ffb-5861-429b-a511-459e4dab1e51/messages"
+      }
+    },
+    {
+      "id": "operation-event-d753600d-1a44-490c-99d0-f24ad9b338cc",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-9edb9547-0d66-4f7d-a459-7c6fa13460f3",
+      "sequence": 2,
+      "at": "2026-09-11T07:25:11.996Z",
+      "event": "turn.received",
+      "phase": "input",
+      "outcome": null,
+      "durationMs": null,
+      "conversationId": "conv-4d980ffb-5861-429b-a511-459e4dab1e51",
+      "turnId": "turn-2bebc651-d88c-4dcf-ba11-dec33611df67",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "question": "今年属于 PSM 的 x-ssl 项目有哪些？返回项目名称、客户名称、销售总监、合作伙伴和 prime office",
+        "conversationState": "ready",
+        "datasetRevision": 5
+      }
+    },
+    {
+      "id": "operation-event-5a81d57d-26d9-494a-b56e-875d40dcd24c",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-9edb9547-0d66-4f7d-a459-7c6fa13460f3",
+      "sequence": 3,
+      "at": "2026-09-11T07:25:12.002Z",
+      "event": "skill.resolved",
+      "phase": "skills",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-4d980ffb-5861-429b-a511-459e4dab1e51",
+      "turnId": "turn-2bebc651-d88c-4dcf-ba11-dec33611df67",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "skillRefs": [
+          "sales-opportunity-a53@1.3.0",
+          "temporal-semantics@1.1.0"
+        ],
+        "conflicts": []
+      }
+    },
+    {
+      "id": "operation-event-7aab13df-4a45-4bba-8f54-4d5fc3ef938b",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-9edb9547-0d66-4f7d-a459-7c6fa13460f3",
+      "sequence": 4,
+      "at": "2026-09-11T07:25:25.516Z",
+      "event": "gateway.attempt",
+      "phase": "llm",
+      "outcome": "success",
+      "durationMs": 13510,
+      "conversationId": "conv-4d980ffb-5861-429b-a511-459e4dab1e51",
+      "turnId": "turn-2bebc651-d88c-4dcf-ba11-dec33611df67",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "operation": "intent",
+        "attempt": 1,
+        "provider": "primary",
+        "model": "deepseek-v4-flash-0731",
+        "responseStatus": 200,
+        "durationMs": 13510,
+        "timeoutClass": "completed",
+        "error": null
+      }
+    },
+    {
+      "id": "operation-event-74481050-270c-4b99-b8bc-d69d35a7fe2a",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-9edb9547-0d66-4f7d-a459-7c6fa13460f3",
+      "sequence": 5,
+      "at": "2026-09-11T07:25:25.518Z",
+      "event": "planning.completed",
+      "phase": "planning",
+      "outcome": "supported",
+      "durationMs": null,
+      "conversationId": "conv-4d980ffb-5861-429b-a511-459e4dab1e51",
+      "turnId": "turn-2bebc651-d88c-4dcf-ba11-dec33611df67",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "status": "supported",
+        "plannerMode": "llm-first",
+        "diagnostics": {
+          "route": "llm-first",
+          "planningDurationMs": 13516,
+          "llmAttempted": true,
+          "llmDurationMs": 13516,
+          "circuitOpen": false,
+          "reason": "intent-llm-validated",
+          "repairAttempted": false,
+          "llmCalls": 1
+        }
+      }
+    },
+    {
+      "id": "operation-event-762c4106-d1ca-4261-93ff-73c56fa120fa",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-9edb9547-0d66-4f7d-a459-7c6fa13460f3",
+      "sequence": 6,
+      "at": "2026-09-11T07:25:25.518Z",
+      "event": "query.planned",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-4d980ffb-5861-429b-a511-459e4dab1e51",
+      "turnId": "turn-2bebc651-d88c-4dcf-ba11-dec33611df67",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "requestId": "qry-intent-0c349c63",
+        "mode": "aggregate",
+        "purpose": "查询今年（按赢单财年口径）属于 PSM 的 x-ssl 项目，返回项目名称、客户名称、销售总监、合作伙伴和 prime office。",
+        "select": [
+          {
+            "field": "pipelineName",
+            "alias": "project_name",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "客户名称",
+            "alias": "customer_name",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "Opportunity_manager",
+            "alias": "sales_director",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "Opportunity_partner",
+            "alias": "partner",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "primeOffice",
+            "alias": "prime_office",
+            "role": "dimension",
+            "grain": null
+          }
+        ],
+        "measures": [
+          {
+            "field": "客户编码",
+            "aggregation": "distinctCount",
+            "alias": "record_count",
+            "resultType": "number"
+          }
+        ],
+        "filters": [
+          {
+            "field": "is_subcode",
+            "operator": "eq",
+            "value": 1,
+            "fieldType": "measure"
+          },
+          {
+            "field": "xssl",
+            "operator": "eq",
+            "value": 1,
+            "fieldType": "measure"
+          },
+          {
+            "field": "赢单财年",
+            "operator": "eq",
+            "value": "27",
+            "fieldType": "dimension"
+          }
+        ],
+        "orderBy": [
+          {
+            "field": "record_count",
+            "direction": "desc"
+          }
+        ],
+        "limit": 20000
+      }
+    },
+    {
+      "id": "operation-event-64bbc9aa-0daf-45e6-bd3e-5fe1750e4722",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-9edb9547-0d66-4f7d-a459-7c6fa13460f3",
+      "sequence": 7,
+      "at": "2026-09-11T07:25:25.518Z",
+      "event": "query.compiled",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-4d980ffb-5861-429b-a511-459e4dab1e51",
+      "turnId": "turn-2bebc651-d88c-4dcf-ba11-dec33611df67",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "requestId": "qry-intent-0c349c63",
+        "queryProgram": {
+          "schema": "wynai.query-program/v1",
+          "version": 1,
+          "baseQuery": {
+            "id": "qry-intent-0c349c63",
+            "hypothesisId": null,
+            "purpose": "查询今年（按赢单财年口径）属于 PSM 的 x-ssl 项目，返回项目名称、客户名称、销售总监、合作伙伴和 prime office。",
+            "mode": "aggregate",
+            "topic": "product",
+            "dataset": {
+              "id": "18b86197-65e3-4682-8501-6e7125afad02",
+              "revision": 5
+            },
+            "select": [
+              {
+                "field": "pipelineName",
+                "alias": "project_name",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "客户名称",
+                "alias": "customer_name",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "Opportunity_manager",
+                "alias": "sales_director",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "Opportunity_partner",
+                "alias": "partner",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "primeOffice",
+                "alias": "prime_office",
+                "role": "dimension",
+                "grain": null
+              }
+            ],
+            "measures": [
+              {
+                "field": "客户编码",
+                "aggregation": "distinctCount",
+                "alias": "record_count",
+                "resultType": "number"
+              }
+            ],
+            "filters": [
+              {
+                "field": "is_subcode",
+                "operator": "eq",
+                "value": 1,
+                "fieldType": "measure"
+              },
+              {
+                "field": "xssl",
+                "operator": "eq",
+                "value": 1,
+                "fieldType": "measure"
+              },
+              {
+                "field": "赢单财年",
+                "operator": "eq",
+                "value": "27",
+                "fieldType": "dimension"
+              }
+            ],
+            "resultFilters": [],
+            "fieldComparisons": [],
+            "comparison": null,
+            "orderBy": [
+              {
+                "field": "record_count",
+                "direction": "desc"
+              }
+            ],
+            "limit": 20000,
+            "limitSource": "default",
+            "expectedResult": {
+              "shape": "table",
+              "minimumRows": 0,
+              "maximumRows": 20000,
+              "requiredPeriods": [],
+              "requiredMetrics": [],
+              "requiredDimensions": [
+                "project_name",
+                "customer_name",
+                "sales_director",
+                "partner",
+                "prime_office"
+              ],
+              "timeZone": "Asia/Shanghai"
+            },
+            "sensitivity": "aggregate-only",
+            "lineage": null
+          },
+          "steps": [
+            {
+              "type": "drop-internal-metrics",
+              "aliases": [
+                "record_count"
+              ]
+            },
+            {
+              "type": "validate",
+              "expectedResult": {
+                "shape": "table",
+                "minimumRows": 0,
+                "maximumRows": 20000,
+                "requiredPeriods": [],
+                "requiredMetrics": [],
+                "requiredDimensions": [
+                  "project_name",
+                  "customer_name",
+                  "sales_director",
+                  "partner",
+                  "prime_office"
+                ],
+                "timeZone": "Asia/Shanghai"
+              }
+            }
+          ],
+          "output": {
+            "schema": "wynai.canonical-result-set/v1",
+            "requiredMetrics": [],
+            "requiredDimensions": [
+              "project_name",
+              "customer_name",
+              "sales_director",
+              "partner",
+              "prime_office"
+            ]
+          }
+        },
+        "plannerMode": "llm-first"
+      }
+    },
+    {
+      "id": "operation-event-2b437255-4eda-43b9-8514-32d0f59a7cf1",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-9edb9547-0d66-4f7d-a459-7c6fa13460f3",
+      "sequence": 8,
+      "at": "2026-09-11T07:25:25.607Z",
+      "event": "query.executed",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": 89,
+      "conversationId": "conv-4d980ffb-5861-429b-a511-459e4dab1e51",
+      "turnId": "turn-2bebc651-d88c-4dcf-ba11-dec33611df67",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "request": {
+          "id": "qry-intent-0c349c63",
+          "hypothesisId": null,
+          "purpose": "查询今年（按赢单财年口径）属于 PSM 的 x-ssl 项目，返回项目名称、客户名称、销售总监、合作伙伴和 prime office。",
+          "mode": "aggregate",
+          "topic": "product",
+          "dataset": {
+            "id": "18b86197-65e3-4682-8501-6e7125afad02",
+            "revision": 5
+          },
+          "select": [
+            {
+              "field": "pipelineName",
+              "alias": "project_name",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "客户名称",
+              "alias": "customer_name",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "Opportunity_manager",
+              "alias": "sales_director",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "Opportunity_partner",
+              "alias": "partner",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "primeOffice",
+              "alias": "prime_office",
+              "role": "dimension",
+              "grain": null
+            }
+          ],
+          "measures": [
+            {
+              "field": "客户编码",
+              "aggregation": "distinctCount",
+              "alias": "record_count",
+              "resultType": "number"
+            }
+          ],
+          "filters": [
+            {
+              "field": "is_subcode",
+              "operator": "eq",
+              "value": 1,
+              "fieldType": "measure"
+            },
+            {
+              "field": "xssl",
+              "operator": "eq",
+              "value": 1,
+              "fieldType": "measure"
+            },
+            {
+              "field": "赢单财年",
+              "operator": "eq",
+              "value": "27",
+              "fieldType": "dimension"
+            }
+          ],
+          "resultFilters": [],
+          "fieldComparisons": [],
+          "comparison": null,
+          "orderBy": [
+            {
+              "field": "record_count",
+              "direction": "desc"
+            }
+          ],
+          "limit": 20000,
+          "limitSource": "default",
+          "expectedResult": {
+            "shape": "table",
+            "minimumRows": 0,
+            "maximumRows": 20000,
+            "requiredPeriods": [],
+            "requiredMetrics": [],
+            "requiredDimensions": [
+              "project_name",
+              "customer_name",
+              "sales_director",
+              "partner",
+              "prime_office"
+            ],
+            "timeZone": "Asia/Shanghai"
+          },
+          "sensitivity": "aggregate-only",
+          "lineage": null
+        },
+        "resultSetId": "rs-qry-intent-0c349c63",
+        "rowCount": 0
+      }
+    },
+    {
+      "id": "operation-event-19f03c0c-c716-4a17-8391-13a4efb1d6f9",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-9edb9547-0d66-4f7d-a459-7c6fa13460f3",
+      "sequence": 9,
+      "at": "2026-09-11T07:25:25.607Z",
+      "event": "result.validated",
+      "phase": "validation",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-4d980ffb-5861-429b-a511-459e4dab1e51",
+      "turnId": "turn-2bebc651-d88c-4dcf-ba11-dec33611df67",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "valid": true,
+        "errors": [],
+        "warnings": [
+          "查询范围没有匹配数据"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-1f25a8e8-06ae-4d1e-b705-3bb9bb0ce2ce",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-9edb9547-0d66-4f7d-a459-7c6fa13460f3",
+      "sequence": 10,
+      "at": "2026-09-11T07:25:28.284Z",
+      "event": "presentation.planned",
+      "phase": "presentation",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-4d980ffb-5861-429b-a511-459e4dab1e51",
+      "turnId": "turn-2bebc651-d88c-4dcf-ba11-dec33611df67",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "documentId": "doc-a8faadc4-f52d-4d2f-bba0-c515b8162308",
+        "schema": "wynai.result-presentation-plan/v1",
+        "version": 1,
+        "mode": "table-only",
+        "priority": "table",
+        "chartType": null,
+        "tableColumns": [
+          "customer_name",
+          "project_name",
+          "sales_director",
+          "partner",
+          "prime_office"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-cf068002-4227-48d0-94f4-ac2b8cce318d",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-9edb9547-0d66-4f7d-a459-7c6fa13460f3",
+      "sequence": 11,
+      "at": "2026-09-11T07:25:28.284Z",
+      "event": "response.composed",
+      "phase": "response",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-4d980ffb-5861-429b-a511-459e4dab1e51",
+      "turnId": "turn-2bebc651-d88c-4dcf-ba11-dec33611df67",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "documentId": "doc-a8faadc4-f52d-4d2f-bba0-c515b8162308",
+        "blockTypes": [
+          "text",
+          "text",
+          "text",
+          "text",
+          "warning",
+          "warning",
+          "table"
+        ],
+        "resultSetIds": [
+          "rs-qry-intent-0c349c63"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-39b5be35-1195-4ae8-9ee1-2371fd43a9d1",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-9edb9547-0d66-4f7d-a459-7c6fa13460f3",
+      "sequence": 12,
+      "at": "2026-09-11T07:25:28.284Z",
+      "event": "turn.completed",
+      "phase": "completion",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-4d980ffb-5861-429b-a511-459e4dab1e51",
+      "turnId": "turn-2bebc651-d88c-4dcf-ba11-dec33611df67",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "plannerMode": "llm-first"
+      }
+    },
+    {
+      "id": "operation-event-88690ff3-77b5-45de-b07e-1dee3c9c3b62",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-9edb9547-0d66-4f7d-a459-7c6fa13460f3",
+      "sequence": 13,
+      "at": "2026-09-11T07:25:28.284Z",
+      "event": "platform.migration.run",
+      "phase": "migration",
+      "outcome": "selected",
+      "durationMs": null,
+      "conversationId": "conv-4d980ffb-5861-429b-a511-459e4dab1e51",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "module": "smart-query-request",
+        "mode": "platform",
+        "routing": {
+          "mode": "platform",
+          "configuredMode": "platform",
+          "module": "smart-query-request",
+          "bucket": 52,
+          "percentage": 100,
+          "allowListed": false,
+          "reason": "percentage"
+        },
+        "comparison": null,
+        "fallback": false,
+        "candidateMetadata": {
+          "schema": "wynai.platform-business-orchestrator/v1",
+          "version": 1,
+          "profile": "smart-query-platform-candidate-v1",
+          "contextAudit": {
+            "schema": "wynai.platform-context-audit/v1",
+            "version": 1,
+            "originalQuestionPresent": true,
+            "messageCount": 0,
+            "activeMetricCount": 0,
+            "activeDimensionCount": 0,
+            "activeFilterCount": 0,
+            "skillCount": 0,
+            "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+            "preservedCoreContext": [
+              "original-question",
+              "active-conversation-context",
+              "dataset-metadata",
+              "skill-references",
+              "permissions-and-scope"
+            ]
+          }
+        },
+        "schema": "wynai.platform-migration-run/v1"
+      }
+    },
+    {
+      "id": "operation-event-ab541658-1c36-455c-8f49-04d759ee215a",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-9edb9547-0d66-4f7d-a459-7c6fa13460f3",
+      "sequence": 14,
+      "at": "2026-09-11T07:25:28.284Z",
+      "event": "request.completed",
+      "phase": "transport",
+      "outcome": "ok",
+      "durationMs": 16289,
+      "conversationId": "conv-4d980ffb-5861-429b-a511-459e4dab1e51",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "plannerMode": "llm-first"
+      }
+    }
+  ],
+  "conversationId": "conv-4d980ffb-5861-429b-a511-459e4dab1e51",
+  "dataset": {
+    "id": "18b86197-65e3-4682-8501-6e7125afad02",
+    "revision": 5,
+    "name": "01测试销售订单-09"
+  },
+  "skillRefs": [
+    "sales-opportunity-a53@1.3.0",
+    "temporal-semantics@1.1.0"
+  ],
+  "canonical": {
+    "id": "qry-intent-0c349c63",
+    "hypothesisId": null,
+    "purpose": "查询今年（按赢单财年口径）属于 PSM 的 x-ssl 项目，返回项目名称、客户名称、销售总监、合作伙伴和 prime office。",
+    "mode": "aggregate",
+    "topic": "product",
+    "dataset": {
+      "id": "18b86197-65e3-4682-8501-6e7125afad02",
+      "revision": 5
+    },
+    "select": [
+      {
+        "field": "pipelineName",
+        "alias": "project_name",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "客户名称",
+        "alias": "customer_name",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "Opportunity_manager",
+        "alias": "sales_director",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "Opportunity_partner",
+        "alias": "partner",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "primeOffice",
+        "alias": "prime_office",
+        "role": "dimension",
+        "grain": null
+      }
+    ],
+    "measures": [],
+    "filters": [
+      {
+        "field": "is_subcode",
+        "operator": "eq",
+        "value": 1,
+        "fieldType": "measure"
+      },
+      {
+        "field": "xssl",
+        "operator": "eq",
+        "value": 1,
+        "fieldType": "measure"
+      },
+      {
+        "field": "赢单财年",
+        "operator": "eq",
+        "value": "27",
+        "fieldType": "dimension"
+      }
+    ],
+    "resultFilters": [],
+    "fieldComparisons": [],
+    "comparison": null,
+    "orderBy": [],
+    "limit": 20000,
+    "limitSource": "default",
+    "expectedResult": {
+      "shape": "table",
+      "minimumRows": 0,
+      "maximumRows": 20000,
+      "requiredPeriods": [],
+      "requiredMetrics": [],
+      "requiredDimensions": [
+        "project_name",
+        "customer_name",
+        "sales_director",
+        "partner",
+        "prime_office"
+      ],
+      "timeZone": "Asia/Shanghai"
+    },
+    "sensitivity": "aggregate-only",
+    "lineage": null
+  },
+  "intent": {
+    "schema": "wynai.business-query-intent/v2",
+    "businessQuestion": "查询今年（按赢单财年口径）属于 PSM 的 x-ssl 项目，返回项目名称、客户名称、销售总监、合作伙伴和 prime office。",
+    "metrics": [
+      {
+        "field": "客户编码",
+        "fieldRef": "客户编码",
+        "aggregation": "distinctCount",
+        "alias": "record_count",
+        "concept": "recordCount",
+        "internal": true
+      }
+    ],
+    "derivedMetrics": [],
+    "dimensions": [
+      {
+        "field": "pipelineName",
+        "alias": "project_name",
+        "grain": null,
+        "concept": "projectName",
+        "fieldRef": "pipelineName",
+        "conceptId": "projectName"
+      },
+      {
+        "field": "客户名称",
+        "alias": "customer_name",
+        "grain": null,
+        "concept": "customer",
+        "fieldRef": "客户名称",
+        "conceptId": "customer"
+      },
+      {
+        "field": "Opportunity_manager",
+        "alias": "sales_director",
+        "grain": null,
+        "concept": "salesDirector",
+        "fieldRef": "Opportunity_manager",
+        "conceptId": "salesDirector"
+      },
+      {
+        "field": "Opportunity_partner",
+        "alias": "partner",
+        "grain": null,
+        "concept": "opportunityPartner",
+        "fieldRef": "Opportunity_partner",
+        "conceptId": "opportunityPartner"
+      },
+      {
+        "field": "primeOffice",
+        "alias": "prime_office",
+        "grain": null,
+        "concept": "primeOffice",
+        "fieldRef": "primeOffice",
+        "conceptId": "primeOffice"
+      }
+    ],
+    "filters": [
+      {
+        "field": "is_subcode",
+        "operator": "eq",
+        "value": 1,
+        "concept": "psm",
+        "fieldRef": "is_subcode"
+      },
+      {
+        "field": "xssl",
+        "operator": "eq",
+        "value": 1,
+        "concept": "xssl",
+        "fieldRef": "xssl"
+      },
+      {
+        "field": "赢单财年",
+        "operator": "eq",
+        "value": "27"
+      }
+    ],
+    "time": {
+      "field": "赢单财年",
+      "calendar": "fiscal",
+      "timeZone": "Asia/Shanghai",
+      "periods": [
+        "27"
+      ],
+      "range": null,
+      "grain": null,
+      "grouping": null,
+      "explicit": false,
+      "modifier": null,
+      "groupedYears": null
+    },
+    "ranking": null,
+    "expectedResult": {
+      "shape": "table",
+      "minimumRows": 0,
+      "maximumRows": 20000,
+      "requiredPeriods": [],
+      "requiredMetrics": [],
+      "requiredDimensions": [
+        "project_name",
+        "customer_name",
+        "sales_director",
+        "partner",
+        "prime_office"
+      ],
+      "timeZone": "Asia/Shanghai"
+    },
+    "constraints": [
+      {
+        "id": "c1",
+        "type": "time",
+        "source": "今年",
+        "normalized": "当前赢单财年（FY26，2025-06-01 至 2026-05-31）",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c2",
+        "type": "filter",
+        "source": "属于 PSM",
+        "normalized": "is_subcode = 1",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c3",
+        "type": "filter",
+        "source": "x-ssl 项目",
+        "normalized": "xssl = 1",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c4",
+        "type": "dimension",
+        "source": "返回项目名称、客户名称、销售总监、合作伙伴和 prime office",
+        "normalized": "pipelineName, 客户名称, Opportunity_manager, Opportunity_partner, primeOffice",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-1",
+        "type": "filter",
+        "source": "查询今年（按赢单财年口径）属于 PSM 的 x-ssl 项目，返回项目名称、客户名称、销售总监、合作伙伴和 prime office。",
+        "normalized": {
+          "field": "is_subcode",
+          "operator": "eq",
+          "value": "1",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-2",
+        "type": "filter",
+        "source": "查询今年（按赢单财年口径）属于 PSM 的 x-ssl 项目，返回项目名称、客户名称、销售总监、合作伙伴和 prime office。",
+        "normalized": {
+          "field": "xssl",
+          "operator": "eq",
+          "value": "1",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-3",
+        "type": "filter",
+        "source": "查询今年（按赢单财年口径）属于 PSM 的 x-ssl 项目，返回项目名称、客户名称、销售总监、合作伙伴和 prime office。",
+        "normalized": {
+          "field": "赢单财年",
+          "operator": "eq",
+          "value": "27",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      }
+    ],
+    "assumptions": [
+      "未明确自然年时，'今年'按赢单财年解释，即当前财年 FY26（2025-06-01 至 2026-05-31）。",
+      "PSM 映射为 is_subcode = 1。",
+      "x-ssl 映射为 xssl = 1。",
+      "销售总监映射为 Opportunity_manager。",
+      "合作伙伴映射为 Opportunity_partner。",
+      "prime office 映射为 primeOffice。",
+      "项目名称映射为 pipelineName。",
+      "不自动排除测试或删除记录，除非用户明确要求。",
+      "未明确自然年时，相对年份按赢单财年解释；用户明确自然年时使用赢单日期。",
+      "未明确自然年时，相对年份按赢单财年解释；用户明确自然年时使用赢单日期。 本次相对年份物化为 FY27。"
+    ],
+    "confidence": 0.95,
+    "skillRefs": [
+      "sales-opportunity-a53@1.3.0",
+      "temporal-semantics@1.1.0"
+    ],
+    "mappingEvidence": [
+      {
+        "source": "PSM",
+        "target": "is_subcode",
+        "evidence": "valueMappings: is_subcode concept psm canonicalValue 1 synonyms PSM"
+      },
+      {
+        "source": "x-ssl",
+        "target": "xssl",
+        "evidence": "valueMappings: xssl concept xssl canonicalValue 1 synonyms x-ssl"
+      },
+      {
+        "source": "销售总监",
+        "target": "Opportunity_manager",
+        "evidence": "businessEntities: salesDirector field Opportunity_manager synonyms 销售总监"
+      },
+      {
+        "source": "合作伙伴",
+        "target": "Opportunity_partner",
+        "evidence": "businessEntities: opportunityPartner field Opportunity_partner synonyms 合作伙伴"
+      },
+      {
+        "source": "prime office",
+        "target": "primeOffice",
+        "evidence": "businessEntities: primeOffice field primeOffice synonyms prime office"
+      },
+      {
+        "source": "项目名称",
+        "target": "pipelineName",
+        "evidence": "businessEntities: projectName field pipelineName synonyms 项目名称"
+      }
+    ],
+    "ambiguities": [],
+    "source": {
+      "planner": "llm-first-intent-planner",
+      "version": "3.0"
+    },
+    "semanticFrame": null
+  },
+  "ledger": [
+    {
+      "id": "c1",
+      "type": "time",
+      "source": "今年",
+      "normalized": "当前赢单财年（FY26，2025-06-01 至 2026-05-31）",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c2",
+      "type": "filter",
+      "source": "属于 PSM",
+      "normalized": "is_subcode = 1",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c3",
+      "type": "filter",
+      "source": "x-ssl 项目",
+      "normalized": "xssl = 1",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c4",
+      "type": "dimension",
+      "source": "返回项目名称、客户名称、销售总监、合作伙伴和 prime office",
+      "normalized": "pipelineName, 客户名称, Opportunity_manager, Opportunity_partner, primeOffice",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-1",
+      "type": "filter",
+      "source": "查询今年（按赢单财年口径）属于 PSM 的 x-ssl 项目，返回项目名称、客户名称、销售总监、合作伙伴和 prime office。",
+      "normalized": {
+        "field": "is_subcode",
+        "operator": "eq",
+        "value": "1",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-2",
+      "type": "filter",
+      "source": "查询今年（按赢单财年口径）属于 PSM 的 x-ssl 项目，返回项目名称、客户名称、销售总监、合作伙伴和 prime office。",
+      "normalized": {
+        "field": "xssl",
+        "operator": "eq",
+        "value": "1",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-3",
+      "type": "filter",
+      "source": "查询今年（按赢单财年口径）属于 PSM 的 x-ssl 项目，返回项目名称、客户名称、销售总监、合作伙伴和 prime office。",
+      "normalized": {
+        "field": "赢单财年",
+        "operator": "eq",
+        "value": "27",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    }
+  ]
+}

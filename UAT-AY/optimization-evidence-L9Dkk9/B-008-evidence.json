@@ -1,0 +1,1117 @@
+{
+  "question": "今年 MNC 和 POE 客户的 x-ssl 项目，按产品统计商机金额和项目数量",
+  "startedAt": "2026-09-11T07:25:45.855Z",
+  "completedAt": "2026-09-11T07:26:16.953Z",
+  "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\n今年 MNC 和 POE 客户的 x-ssl 项目，按产品统计商机金额和项目数量\n问\n\n查询结果为空，未找到符合条件的数据。\n\n指标\nOpportunity_amount_CNY（求和）、pipelineCode（去重计数）\n维度\n产品名称\n筛选\n客户类型 包含任一：Multinational Corporation（MNC）、Private Entity（POE）；xssl 等于 1；赢单财年 等于 27\n排序\n按Opportunity_amount_CNY（求和）降序\n查询明细\n\n暂无表格数据 · 结果集 rs-qry-intent-9f7affee\n\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+  "traceId": "trace-7ea44370-171a-4f41-a5a9-c01899a9a004",
+  "trace": [
+    {
+      "id": "operation-event-1a5951be-d422-4c5d-a326-c5b5e1bbca07",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7ea44370-171a-4f41-a5a9-c01899a9a004",
+      "sequence": 1,
+      "at": "2026-09-11T07:25:45.912Z",
+      "event": "request.accepted",
+      "phase": "transport",
+      "outcome": null,
+      "durationMs": null,
+      "conversationId": "conv-af17d243-399e-493e-8374-20667b48562b",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "method": "POST",
+        "path": "/api/smart-query/conversations/conv-af17d243-399e-493e-8374-20667b48562b/messages"
+      }
+    },
+    {
+      "id": "operation-event-381d1d12-72c7-4554-875e-dd1d26c9a4f2",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7ea44370-171a-4f41-a5a9-c01899a9a004",
+      "sequence": 2,
+      "at": "2026-09-11T07:25:45.912Z",
+      "event": "turn.received",
+      "phase": "input",
+      "outcome": null,
+      "durationMs": null,
+      "conversationId": "conv-af17d243-399e-493e-8374-20667b48562b",
+      "turnId": "turn-9982c6dd-91bf-4140-9332-b44f73164d0c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "question": "今年 MNC 和 POE 客户的 x-ssl 项目，按产品统计商机金额和项目数量",
+        "conversationState": "ready",
+        "datasetRevision": 5
+      }
+    },
+    {
+      "id": "operation-event-a4de9f11-c2e1-41e5-8868-21e2c4db97fb",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7ea44370-171a-4f41-a5a9-c01899a9a004",
+      "sequence": 3,
+      "at": "2026-09-11T07:25:45.919Z",
+      "event": "skill.resolved",
+      "phase": "skills",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-af17d243-399e-493e-8374-20667b48562b",
+      "turnId": "turn-9982c6dd-91bf-4140-9332-b44f73164d0c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "skillRefs": [
+          "sales-opportunity-a53@1.3.0",
+          "temporal-semantics@1.1.0"
+        ],
+        "conflicts": []
+      }
+    },
+    {
+      "id": "operation-event-c555004b-efc5-4c09-ab4d-65c6137d373b",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7ea44370-171a-4f41-a5a9-c01899a9a004",
+      "sequence": 4,
+      "at": "2026-09-11T07:25:58.183Z",
+      "event": "gateway.attempt",
+      "phase": "llm",
+      "outcome": "success",
+      "durationMs": 12261,
+      "conversationId": "conv-af17d243-399e-493e-8374-20667b48562b",
+      "turnId": "turn-9982c6dd-91bf-4140-9332-b44f73164d0c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "operation": "intent",
+        "attempt": 1,
+        "provider": "primary",
+        "model": "deepseek-v4-flash-0731",
+        "responseStatus": 200,
+        "durationMs": 12261,
+        "timeoutClass": "completed",
+        "error": null
+      }
+    },
+    {
+      "id": "operation-event-ba1e93e8-2cee-47f2-9723-112140c62f7a",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7ea44370-171a-4f41-a5a9-c01899a9a004",
+      "sequence": 5,
+      "at": "2026-09-11T07:26:12.860Z",
+      "event": "gateway.attempt",
+      "phase": "llm",
+      "outcome": "success",
+      "durationMs": 14674,
+      "conversationId": "conv-af17d243-399e-493e-8374-20667b48562b",
+      "turnId": "turn-9982c6dd-91bf-4140-9332-b44f73164d0c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "operation": "intent",
+        "attempt": 1,
+        "provider": "primary",
+        "model": "deepseek-v4-flash-0731",
+        "responseStatus": 200,
+        "durationMs": 14674,
+        "timeoutClass": "completed",
+        "error": null
+      }
+    },
+    {
+      "id": "operation-event-af3759f9-c43f-4ae2-886f-f5a8c271973d",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7ea44370-171a-4f41-a5a9-c01899a9a004",
+      "sequence": 6,
+      "at": "2026-09-11T07:26:12.862Z",
+      "event": "planning.completed",
+      "phase": "planning",
+      "outcome": "supported",
+      "durationMs": null,
+      "conversationId": "conv-af17d243-399e-493e-8374-20667b48562b",
+      "turnId": "turn-9982c6dd-91bf-4140-9332-b44f73164d0c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "status": "supported",
+        "plannerMode": "llm-first",
+        "diagnostics": {
+          "route": "llm-first",
+          "planningDurationMs": 26943,
+          "llmAttempted": true,
+          "llmDurationMs": 26943,
+          "circuitOpen": false,
+          "reason": "intent-llm-validated-after-repair",
+          "repairAttempted": true,
+          "llmCalls": 2
+        }
+      }
+    },
+    {
+      "id": "operation-event-e724f622-f10c-4489-ab6f-d82d0bbe311b",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7ea44370-171a-4f41-a5a9-c01899a9a004",
+      "sequence": 7,
+      "at": "2026-09-11T07:26:12.862Z",
+      "event": "query.planned",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-af17d243-399e-493e-8374-20667b48562b",
+      "turnId": "turn-9982c6dd-91bf-4140-9332-b44f73164d0c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "requestId": "qry-intent-9f7affee",
+        "mode": "aggregate",
+        "purpose": "统计今年（按赢单财年）MNC 和 POE 客户的 x-ssl 项目，按产品名称统计商机金额（CNY）和商机数量。",
+        "select": [
+          {
+            "field": "产品名称",
+            "alias": "product_name",
+            "role": "dimension",
+            "grain": null
+          }
+        ],
+        "measures": [
+          {
+            "field": "Opportunity_amount_CNY",
+            "aggregation": "sum",
+            "alias": "revenue_cny",
+            "resultType": "number"
+          },
+          {
+            "field": "pipelineCode",
+            "aggregation": "distinctCount",
+            "alias": "opportunity_count",
+            "resultType": "number"
+          }
+        ],
+        "filters": [
+          {
+            "field": "客户类型",
+            "operator": "containsAny",
+            "value": [
+              "Multinational Corporation（MNC）",
+              "Private Entity（POE）"
+            ],
+            "fieldType": "dimension"
+          },
+          {
+            "field": "xssl",
+            "operator": "eq",
+            "value": 1,
+            "fieldType": "measure"
+          },
+          {
+            "field": "赢单财年",
+            "operator": "eq",
+            "value": "27",
+            "fieldType": "dimension"
+          }
+        ],
+        "orderBy": [
+          {
+            "field": "revenue_cny",
+            "direction": "desc"
+          }
+        ],
+        "limit": 20000
+      }
+    },
+    {
+      "id": "operation-event-b9b2a346-ca74-4f22-822c-a3fd8051ea83",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7ea44370-171a-4f41-a5a9-c01899a9a004",
+      "sequence": 8,
+      "at": "2026-09-11T07:26:12.862Z",
+      "event": "query.compiled",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-af17d243-399e-493e-8374-20667b48562b",
+      "turnId": "turn-9982c6dd-91bf-4140-9332-b44f73164d0c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "requestId": "qry-intent-9f7affee",
+        "queryProgram": {
+          "schema": "wynai.query-program/v1",
+          "version": 1,
+          "baseQuery": {
+            "id": "qry-intent-9f7affee",
+            "hypothesisId": null,
+            "purpose": "统计今年（按赢单财年）MNC 和 POE 客户的 x-ssl 项目，按产品名称统计商机金额（CNY）和商机数量。",
+            "mode": "aggregate",
+            "topic": "product",
+            "dataset": {
+              "id": "18b86197-65e3-4682-8501-6e7125afad02",
+              "revision": 5
+            },
+            "select": [
+              {
+                "field": "产品名称",
+                "alias": "product_name",
+                "role": "dimension",
+                "grain": null
+              }
+            ],
+            "measures": [
+              {
+                "field": "Opportunity_amount_CNY",
+                "aggregation": "sum",
+                "alias": "revenue_cny",
+                "resultType": "number"
+              },
+              {
+                "field": "pipelineCode",
+                "aggregation": "distinctCount",
+                "alias": "opportunity_count",
+                "resultType": "number"
+              }
+            ],
+            "filters": [
+              {
+                "field": "客户类型",
+                "operator": "containsAny",
+                "value": [
+                  "Multinational Corporation（MNC）",
+                  "Private Entity（POE）"
+                ],
+                "fieldType": "dimension"
+              },
+              {
+                "field": "xssl",
+                "operator": "eq",
+                "value": 1,
+                "fieldType": "measure"
+              },
+              {
+                "field": "赢单财年",
+                "operator": "eq",
+                "value": "27",
+                "fieldType": "dimension"
+              }
+            ],
+            "resultFilters": [],
+            "fieldComparisons": [],
+            "comparison": null,
+            "orderBy": [
+              {
+                "field": "revenue_cny",
+                "direction": "desc"
+              }
+            ],
+            "limit": 20000,
+            "limitSource": "default",
+            "expectedResult": {
+              "shape": "table",
+              "minimumRows": 1,
+              "maximumRows": 20000,
+              "requiredPeriods": [],
+              "requiredMetrics": [
+                "revenue_cny",
+                "opportunity_count"
+              ],
+              "requiredDimensions": [
+                "product_name"
+              ],
+              "timeZone": "Asia/Shanghai"
+            },
+            "sensitivity": "aggregate-only",
+            "lineage": null
+          },
+          "steps": [
+            {
+              "type": "validate",
+              "expectedResult": {
+                "shape": "table",
+                "minimumRows": 1,
+                "maximumRows": 20000,
+                "requiredPeriods": [],
+                "requiredMetrics": [
+                  "revenue_cny",
+                  "opportunity_count"
+                ],
+                "requiredDimensions": [
+                  "product_name"
+                ],
+                "timeZone": "Asia/Shanghai"
+              }
+            }
+          ],
+          "output": {
+            "schema": "wynai.canonical-result-set/v1",
+            "requiredMetrics": [
+              "revenue_cny",
+              "opportunity_count"
+            ],
+            "requiredDimensions": [
+              "product_name"
+            ]
+          }
+        },
+        "plannerMode": "llm-first"
+      }
+    },
+    {
+      "id": "operation-event-317630b7-3dc8-49df-8eac-74690599ed89",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7ea44370-171a-4f41-a5a9-c01899a9a004",
+      "sequence": 9,
+      "at": "2026-09-11T07:26:12.965Z",
+      "event": "query.executed",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": 103,
+      "conversationId": "conv-af17d243-399e-493e-8374-20667b48562b",
+      "turnId": "turn-9982c6dd-91bf-4140-9332-b44f73164d0c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "request": {
+          "id": "qry-intent-9f7affee",
+          "hypothesisId": null,
+          "purpose": "统计今年（按赢单财年）MNC 和 POE 客户的 x-ssl 项目，按产品名称统计商机金额（CNY）和商机数量。",
+          "mode": "aggregate",
+          "topic": "product",
+          "dataset": {
+            "id": "18b86197-65e3-4682-8501-6e7125afad02",
+            "revision": 5
+          },
+          "select": [
+            {
+              "field": "产品名称",
+              "alias": "product_name",
+              "role": "dimension",
+              "grain": null
+            }
+          ],
+          "measures": [
+            {
+              "field": "Opportunity_amount_CNY",
+              "aggregation": "sum",
+              "alias": "revenue_cny",
+              "resultType": "number"
+            },
+            {
+              "field": "pipelineCode",
+              "aggregation": "distinctCount",
+              "alias": "opportunity_count",
+              "resultType": "number"
+            }
+          ],
+          "filters": [
+            {
+              "field": "客户类型",
+              "operator": "containsAny",
+              "value": [
+                "Multinational Corporation（MNC）",
+                "Private Entity（POE）"
+              ],
+              "fieldType": "dimension"
+            },
+            {
+              "field": "xssl",
+              "operator": "eq",
+              "value": 1,
+              "fieldType": "measure"
+            },
+            {
+              "field": "赢单财年",
+              "operator": "eq",
+              "value": "27",
+              "fieldType": "dimension"
+            }
+          ],
+          "resultFilters": [],
+          "fieldComparisons": [],
+          "comparison": null,
+          "orderBy": [
+            {
+              "field": "revenue_cny",
+              "direction": "desc"
+            }
+          ],
+          "limit": 20000,
+          "limitSource": "default",
+          "expectedResult": {
+            "shape": "table",
+            "minimumRows": 1,
+            "maximumRows": 20000,
+            "requiredPeriods": [],
+            "requiredMetrics": [
+              "revenue_cny",
+              "opportunity_count"
+            ],
+            "requiredDimensions": [
+              "product_name"
+            ],
+            "timeZone": "Asia/Shanghai"
+          },
+          "sensitivity": "aggregate-only",
+          "lineage": null
+        },
+        "resultSetId": "rs-qry-intent-9f7affee",
+        "rowCount": 0
+      }
+    },
+    {
+      "id": "operation-event-a4db516f-1064-49cb-8d02-47429516838f",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7ea44370-171a-4f41-a5a9-c01899a9a004",
+      "sequence": 10,
+      "at": "2026-09-11T07:26:12.965Z",
+      "event": "result.validated",
+      "phase": "validation",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-af17d243-399e-493e-8374-20667b48562b",
+      "turnId": "turn-9982c6dd-91bf-4140-9332-b44f73164d0c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "valid": true,
+        "errors": [],
+        "warnings": [
+          "查询范围没有匹配数据"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-9f85c609-740b-4d1c-be71-5d4d20befaf5",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7ea44370-171a-4f41-a5a9-c01899a9a004",
+      "sequence": 11,
+      "at": "2026-09-11T07:26:15.796Z",
+      "event": "presentation.planned",
+      "phase": "presentation",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-af17d243-399e-493e-8374-20667b48562b",
+      "turnId": "turn-9982c6dd-91bf-4140-9332-b44f73164d0c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "documentId": "doc-2e697436-04a8-4bcb-be89-9a9f2eaac6ec",
+        "schema": "wynai.result-presentation-plan/v1",
+        "version": 1,
+        "mode": "table-only",
+        "priority": "table",
+        "chartType": null,
+        "tableColumns": [
+          "product_name",
+          "revenue_cny",
+          "opportunity_count"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-34e45b35-0a00-447b-9f54-51180b257bd8",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7ea44370-171a-4f41-a5a9-c01899a9a004",
+      "sequence": 12,
+      "at": "2026-09-11T07:26:15.796Z",
+      "event": "response.composed",
+      "phase": "response",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-af17d243-399e-493e-8374-20667b48562b",
+      "turnId": "turn-9982c6dd-91bf-4140-9332-b44f73164d0c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "documentId": "doc-2e697436-04a8-4bcb-be89-9a9f2eaac6ec",
+        "blockTypes": [
+          "text",
+          "text",
+          "text",
+          "text",
+          "warning",
+          "warning",
+          "table"
+        ],
+        "resultSetIds": [
+          "rs-qry-intent-9f7affee"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-b0256101-acca-4a0e-8cc6-5612dccf3791",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7ea44370-171a-4f41-a5a9-c01899a9a004",
+      "sequence": 13,
+      "at": "2026-09-11T07:26:15.796Z",
+      "event": "turn.completed",
+      "phase": "completion",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-af17d243-399e-493e-8374-20667b48562b",
+      "turnId": "turn-9982c6dd-91bf-4140-9332-b44f73164d0c",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "plannerMode": "llm-first"
+      }
+    },
+    {
+      "id": "operation-event-7372f9de-9359-4353-a674-00e2ca03078a",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7ea44370-171a-4f41-a5a9-c01899a9a004",
+      "sequence": 14,
+      "at": "2026-09-11T07:26:15.796Z",
+      "event": "platform.migration.run",
+      "phase": "migration",
+      "outcome": "selected",
+      "durationMs": null,
+      "conversationId": "conv-af17d243-399e-493e-8374-20667b48562b",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "module": "smart-query-request",
+        "mode": "platform",
+        "routing": {
+          "mode": "platform",
+          "configuredMode": "platform",
+          "module": "smart-query-request",
+          "bucket": 52,
+          "percentage": 100,
+          "allowListed": false,
+          "reason": "percentage"
+        },
+        "comparison": null,
+        "fallback": false,
+        "candidateMetadata": {
+          "schema": "wynai.platform-business-orchestrator/v1",
+          "version": 1,
+          "profile": "smart-query-platform-candidate-v1",
+          "contextAudit": {
+            "schema": "wynai.platform-context-audit/v1",
+            "version": 1,
+            "originalQuestionPresent": true,
+            "messageCount": 0,
+            "activeMetricCount": 0,
+            "activeDimensionCount": 0,
+            "activeFilterCount": 0,
+            "skillCount": 0,
+            "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+            "preservedCoreContext": [
+              "original-question",
+              "active-conversation-context",
+              "dataset-metadata",
+              "skill-references",
+              "permissions-and-scope"
+            ]
+          }
+        },
+        "schema": "wynai.platform-migration-run/v1"
+      }
+    },
+    {
+      "id": "operation-event-b2b93fcc-d9ab-4129-963c-6e79812d4354",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-7ea44370-171a-4f41-a5a9-c01899a9a004",
+      "sequence": 15,
+      "at": "2026-09-11T07:26:15.796Z",
+      "event": "request.completed",
+      "phase": "transport",
+      "outcome": "ok",
+      "durationMs": 29884,
+      "conversationId": "conv-af17d243-399e-493e-8374-20667b48562b",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "plannerMode": "llm-first"
+      }
+    }
+  ],
+  "conversationId": "conv-af17d243-399e-493e-8374-20667b48562b",
+  "dataset": {
+    "id": "18b86197-65e3-4682-8501-6e7125afad02",
+    "revision": 5,
+    "name": "01测试销售订单-09"
+  },
+  "skillRefs": [
+    "sales-opportunity-a53@1.3.0",
+    "temporal-semantics@1.1.0"
+  ],
+  "canonical": {
+    "id": "qry-intent-9f7affee",
+    "hypothesisId": null,
+    "purpose": "统计今年（按赢单财年）MNC 和 POE 客户的 x-ssl 项目，按产品名称统计商机金额（CNY）和商机数量。",
+    "mode": "aggregate",
+    "topic": "product",
+    "dataset": {
+      "id": "18b86197-65e3-4682-8501-6e7125afad02",
+      "revision": 5
+    },
+    "select": [
+      {
+        "field": "产品名称",
+        "alias": "product_name",
+        "role": "dimension",
+        "grain": null
+      }
+    ],
+    "measures": [
+      {
+        "field": "Opportunity_amount_CNY",
+        "aggregation": "sum",
+        "alias": "revenue_cny",
+        "resultType": "number",
+        "concept": "revenue"
+      },
+      {
+        "field": "pipelineCode",
+        "aggregation": "distinctCount",
+        "alias": "opportunity_count",
+        "resultType": "number",
+        "concept": "opportunityCount"
+      }
+    ],
+    "filters": [
+      {
+        "field": "客户类型",
+        "operator": "containsAny",
+        "value": [
+          "Multinational Corporation（MNC）",
+          "Private Entity（POE）"
+        ],
+        "fieldType": "dimension"
+      },
+      {
+        "field": "xssl",
+        "operator": "eq",
+        "value": 1,
+        "fieldType": "measure"
+      },
+      {
+        "field": "赢单财年",
+        "operator": "eq",
+        "value": "27",
+        "fieldType": "dimension"
+      }
+    ],
+    "resultFilters": [],
+    "fieldComparisons": [],
+    "comparison": null,
+    "orderBy": [
+      {
+        "field": "revenue_cny",
+        "direction": "desc"
+      }
+    ],
+    "limit": 20000,
+    "limitSource": "default",
+    "expectedResult": {
+      "shape": "table",
+      "minimumRows": 1,
+      "maximumRows": 20000,
+      "requiredPeriods": [],
+      "requiredMetrics": [
+        "revenue_cny",
+        "opportunity_count"
+      ],
+      "requiredDimensions": [
+        "product_name"
+      ],
+      "timeZone": "Asia/Shanghai"
+    },
+    "sensitivity": "aggregate-only",
+    "lineage": null
+  },
+  "intent": {
+    "schema": "wynai.business-query-intent/v2",
+    "businessQuestion": "统计今年（按赢单财年）MNC 和 POE 客户的 x-ssl 项目，按产品名称统计商机金额（CNY）和商机数量。",
+    "metrics": [
+      {
+        "field": "Opportunity_amount_CNY",
+        "aggregation": "sum",
+        "alias": "revenue_cny",
+        "concept": "revenue",
+        "metricId": "revenueCny",
+        "internal": false,
+        "fieldRef": "Opportunity_amount_CNY",
+        "conceptId": "revenue"
+      },
+      {
+        "field": "pipelineCode",
+        "aggregation": "distinctCount",
+        "alias": "opportunity_count",
+        "concept": "opportunityCount",
+        "metricId": "opportunityCount",
+        "internal": false,
+        "fieldRef": "pipelineCode",
+        "conceptId": "opportunityCount"
+      }
+    ],
+    "derivedMetrics": [],
+    "dimensions": [
+      {
+        "field": "产品名称",
+        "alias": "product_name",
+        "grain": null,
+        "concept": "product",
+        "fieldRef": "产品名称",
+        "conceptId": "product"
+      }
+    ],
+    "filters": [
+      {
+        "field": "客户类型",
+        "operator": "containsAny",
+        "value": [
+          "Multinational Corporation（MNC）",
+          "Private Entity（POE）"
+        ],
+        "concept": "customerType",
+        "fieldRef": "客户类型"
+      },
+      {
+        "field": "xssl",
+        "operator": "eq",
+        "value": "1",
+        "concept": "xssl",
+        "fieldRef": "xssl"
+      },
+      {
+        "field": "赢单财年",
+        "operator": "eq",
+        "value": "27"
+      }
+    ],
+    "time": {
+      "field": "赢单财年",
+      "calendar": "fiscal",
+      "timeZone": "Asia/Shanghai",
+      "periods": [
+        "27"
+      ],
+      "range": null,
+      "grain": null,
+      "grouping": null,
+      "explicit": false,
+      "modifier": null,
+      "groupedYears": null
+    },
+    "ranking": null,
+    "expectedResult": {
+      "shape": "table",
+      "minimumRows": 1,
+      "maximumRows": 20000,
+      "requiredPeriods": [],
+      "requiredMetrics": [
+        "revenue_cny",
+        "opportunity_count"
+      ],
+      "requiredDimensions": [
+        "product_name"
+      ],
+      "timeZone": "Asia/Shanghai"
+    },
+    "constraints": [
+      {
+        "id": "c1",
+        "type": "time",
+        "source": "今年",
+        "normalized": "当前赢单财年（FY26，2025-06-01 至 2026-05-31）",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c2",
+        "type": "filter",
+        "source": "MNC 和 POE 客户",
+        "normalized": "客户类型包含 Multinational Corporation（MNC）或 Private Entity（POE）",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c3",
+        "type": "filter",
+        "source": "x-ssl 项目",
+        "normalized": "xssl = 1",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c4",
+        "type": "dimension",
+        "source": "按产品统计",
+        "normalized": "按产品名称分组",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c5",
+        "type": "metric",
+        "source": "商机金额",
+        "normalized": "Opportunity_amount_CNY 求和",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c6",
+        "type": "metric",
+        "source": "项目数量",
+        "normalized": "pipelineCode 去重计数",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-1",
+        "type": "filter",
+        "source": "统计今年（按赢单财年）MNC 和 POE 客户的 x-ssl 项目，按产品名称统计商机金额（CNY）和商机数量。",
+        "normalized": {
+          "field": "客户类型",
+          "operator": "containsAny",
+          "value": [
+            "Multinational Corporation（MNC）",
+            "Private Entity（POE）"
+          ],
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-2",
+        "type": "filter",
+        "source": "统计今年（按赢单财年）MNC 和 POE 客户的 x-ssl 项目，按产品名称统计商机金额（CNY）和商机数量。",
+        "normalized": {
+          "field": "xssl",
+          "operator": "eq",
+          "value": "1",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-3",
+        "type": "filter",
+        "source": "统计今年（按赢单财年）MNC 和 POE 客户的 x-ssl 项目，按产品名称统计商机金额（CNY）和商机数量。",
+        "normalized": {
+          "field": "赢单财年",
+          "operator": "eq",
+          "value": "27",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      }
+    ],
+    "assumptions": [
+      "未明确自然年，'今年'按赢单财年解释，即 FY26（2025-06-01 至 2026-05-31）。",
+      "商机金额默认使用人民币字段 Opportunity_amount_CNY。",
+      "商机数量使用 pipelineCode 去重计数。",
+      "客户类型为多值字段，MNC 和 POE 使用 containsAny 语义匹配。",
+      "用户说'产品'，按产品名称维度分组。",
+      "未明确自然年时，相对年份按赢单财年解释；用户明确自然年时使用赢单日期。",
+      "未明确自然年时，相对年份按赢单财年解释；用户明确自然年时使用赢单日期。 本次相对年份物化为 FY27。"
+    ],
+    "confidence": 0.95,
+    "skillRefs": [
+      "sales-opportunity-a53@1.3.0",
+      "temporal-semantics@1.1.0"
+    ],
+    "mappingEvidence": [
+      "客户类型字段描述中明确 MNC 和 POE 为业务简称，且 Skill valueMappings 提供规范成员值。",
+      "xssl 字段描述为是否为 x-ssl 项目，1 表示是。",
+      "产品名称字段描述为具体产品名称，用户只说产品时优先使用。",
+      "商机金额默认使用 Opportunity_amount_CNY，商机数量使用 pipelineCode 去重计数。",
+      "时间口径：Skill 默认财年，'今年'按赢单财年解释。"
+    ],
+    "ambiguities": [],
+    "source": {
+      "planner": "llm-first-intent-planner",
+      "version": "3.0"
+    },
+    "semanticFrame": null
+  },
+  "ledger": [
+    {
+      "id": "c1",
+      "type": "time",
+      "source": "今年",
+      "normalized": "当前赢单财年（FY26，2025-06-01 至 2026-05-31）",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c2",
+      "type": "filter",
+      "source": "MNC 和 POE 客户",
+      "normalized": "客户类型包含 Multinational Corporation（MNC）或 Private Entity（POE）",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c3",
+      "type": "filter",
+      "source": "x-ssl 项目",
+      "normalized": "xssl = 1",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c4",
+      "type": "dimension",
+      "source": "按产品统计",
+      "normalized": "按产品名称分组",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c5",
+      "type": "metric",
+      "source": "商机金额",
+      "normalized": "Opportunity_amount_CNY 求和",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c6",
+      "type": "metric",
+      "source": "项目数量",
+      "normalized": "pipelineCode 去重计数",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-1",
+      "type": "filter",
+      "source": "统计今年（按赢单财年）MNC 和 POE 客户的 x-ssl 项目，按产品名称统计商机金额（CNY）和商机数量。",
+      "normalized": {
+        "field": "客户类型",
+        "operator": "containsAny",
+        "value": [
+          "Multinational Corporation（MNC）",
+          "Private Entity（POE）"
+        ],
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-2",
+      "type": "filter",
+      "source": "统计今年（按赢单财年）MNC 和 POE 客户的 x-ssl 项目，按产品名称统计商机金额（CNY）和商机数量。",
+      "normalized": {
+        "field": "xssl",
+        "operator": "eq",
+        "value": "1",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-3",
+      "type": "filter",
+      "source": "统计今年（按赢单财年）MNC 和 POE 客户的 x-ssl 项目，按产品名称统计商机金额（CNY）和商机数量。",
+      "normalized": {
+        "field": "赢单财年",
+        "operator": "eq",
+        "value": "27",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    }
+  ]
+}

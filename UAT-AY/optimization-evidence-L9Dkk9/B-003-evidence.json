@@ -1,0 +1,327 @@
+{
+  "question": "去年 x-ssl 且 recurring 的项目有哪些？请返回项目名称、客户名称、recurring 类型和订单金额",
+  "startedAt": "2026-09-11T07:24:02.344Z",
+  "completedAt": "2026-09-11T07:24:32.959Z",
+  "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n等待提问\n去年 x-ssl 且 recurring 的项目有哪些？请返回项目名称、客户名称、recurring 类型和订单金额\n问\n本轮未完成\n\n大模型理解结果在有限修复后仍未通过查询约束：大模型新增了用户未要求的可见维度：recurring（跟踪编号：trace-39bd22cf-90cd-46e2-a95d-80c69b8b3224）\n\n新建会话\n大模型理解结果在有限修复后仍未通过查询约束：大模型新增了用户未要求的可见维度：recurring（跟踪编号：trace-39bd22cf-90cd-46e2-a95d-80c69b8b3224）",
+  "traceId": "trace-39bd22cf-90cd-46e2-a95d-80c69b8b3224",
+  "trace": [
+    {
+      "id": "operation-event-17922b47-1608-4934-bcac-d11a14ca3e77",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-39bd22cf-90cd-46e2-a95d-80c69b8b3224",
+      "sequence": 1,
+      "at": "2026-09-11T07:24:02.399Z",
+      "event": "request.accepted",
+      "phase": "transport",
+      "outcome": null,
+      "durationMs": null,
+      "conversationId": "conv-90382fcd-146c-473b-8467-31864d48ab26",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "method": "POST",
+        "path": "/api/smart-query/conversations/conv-90382fcd-146c-473b-8467-31864d48ab26/messages"
+      }
+    },
+    {
+      "id": "operation-event-29b5ad86-074e-458f-aee6-0ee61337029d",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-39bd22cf-90cd-46e2-a95d-80c69b8b3224",
+      "sequence": 2,
+      "at": "2026-09-11T07:24:02.399Z",
+      "event": "turn.received",
+      "phase": "input",
+      "outcome": null,
+      "durationMs": null,
+      "conversationId": "conv-90382fcd-146c-473b-8467-31864d48ab26",
+      "turnId": "turn-ec61634e-4eb2-4aaa-a0dc-290e04fd8104",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "question": "去年 x-ssl 且 recurring 的项目有哪些？请返回项目名称、客户名称、recurring 类型和订单金额",
+        "conversationState": "ready",
+        "datasetRevision": 5
+      }
+    },
+    {
+      "id": "operation-event-e16f931f-24b4-4069-b86d-af855331fbab",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-39bd22cf-90cd-46e2-a95d-80c69b8b3224",
+      "sequence": 3,
+      "at": "2026-09-11T07:24:02.405Z",
+      "event": "skill.resolved",
+      "phase": "skills",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-90382fcd-146c-473b-8467-31864d48ab26",
+      "turnId": "turn-ec61634e-4eb2-4aaa-a0dc-290e04fd8104",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "skillRefs": [
+          "sales-opportunity-a53@1.3.0",
+          "temporal-semantics@1.1.0"
+        ],
+        "conflicts": []
+      }
+    },
+    {
+      "id": "operation-event-dfbcb7a3-d421-490e-b4a0-340acbf0c462",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-39bd22cf-90cd-46e2-a95d-80c69b8b3224",
+      "sequence": 4,
+      "at": "2026-09-11T07:24:15.947Z",
+      "event": "gateway.attempt",
+      "phase": "llm",
+      "outcome": "success",
+      "durationMs": 13539,
+      "conversationId": "conv-90382fcd-146c-473b-8467-31864d48ab26",
+      "turnId": "turn-ec61634e-4eb2-4aaa-a0dc-290e04fd8104",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "operation": "intent",
+        "attempt": 1,
+        "provider": "primary",
+        "model": "deepseek-v4-flash-0731",
+        "responseStatus": 200,
+        "durationMs": 13539,
+        "timeoutClass": "completed",
+        "error": null
+      }
+    },
+    {
+      "id": "operation-event-a474e37d-022d-4d6a-bce9-57ef19c8ee79",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-39bd22cf-90cd-46e2-a95d-80c69b8b3224",
+      "sequence": 5,
+      "at": "2026-09-11T07:24:30.956Z",
+      "event": "gateway.slow",
+      "phase": "llm",
+      "outcome": "warning",
+      "durationMs": 15007,
+      "conversationId": "conv-90382fcd-146c-473b-8467-31864d48ab26",
+      "turnId": "turn-ec61634e-4eb2-4aaa-a0dc-290e04fd8104",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "operation": "intent",
+        "attempt": null,
+        "provider": "primary",
+        "model": "deepseek-v4-flash-0731",
+        "responseStatus": null,
+        "durationMs": null,
+        "timeoutClass": "soft-warning",
+        "error": null
+      }
+    },
+    {
+      "id": "operation-event-c7856819-8927-447f-bbd7-236be490ef0e",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-39bd22cf-90cd-46e2-a95d-80c69b8b3224",
+      "sequence": 6,
+      "at": "2026-09-11T07:24:31.906Z",
+      "event": "gateway.attempt",
+      "phase": "llm",
+      "outcome": "success",
+      "durationMs": 15956,
+      "conversationId": "conv-90382fcd-146c-473b-8467-31864d48ab26",
+      "turnId": "turn-ec61634e-4eb2-4aaa-a0dc-290e04fd8104",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "operation": "intent",
+        "attempt": 1,
+        "provider": "primary",
+        "model": "deepseek-v4-flash-0731",
+        "responseStatus": 200,
+        "durationMs": 15956,
+        "timeoutClass": "completed-after-soft-warning",
+        "error": null
+      }
+    },
+    {
+      "id": "operation-event-5d870c4e-76e5-47c3-80d3-9a301f460998",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-39bd22cf-90cd-46e2-a95d-80c69b8b3224",
+      "sequence": 7,
+      "at": "2026-09-11T07:24:31.908Z",
+      "event": "gateway.cache-hit",
+      "phase": "llm",
+      "outcome": "success",
+      "durationMs": 1,
+      "conversationId": "conv-90382fcd-146c-473b-8467-31864d48ab26",
+      "turnId": "turn-ec61634e-4eb2-4aaa-a0dc-290e04fd8104",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "operation": "intent",
+        "attempt": null,
+        "provider": null,
+        "model": null,
+        "responseStatus": null,
+        "durationMs": null,
+        "timeoutClass": null,
+        "error": null
+      }
+    },
+    {
+      "id": "operation-event-ba531425-93f3-4ad6-ab9a-b62f1f18f8ca",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-39bd22cf-90cd-46e2-a95d-80c69b8b3224",
+      "sequence": 8,
+      "at": "2026-09-11T07:24:31.909Z",
+      "event": "planning.completed",
+      "phase": "planning",
+      "outcome": "error",
+      "durationMs": null,
+      "conversationId": "conv-90382fcd-146c-473b-8467-31864d48ab26",
+      "turnId": "turn-ec61634e-4eb2-4aaa-a0dc-290e04fd8104",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "status": "error",
+        "plannerMode": "llm-error",
+        "diagnostics": {
+          "route": "llm-error",
+          "planningDurationMs": 29504,
+          "llmAttempted": true,
+          "llmDurationMs": 29504,
+          "circuitOpen": false,
+          "reason": "SEMANTIC_MAPPING_INVALID",
+          "errorMessage": "大模型新增了用户未要求的可见维度：recurring",
+          "failureCategory": "semantic-validation",
+          "repairAttempted": true,
+          "repairFeedback": "大模型新增了用户未要求的可见维度：recurring",
+          "llmCalls": 3
+        }
+      }
+    },
+    {
+      "id": "operation-event-c80008b1-0587-4ed8-b378-c5b6432e7caf",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-39bd22cf-90cd-46e2-a95d-80c69b8b3224",
+      "sequence": 9,
+      "at": "2026-09-11T07:24:31.910Z",
+      "event": "planning.failed",
+      "phase": "planning",
+      "outcome": "failed",
+      "durationMs": null,
+      "conversationId": "conv-90382fcd-146c-473b-8467-31864d48ab26",
+      "turnId": "turn-ec61634e-4eb2-4aaa-a0dc-290e04fd8104",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "code": "INTENT_VALIDATION_FAILED",
+        "message": "大模型理解结果在有限修复后仍未通过查询约束：大模型新增了用户未要求的可见维度：recurring",
+        "diagnostics": {
+          "route": "llm-error",
+          "planningDurationMs": 29504,
+          "llmAttempted": true,
+          "llmDurationMs": 29504,
+          "circuitOpen": false,
+          "reason": "SEMANTIC_MAPPING_INVALID",
+          "errorMessage": "大模型新增了用户未要求的可见维度：recurring",
+          "failureCategory": "semantic-validation",
+          "repairAttempted": true,
+          "repairFeedback": "大模型新增了用户未要求的可见维度：recurring",
+          "llmCalls": 3
+        }
+      }
+    },
+    {
+      "id": "operation-event-8c1447b8-3adb-45ef-ad88-b0d8abcad538",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-39bd22cf-90cd-46e2-a95d-80c69b8b3224",
+      "sequence": 10,
+      "at": "2026-09-11T07:24:31.910Z",
+      "event": "request.failed",
+      "phase": "transport",
+      "outcome": "failed",
+      "durationMs": 29512,
+      "conversationId": "conv-90382fcd-146c-473b-8467-31864d48ab26",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "code": "INTENT_VALIDATION_FAILED",
+        "status": 422,
+        "message": "大模型理解结果在有限修复后仍未通过查询约束：大模型新增了用户未要求的可见维度：recurring",
+        "attempts": []
+      }
+    }
+  ],
+  "conversationId": "conv-90382fcd-146c-473b-8467-31864d48ab26",
+  "dataset": {
+    "id": "18b86197-65e3-4682-8501-6e7125afad02",
+    "revision": 5,
+    "name": "01测试销售订单-09"
+  },
+  "skillRefs": [],
+  "canonical": null,
+  "intent": null,
+  "ledger": []
+}

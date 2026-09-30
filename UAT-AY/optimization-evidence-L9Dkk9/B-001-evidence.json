@@ -1,0 +1,1168 @@
+{
+  "question": "今年 x-ssl 的项目，而且是 POE 类型的有哪些，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期",
+  "startedAt": "2026-09-11T07:23:27.903Z",
+  "completedAt": "2026-09-11T07:23:45.357Z",
+  "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\n今年 x-ssl 的项目，而且是 POE 类型的有哪些，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期\n问\n\n查询结果为空，未找到满足条件（赢单财年 FY27、x-ssl 项目、客户类型为 POE）的商机记录。\n\n指标\n未指定\n维度\npipelineName、客户名称、Opportunity_manager、Opportunity_partner、code_open_date、预计关闭日期\n筛选\nxssl 等于 1；客户类型 包含任一：Private Entity（POE）；赢单财年 等于 27\n排序\n未排序\n查询明细\n\n暂无表格数据 · 结果集 rs-qry-intent-117b1b49\n\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+  "traceId": "trace-6d61a39f-5604-4ce9-b4eb-04268da7a45b",
+  "trace": [
+    {
+      "id": "operation-event-a9897c0e-1ccd-401d-83f5-264fb76c9d93",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-6d61a39f-5604-4ce9-b4eb-04268da7a45b",
+      "sequence": 1,
+      "at": "2026-09-11T07:23:27.952Z",
+      "event": "request.accepted",
+      "phase": "transport",
+      "outcome": null,
+      "durationMs": null,
+      "conversationId": "conv-a2ff5386-cdfd-48b8-b454-949dbc5d58a6",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "method": "POST",
+        "path": "/api/smart-query/conversations/conv-a2ff5386-cdfd-48b8-b454-949dbc5d58a6/messages"
+      }
+    },
+    {
+      "id": "operation-event-fdad265f-c93f-4958-9ed8-9dc06fe897da",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-6d61a39f-5604-4ce9-b4eb-04268da7a45b",
+      "sequence": 2,
+      "at": "2026-09-11T07:23:27.952Z",
+      "event": "turn.received",
+      "phase": "input",
+      "outcome": null,
+      "durationMs": null,
+      "conversationId": "conv-a2ff5386-cdfd-48b8-b454-949dbc5d58a6",
+      "turnId": "turn-f6e6deae-f8df-4f78-8d98-bff32bf12149",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "question": "今年 x-ssl 的项目，而且是 POE 类型的有哪些，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期",
+        "conversationState": "ready",
+        "datasetRevision": 5
+      }
+    },
+    {
+      "id": "operation-event-cb9ec34f-06e4-48bb-8964-65837a294c7e",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-6d61a39f-5604-4ce9-b4eb-04268da7a45b",
+      "sequence": 3,
+      "at": "2026-09-11T07:23:27.960Z",
+      "event": "skill.resolved",
+      "phase": "skills",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-a2ff5386-cdfd-48b8-b454-949dbc5d58a6",
+      "turnId": "turn-f6e6deae-f8df-4f78-8d98-bff32bf12149",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "skillRefs": [
+          "sales-opportunity-a53@1.3.0",
+          "temporal-semantics@1.1.0"
+        ],
+        "conflicts": []
+      }
+    },
+    {
+      "id": "operation-event-526ef471-615a-4e0e-9dc5-b4805047f0ce",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-6d61a39f-5604-4ce9-b4eb-04268da7a45b",
+      "sequence": 4,
+      "at": "2026-09-11T07:23:41.579Z",
+      "event": "gateway.attempt",
+      "phase": "llm",
+      "outcome": "success",
+      "durationMs": 13615,
+      "conversationId": "conv-a2ff5386-cdfd-48b8-b454-949dbc5d58a6",
+      "turnId": "turn-f6e6deae-f8df-4f78-8d98-bff32bf12149",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "operation": "intent",
+        "attempt": 1,
+        "provider": "primary",
+        "model": "deepseek-v4-flash-0731",
+        "responseStatus": 200,
+        "durationMs": 13615,
+        "timeoutClass": "completed",
+        "error": null
+      }
+    },
+    {
+      "id": "operation-event-5a0a8413-54ca-47bc-9e51-8b37ad31914d",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-6d61a39f-5604-4ce9-b4eb-04268da7a45b",
+      "sequence": 5,
+      "at": "2026-09-11T07:23:41.581Z",
+      "event": "planning.completed",
+      "phase": "planning",
+      "outcome": "supported",
+      "durationMs": null,
+      "conversationId": "conv-a2ff5386-cdfd-48b8-b454-949dbc5d58a6",
+      "turnId": "turn-f6e6deae-f8df-4f78-8d98-bff32bf12149",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "status": "supported",
+        "plannerMode": "llm-first",
+        "diagnostics": {
+          "route": "llm-first",
+          "planningDurationMs": 13621,
+          "llmAttempted": true,
+          "llmDurationMs": 13621,
+          "circuitOpen": false,
+          "reason": "intent-llm-validated",
+          "repairAttempted": false,
+          "llmCalls": 1
+        }
+      }
+    },
+    {
+      "id": "operation-event-dcc40f95-5918-4adc-8faf-da6cc37aedad",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-6d61a39f-5604-4ce9-b4eb-04268da7a45b",
+      "sequence": 6,
+      "at": "2026-09-11T07:23:41.582Z",
+      "event": "query.planned",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-a2ff5386-cdfd-48b8-b454-949dbc5d58a6",
+      "turnId": "turn-f6e6deae-f8df-4f78-8d98-bff32bf12149",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "requestId": "qry-intent-117b1b49",
+        "mode": "aggregate",
+        "purpose": "查询今年（按赢单财年）x-ssl 项目且客户类型为 POE 的商机，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期。",
+        "select": [
+          {
+            "field": "pipelineName",
+            "alias": "project_name",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "客户名称",
+            "alias": "customer_name",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "Opportunity_manager",
+            "alias": "sales_director",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "Opportunity_partner",
+            "alias": "partner",
+            "role": "dimension",
+            "grain": null
+          },
+          {
+            "field": "code_open_date",
+            "alias": "created_date",
+            "role": "time",
+            "grain": null
+          },
+          {
+            "field": "预计关闭日期",
+            "alias": "expected_end_date",
+            "role": "time",
+            "grain": null
+          }
+        ],
+        "measures": [
+          {
+            "field": "客户编码",
+            "aggregation": "distinctCount",
+            "alias": "record_count",
+            "resultType": "number"
+          }
+        ],
+        "filters": [
+          {
+            "field": "xssl",
+            "operator": "eq",
+            "value": 1,
+            "fieldType": "measure"
+          },
+          {
+            "field": "客户类型",
+            "operator": "containsAny",
+            "value": [
+              "Private Entity（POE）"
+            ],
+            "fieldType": "dimension"
+          },
+          {
+            "field": "赢单财年",
+            "operator": "eq",
+            "value": "27",
+            "fieldType": "dimension"
+          }
+        ],
+        "orderBy": [
+          {
+            "field": "record_count",
+            "direction": "desc"
+          }
+        ],
+        "limit": 20000
+      }
+    },
+    {
+      "id": "operation-event-cc43938b-4fbb-4cdb-9018-2826363e7f91",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-6d61a39f-5604-4ce9-b4eb-04268da7a45b",
+      "sequence": 7,
+      "at": "2026-09-11T07:23:41.582Z",
+      "event": "query.compiled",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-a2ff5386-cdfd-48b8-b454-949dbc5d58a6",
+      "turnId": "turn-f6e6deae-f8df-4f78-8d98-bff32bf12149",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "requestId": "qry-intent-117b1b49",
+        "queryProgram": {
+          "schema": "wynai.query-program/v1",
+          "version": 1,
+          "baseQuery": {
+            "id": "qry-intent-117b1b49",
+            "hypothesisId": null,
+            "purpose": "查询今年（按赢单财年）x-ssl 项目且客户类型为 POE 的商机，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期。",
+            "mode": "aggregate",
+            "topic": "product",
+            "dataset": {
+              "id": "18b86197-65e3-4682-8501-6e7125afad02",
+              "revision": 5
+            },
+            "select": [
+              {
+                "field": "pipelineName",
+                "alias": "project_name",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "客户名称",
+                "alias": "customer_name",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "Opportunity_manager",
+                "alias": "sales_director",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "Opportunity_partner",
+                "alias": "partner",
+                "role": "dimension",
+                "grain": null
+              },
+              {
+                "field": "code_open_date",
+                "alias": "created_date",
+                "role": "time",
+                "grain": null
+              },
+              {
+                "field": "预计关闭日期",
+                "alias": "expected_end_date",
+                "role": "time",
+                "grain": null
+              }
+            ],
+            "measures": [
+              {
+                "field": "客户编码",
+                "aggregation": "distinctCount",
+                "alias": "record_count",
+                "resultType": "number"
+              }
+            ],
+            "filters": [
+              {
+                "field": "xssl",
+                "operator": "eq",
+                "value": 1,
+                "fieldType": "measure"
+              },
+              {
+                "field": "客户类型",
+                "operator": "containsAny",
+                "value": [
+                  "Private Entity（POE）"
+                ],
+                "fieldType": "dimension"
+              },
+              {
+                "field": "赢单财年",
+                "operator": "eq",
+                "value": "27",
+                "fieldType": "dimension"
+              }
+            ],
+            "resultFilters": [],
+            "fieldComparisons": [],
+            "comparison": null,
+            "orderBy": [
+              {
+                "field": "record_count",
+                "direction": "desc"
+              }
+            ],
+            "limit": 20000,
+            "limitSource": "default",
+            "expectedResult": {
+              "shape": "table",
+              "minimumRows": 0,
+              "maximumRows": 20000,
+              "requiredPeriods": [],
+              "requiredMetrics": [],
+              "requiredDimensions": [
+                "project_name",
+                "customer_name",
+                "sales_director",
+                "partner",
+                "created_date",
+                "expected_end_date"
+              ],
+              "timeZone": "Asia/Shanghai"
+            },
+            "sensitivity": "aggregate-only",
+            "lineage": null
+          },
+          "steps": [
+            {
+              "type": "drop-internal-metrics",
+              "aliases": [
+                "record_count"
+              ]
+            },
+            {
+              "type": "validate",
+              "expectedResult": {
+                "shape": "table",
+                "minimumRows": 0,
+                "maximumRows": 20000,
+                "requiredPeriods": [],
+                "requiredMetrics": [],
+                "requiredDimensions": [
+                  "project_name",
+                  "customer_name",
+                  "sales_director",
+                  "partner",
+                  "created_date",
+                  "expected_end_date"
+                ],
+                "timeZone": "Asia/Shanghai"
+              }
+            }
+          ],
+          "output": {
+            "schema": "wynai.canonical-result-set/v1",
+            "requiredMetrics": [],
+            "requiredDimensions": [
+              "project_name",
+              "customer_name",
+              "sales_director",
+              "partner",
+              "created_date",
+              "expected_end_date"
+            ]
+          }
+        },
+        "plannerMode": "llm-first"
+      }
+    },
+    {
+      "id": "operation-event-606e1f7b-e9a8-4ec2-95c1-b0c54a3a1211",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-6d61a39f-5604-4ce9-b4eb-04268da7a45b",
+      "sequence": 8,
+      "at": "2026-09-11T07:23:41.677Z",
+      "event": "query.executed",
+      "phase": "query",
+      "outcome": "success",
+      "durationMs": 95,
+      "conversationId": "conv-a2ff5386-cdfd-48b8-b454-949dbc5d58a6",
+      "turnId": "turn-f6e6deae-f8df-4f78-8d98-bff32bf12149",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "request": {
+          "id": "qry-intent-117b1b49",
+          "hypothesisId": null,
+          "purpose": "查询今年（按赢单财年）x-ssl 项目且客户类型为 POE 的商机，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期。",
+          "mode": "aggregate",
+          "topic": "product",
+          "dataset": {
+            "id": "18b86197-65e3-4682-8501-6e7125afad02",
+            "revision": 5
+          },
+          "select": [
+            {
+              "field": "pipelineName",
+              "alias": "project_name",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "客户名称",
+              "alias": "customer_name",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "Opportunity_manager",
+              "alias": "sales_director",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "Opportunity_partner",
+              "alias": "partner",
+              "role": "dimension",
+              "grain": null
+            },
+            {
+              "field": "code_open_date",
+              "alias": "created_date",
+              "role": "time",
+              "grain": null
+            },
+            {
+              "field": "预计关闭日期",
+              "alias": "expected_end_date",
+              "role": "time",
+              "grain": null
+            }
+          ],
+          "measures": [
+            {
+              "field": "客户编码",
+              "aggregation": "distinctCount",
+              "alias": "record_count",
+              "resultType": "number"
+            }
+          ],
+          "filters": [
+            {
+              "field": "xssl",
+              "operator": "eq",
+              "value": 1,
+              "fieldType": "measure"
+            },
+            {
+              "field": "客户类型",
+              "operator": "containsAny",
+              "value": [
+                "Private Entity（POE）"
+              ],
+              "fieldType": "dimension"
+            },
+            {
+              "field": "赢单财年",
+              "operator": "eq",
+              "value": "27",
+              "fieldType": "dimension"
+            }
+          ],
+          "resultFilters": [],
+          "fieldComparisons": [],
+          "comparison": null,
+          "orderBy": [
+            {
+              "field": "record_count",
+              "direction": "desc"
+            }
+          ],
+          "limit": 20000,
+          "limitSource": "default",
+          "expectedResult": {
+            "shape": "table",
+            "minimumRows": 0,
+            "maximumRows": 20000,
+            "requiredPeriods": [],
+            "requiredMetrics": [],
+            "requiredDimensions": [
+              "project_name",
+              "customer_name",
+              "sales_director",
+              "partner",
+              "created_date",
+              "expected_end_date"
+            ],
+            "timeZone": "Asia/Shanghai"
+          },
+          "sensitivity": "aggregate-only",
+          "lineage": null
+        },
+        "resultSetId": "rs-qry-intent-117b1b49",
+        "rowCount": 0
+      }
+    },
+    {
+      "id": "operation-event-663c63d6-6e37-4c7b-a860-84e34739ee4d",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-6d61a39f-5604-4ce9-b4eb-04268da7a45b",
+      "sequence": 9,
+      "at": "2026-09-11T07:23:41.677Z",
+      "event": "result.validated",
+      "phase": "validation",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-a2ff5386-cdfd-48b8-b454-949dbc5d58a6",
+      "turnId": "turn-f6e6deae-f8df-4f78-8d98-bff32bf12149",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "valid": true,
+        "errors": [],
+        "warnings": [
+          "查询范围没有匹配数据"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-9f5614c5-6370-4ad2-b374-a71c69c39bb4",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-6d61a39f-5604-4ce9-b4eb-04268da7a45b",
+      "sequence": 10,
+      "at": "2026-09-11T07:23:44.270Z",
+      "event": "presentation.planned",
+      "phase": "presentation",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-a2ff5386-cdfd-48b8-b454-949dbc5d58a6",
+      "turnId": "turn-f6e6deae-f8df-4f78-8d98-bff32bf12149",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "documentId": "doc-51c03b76-1a8d-45df-a847-9b6a24059eb9",
+        "schema": "wynai.result-presentation-plan/v1",
+        "version": 1,
+        "mode": "table-only",
+        "priority": "table",
+        "chartType": null,
+        "tableColumns": [
+          "customer_name",
+          "project_name",
+          "sales_director",
+          "partner"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-f53b8b64-4cb8-4904-a8fd-e8065987ae08",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-6d61a39f-5604-4ce9-b4eb-04268da7a45b",
+      "sequence": 11,
+      "at": "2026-09-11T07:23:44.270Z",
+      "event": "response.composed",
+      "phase": "response",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-a2ff5386-cdfd-48b8-b454-949dbc5d58a6",
+      "turnId": "turn-f6e6deae-f8df-4f78-8d98-bff32bf12149",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "documentId": "doc-51c03b76-1a8d-45df-a847-9b6a24059eb9",
+        "blockTypes": [
+          "text",
+          "text",
+          "text",
+          "text",
+          "warning",
+          "warning",
+          "table"
+        ],
+        "resultSetIds": [
+          "rs-qry-intent-117b1b49"
+        ]
+      }
+    },
+    {
+      "id": "operation-event-40f97f3b-6ac9-432d-977f-55e8ad1ef191",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-6d61a39f-5604-4ce9-b4eb-04268da7a45b",
+      "sequence": 12,
+      "at": "2026-09-11T07:23:44.270Z",
+      "event": "turn.completed",
+      "phase": "completion",
+      "outcome": "success",
+      "durationMs": null,
+      "conversationId": "conv-a2ff5386-cdfd-48b8-b454-949dbc5d58a6",
+      "turnId": "turn-f6e6deae-f8df-4f78-8d98-bff32bf12149",
+      "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {
+        "conversation": "wynai.smart-query-conversation/v3",
+        "intent": "wynai.business-query-intent/v2",
+        "canonicalQuery": "v1"
+      },
+      "details": {
+        "plannerMode": "llm-first"
+      }
+    },
+    {
+      "id": "operation-event-a53f547e-471d-4a2f-b2f9-52e2ac8faac2",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-6d61a39f-5604-4ce9-b4eb-04268da7a45b",
+      "sequence": 13,
+      "at": "2026-09-11T07:23:44.270Z",
+      "event": "platform.migration.run",
+      "phase": "migration",
+      "outcome": "selected",
+      "durationMs": null,
+      "conversationId": "conv-a2ff5386-cdfd-48b8-b454-949dbc5d58a6",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "module": "smart-query-request",
+        "mode": "platform",
+        "routing": {
+          "mode": "platform",
+          "configuredMode": "platform",
+          "module": "smart-query-request",
+          "bucket": 52,
+          "percentage": 100,
+          "allowListed": false,
+          "reason": "percentage"
+        },
+        "comparison": null,
+        "fallback": false,
+        "candidateMetadata": {
+          "schema": "wynai.platform-business-orchestrator/v1",
+          "version": 1,
+          "profile": "smart-query-platform-candidate-v1",
+          "contextAudit": {
+            "schema": "wynai.platform-context-audit/v1",
+            "version": 1,
+            "originalQuestionPresent": true,
+            "messageCount": 0,
+            "activeMetricCount": 0,
+            "activeDimensionCount": 0,
+            "activeFilterCount": 0,
+            "skillCount": 0,
+            "datasetId": "18b86197-65e3-4682-8501-6e7125afad02",
+            "preservedCoreContext": [
+              "original-question",
+              "active-conversation-context",
+              "dataset-metadata",
+              "skill-references",
+              "permissions-and-scope"
+            ]
+          }
+        },
+        "schema": "wynai.platform-migration-run/v1"
+      }
+    },
+    {
+      "id": "operation-event-842b302f-72cf-467c-bf76-dfa412ef4289",
+      "schema": "wynai.operation-event/v1",
+      "traceId": "trace-6d61a39f-5604-4ce9-b4eb-04268da7a45b",
+      "sequence": 14,
+      "at": "2026-09-11T07:23:44.270Z",
+      "event": "request.completed",
+      "phase": "transport",
+      "outcome": "ok",
+      "durationMs": 16319,
+      "conversationId": "conv-a2ff5386-cdfd-48b8-b454-949dbc5d58a6",
+      "turnId": null,
+      "datasetId": null,
+      "actor": "anonymous",
+      "organizationId": null,
+      "userId": null,
+      "versions": {},
+      "details": {
+        "plannerMode": "llm-first"
+      }
+    }
+  ],
+  "conversationId": "conv-a2ff5386-cdfd-48b8-b454-949dbc5d58a6",
+  "dataset": {
+    "id": "18b86197-65e3-4682-8501-6e7125afad02",
+    "revision": 5,
+    "name": "01测试销售订单-09"
+  },
+  "skillRefs": [
+    "sales-opportunity-a53@1.3.0"
+  ],
+  "canonical": {
+    "id": "qry-intent-117b1b49",
+    "hypothesisId": null,
+    "purpose": "查询今年（按赢单财年）x-ssl 项目且客户类型为 POE 的商机，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期。",
+    "mode": "aggregate",
+    "topic": "product",
+    "dataset": {
+      "id": "18b86197-65e3-4682-8501-6e7125afad02",
+      "revision": 5
+    },
+    "select": [
+      {
+        "field": "pipelineName",
+        "alias": "project_name",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "客户名称",
+        "alias": "customer_name",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "Opportunity_manager",
+        "alias": "sales_director",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "Opportunity_partner",
+        "alias": "partner",
+        "role": "dimension",
+        "grain": null
+      },
+      {
+        "field": "code_open_date",
+        "alias": "created_date",
+        "role": "time",
+        "grain": null
+      },
+      {
+        "field": "预计关闭日期",
+        "alias": "expected_end_date",
+        "role": "time",
+        "grain": null
+      }
+    ],
+    "measures": [],
+    "filters": [
+      {
+        "field": "xssl",
+        "operator": "eq",
+        "value": 1,
+        "fieldType": "measure"
+      },
+      {
+        "field": "客户类型",
+        "operator": "containsAny",
+        "value": [
+          "Private Entity（POE）"
+        ],
+        "fieldType": "dimension"
+      },
+      {
+        "field": "赢单财年",
+        "operator": "eq",
+        "value": "27",
+        "fieldType": "dimension"
+      }
+    ],
+    "resultFilters": [],
+    "fieldComparisons": [],
+    "comparison": null,
+    "orderBy": [],
+    "limit": 20000,
+    "limitSource": "default",
+    "expectedResult": {
+      "shape": "table",
+      "minimumRows": 0,
+      "maximumRows": 20000,
+      "requiredPeriods": [],
+      "requiredMetrics": [],
+      "requiredDimensions": [
+        "project_name",
+        "customer_name",
+        "sales_director",
+        "partner",
+        "created_date",
+        "expected_end_date"
+      ],
+      "timeZone": "Asia/Shanghai"
+    },
+    "sensitivity": "aggregate-only",
+    "lineage": null
+  },
+  "intent": {
+    "schema": "wynai.business-query-intent/v2",
+    "businessQuestion": "查询今年（按赢单财年）x-ssl 项目且客户类型为 POE 的商机，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期。",
+    "metrics": [
+      {
+        "field": "客户编码",
+        "fieldRef": "客户编码",
+        "aggregation": "distinctCount",
+        "alias": "record_count",
+        "concept": "recordCount",
+        "internal": true
+      }
+    ],
+    "derivedMetrics": [],
+    "dimensions": [
+      {
+        "field": "pipelineName",
+        "alias": "project_name",
+        "grain": null,
+        "concept": "projectName",
+        "fieldRef": "pipelineName",
+        "conceptId": "projectName"
+      },
+      {
+        "field": "客户名称",
+        "alias": "customer_name",
+        "grain": null,
+        "concept": "customer",
+        "fieldRef": "客户名称",
+        "conceptId": "customer"
+      },
+      {
+        "field": "Opportunity_manager",
+        "alias": "sales_director",
+        "grain": null,
+        "concept": "salesDirector",
+        "fieldRef": "Opportunity_manager",
+        "conceptId": "salesDirector"
+      },
+      {
+        "field": "Opportunity_partner",
+        "alias": "partner",
+        "grain": null,
+        "concept": "opportunityPartner",
+        "fieldRef": "Opportunity_partner",
+        "conceptId": "opportunityPartner"
+      },
+      {
+        "field": "code_open_date",
+        "alias": "created_date",
+        "grain": null,
+        "concept": "createdDate",
+        "fieldRef": "code_open_date",
+        "conceptId": "createdDate"
+      },
+      {
+        "field": "预计关闭日期",
+        "alias": "expected_end_date",
+        "grain": null,
+        "concept": "expectedEndDate",
+        "fieldRef": "预计关闭日期",
+        "conceptId": "expectedEndDate"
+      }
+    ],
+    "filters": [
+      {
+        "field": "xssl",
+        "operator": "eq",
+        "value": 1,
+        "concept": "xssl",
+        "fieldRef": "xssl"
+      },
+      {
+        "field": "客户类型",
+        "operator": "containsAny",
+        "value": "Private Entity（POE）",
+        "concept": "customerType",
+        "fieldRef": "客户类型"
+      },
+      {
+        "field": "赢单财年",
+        "operator": "eq",
+        "value": "27"
+      }
+    ],
+    "time": {
+      "field": "赢单财年",
+      "calendar": "fiscal",
+      "timeZone": "Asia/Shanghai",
+      "periods": [
+        "27"
+      ],
+      "range": null,
+      "grain": null,
+      "grouping": null,
+      "explicit": false,
+      "modifier": "current-fiscal-year",
+      "groupedYears": null
+    },
+    "ranking": null,
+    "expectedResult": {
+      "shape": "table",
+      "minimumRows": 0,
+      "maximumRows": 20000,
+      "requiredPeriods": [],
+      "requiredMetrics": [],
+      "requiredDimensions": [
+        "project_name",
+        "customer_name",
+        "sales_director",
+        "partner",
+        "created_date",
+        "expected_end_date"
+      ],
+      "timeZone": "Asia/Shanghai"
+    },
+    "constraints": [
+      {
+        "id": "c1",
+        "type": "filter",
+        "source": "user",
+        "normalized": "xssl = 1",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c2",
+        "type": "filter",
+        "source": "user",
+        "normalized": "客户类型 containsAny 'Private Entity（POE）'",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c3",
+        "type": "time",
+        "source": "user",
+        "normalized": "今年（赢单财年 FY26）",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "c4",
+        "type": "dimension",
+        "source": "user",
+        "normalized": "返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期",
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-1",
+        "type": "filter",
+        "source": "查询今年（按赢单财年）x-ssl 项目且客户类型为 POE 的商机，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期。",
+        "normalized": {
+          "field": "xssl",
+          "operator": "eq",
+          "value": "1",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-2",
+        "type": "filter",
+        "source": "查询今年（按赢单财年）x-ssl 项目且客户类型为 POE 的商机，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期。",
+        "normalized": {
+          "field": "客户类型",
+          "operator": "containsAny",
+          "value": "Private Entity（POE）",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      },
+      {
+        "id": "filter-ledger-3",
+        "type": "filter",
+        "source": "查询今年（按赢单财年）x-ssl 项目且客户类型为 POE 的商机，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期。",
+        "normalized": {
+          "field": "赢单财年",
+          "operator": "eq",
+          "value": "27",
+          "negated": false
+        },
+        "required": true,
+        "status": "resolved"
+      }
+    ],
+    "assumptions": [
+      "“今年”按赢单财年解释，当前日期 2026-09-11 属于 FY26（2025-06-01 至 2026-05-31），因此时间范围为 FY26。",
+      "x-ssl 项目映射为 xssl 字段等于 1。",
+      "POE 客户类型映射为客户类型字段包含 'Private Entity（POE）'，使用 containsAny 语义。",
+      "返回字段均为维度，不涉及聚合指标。",
+      "未明确自然年时，相对年份按赢单财年解释；用户明确自然年时使用赢单日期。",
+      "未明确自然年时，相对年份按赢单财年解释；用户明确自然年时使用赢单日期。 本次相对年份物化为 FY27。"
+    ],
+    "confidence": 0.95,
+    "skillRefs": [
+      "sales-opportunity-a53@1.3.0"
+    ],
+    "mappingEvidence": [
+      "xssl 字段描述为是否为 x-ssl 项目，1 代表是。",
+      "客户类型字段的 valueMappings 中 POE 映射为 'Private Entity（POE）'。",
+      "pipelineName 字段同义词包含项目名称。",
+      "Opportunity_manager 字段同义词包含销售总监。",
+      "Opportunity_partner 字段同义词包含合作伙伴。",
+      "code_open_date 字段描述为创建日期。",
+      "预计关闭日期 字段同义词包含预计结束日期。"
+    ],
+    "ambiguities": [],
+    "source": {
+      "planner": "llm-first-intent-planner",
+      "version": "3.0"
+    },
+    "semanticFrame": null
+  },
+  "ledger": [
+    {
+      "id": "c1",
+      "type": "filter",
+      "source": "user",
+      "normalized": "xssl = 1",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c2",
+      "type": "filter",
+      "source": "user",
+      "normalized": "客户类型 containsAny 'Private Entity（POE）'",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c3",
+      "type": "time",
+      "source": "user",
+      "normalized": "今年（赢单财年 FY26）",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "c4",
+      "type": "dimension",
+      "source": "user",
+      "normalized": "返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期",
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-1",
+      "type": "filter",
+      "source": "查询今年（按赢单财年）x-ssl 项目且客户类型为 POE 的商机，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期。",
+      "normalized": {
+        "field": "xssl",
+        "operator": "eq",
+        "value": "1",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-2",
+      "type": "filter",
+      "source": "查询今年（按赢单财年）x-ssl 项目且客户类型为 POE 的商机，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期。",
+      "normalized": {
+        "field": "客户类型",
+        "operator": "containsAny",
+        "value": "Private Entity（POE）",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    },
+    {
+      "id": "filter-ledger-3",
+      "type": "filter",
+      "source": "查询今年（按赢单财年）x-ssl 项目且客户类型为 POE 的商机，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期。",
+      "normalized": {
+        "field": "赢单财年",
+        "operator": "eq",
+        "value": "27",
+        "negated": false
+      },
+      "required": true,
+      "status": "resolved"
+    }
+  ]
+}

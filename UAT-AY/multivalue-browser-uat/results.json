@@ -1,0 +1,56 @@
+[
+  {
+    "id": "MV-001",
+    "question": "我的POE客户名单",
+    "startedAt": "2026-09-09T15:11:23.318Z",
+    "completedAt": "2026-09-09T15:11:40.568Z",
+    "status": "passed",
+    "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\n我的POE客户名单\n问\n\n查询到7个客户类型为POE（Private Entity）的客户，按商机数量降序排列，商机数量范围为61至3456。\n\n指标\npipelineCode（去重计数）\n维度\n客户名称\n筛选\n客户类型 包含任一：Private Entity（POE）\n排序\n按pipelineCode（去重计数）降序\n我的POE客户名单\n数据洞察\n客户名称\tpipelineCode\n客户492\t3,456\n客户4\t2,620\n客户5\t1,762\n客户23\t1,622\n客户3\t382\n客户2\t323\n客户9\t61\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+    "screenshot": "UAT-AY/multivalue-browser-uat/screenshots/MV-001.png"
+  },
+  {
+    "id": "MV-002",
+    "question": "我的MNC客户名单",
+    "startedAt": "2026-09-09T15:11:40.612Z",
+    "completedAt": "2026-09-09T15:11:57.912Z",
+    "status": "passed",
+    "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\n我的MNC客户名单\n问\n\n已列出客户类型为MNC（跨国公司）的客户名单，共7个客户，并附有各客户的商机数量（去重计数）。\n\n指标\npipelineCode（去重计数）\n维度\n客户名称\n筛选\n客户类型 包含任一：Multinational Corporation（MNC）\n排序\n按pipelineCode（去重计数）降序\n我的MNC客户名单\n数据洞察\n客户名称\tpipelineCode\n客户492\t4,698\n客户4\t4,543\n客户23\t2,720\n客户5\t1,977\n客户3\t494\n客户2\t359\n客户9\t98\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+    "screenshot": "UAT-AY/multivalue-browser-uat/screenshots/MV-002.png"
+  },
+  {
+    "id": "MV-003",
+    "question": "我的POE、MNC客户名单",
+    "startedAt": "2026-09-09T15:11:57.946Z",
+    "completedAt": "2026-09-09T15:12:16.042Z",
+    "status": "passed",
+    "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\n我的POE、MNC客户名单\n问\n\n查询到7个客户类型为POE或MNC的客户，按商机数量降序排列。\n\n指标\npipelineCode（去重计数）\n维度\n客户名称\n筛选\n客户类型 包含任一：Private Entity（POE）、Multinational Corporation（MNC）\n排序\n按pipelineCode（去重计数）降序\n我的POE、MNC客户名单\n数据洞察\n客户名称\tpipelineCode\n客户492\t8,151\n客户4\t7,160\n客户23\t4,339\n客户5\t3,738\n客户3\t875\n客户2\t682\n客户9\t159\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+    "screenshot": "UAT-AY/multivalue-browser-uat/screenshots/MV-003.png"
+  },
+  {
+    "id": "MV-004",
+    "question": "MNC、POE客户的商机金额是多少",
+    "startedAt": "2026-09-09T15:12:16.079Z",
+    "completedAt": "2026-09-09T15:12:27.911Z",
+    "status": "passed",
+    "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\nMNC、POE客户的商机金额是多少\n问\n\nMNC和POE客户的商机金额（人民币）合计为10,811,846,592.18元。\n\n指标\nOpportunity_amount_CNY（求和）\n维度\n未分组\n筛选\n客户类型 包含任一：Multinational Corporation（MNC）、Private Entity（POE）\n排序\n未排序\nOpportunity_amount_CNY\n10,811,846,592.18\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+    "screenshot": "UAT-AY/multivalue-browser-uat/screenshots/MV-004.png"
+  },
+  {
+    "id": "MV-005",
+    "question": "不是MNC和POE客户的商机金额是多少",
+    "startedAt": "2026-09-09T15:12:27.945Z",
+    "completedAt": "2026-09-09T15:12:38.049Z",
+    "status": "passed",
+    "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\n不是MNC和POE客户的商机金额是多少\n问\n\n客户类型既不是MNC也不是POE的商机金额总和为2,401,301,728.07元人民币。\n\n指标\nOpportunity_amount_CNY（求和）\n维度\n未分组\n筛选\n客户类型 不包含任何：Multinational Corporation（MNC）、Private Entity（POE）\n排序\n未排序\nOpportunity_amount_CNY\n2,401,301,728.07\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+    "screenshot": "UAT-AY/multivalue-browser-uat/screenshots/MV-005.png"
+  },
+  {
+    "id": "MV-006",
+    "question": "MNC 客户的商机金额大于20万的商机有几个",
+    "startedAt": "2026-09-09T15:12:38.094Z",
+    "completedAt": "2026-09-09T15:12:49.315Z",
+    "status": "passed",
+    "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\nMNC 客户的商机金额大于20万的商机有几个\n问\n\n客户类型为 MNC（Multinational Corporation）且商机金额大于 20 万人民币的商机数量为 4301 个。\n\n指标\npipelineCode（去重计数）\n维度\n未分组\n筛选\n客户类型 包含任一：Multinational Corporation（MNC）；Opportunity_amount_CNY 大于 200000\n排序\n未排序\npipelineCode\n4,301\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+    "screenshot": "UAT-AY/multivalue-browser-uat/screenshots/MV-006.png"
+  }
+]

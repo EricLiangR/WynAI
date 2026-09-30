@@ -1,0 +1,12 @@
+[
+  {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 404 (Not Found)",
+    "at": "2026-09-11T07:23:26.316Z"
+  },
+  {
+    "type": "error",
+    "text": "Failed to load resource: the server responded with a status of 422 (Unprocessable Entity)",
+    "at": "2026-09-11T07:24:31.916Z"
+  }
+]

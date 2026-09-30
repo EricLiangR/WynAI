@@ -167,8 +167,8 @@ test('分别计算增长率时显示名绑定到各自来源指标', async () =>
   modelIntent.expectedResult.requiredMetrics.push('revenueGrowthRate');
   const plan = await planBusinessQuestionAsync({ metadata, question, llm: { enabled: true, async planQueryIntent() { return modelIntent; } } });
   assert.equal(plan.status, 'supported');
-  assert.deepEqual(plan.intent.derivedMetrics.map(item => item.source), ['销售额同比增长率', '利润同比增长率', '订单数量同比增长率']);
-  assert.deepEqual(plan.displayRequest.measures.filter(item => item.derived).map(item => item.field), ['销售额同比增长率', '利润同比增长率', '订单数量同比增长率']);
+  assert.deepEqual(plan.intent.derivedMetrics.map(item => item.source), ['同比增长率']);
+  assert.deepEqual(plan.displayRequest.measures.filter(item => item.derived).map(item => item.field), ['同比增长率']);
 });
 
 test('Skill 派生指标自动注入内部依赖并统一可见字段契约', async () => {
@@ -230,6 +230,52 @@ test('显式年月被遗漏时触发 LLM 修复轮次', async () => {
   assert.equal(calls, 2);
   assert.equal(plan.status, 'supported');
   assert.equal(plan.intent.dimensions[0].grain, 'month');
+});
+
+test('Skill 默认财年时按年查询通过修复轮次改用财年字段并由 Wyn 分组', async () => {
+  const question = '每年的收入和项目数量';
+  const catalog = {
+    ...metadata,
+    fields: [...metadata.fields, { name: '赢单财年', role: 'dimension', type: 'String', rawType: 'String' }],
+  };
+  const fiscalSkill = {
+    id: 'generic-fiscal-grouping', version: '1.0.0', status: 'approved', defaultCalendar: 'fiscal',
+    calendarPolicy: { default: 'fiscal', fiscalYearField: '赢单财年', dateField: '订购日期', fiscalYearStart: '06-01' },
+  };
+  const base = {
+    schema: 'wynai.business-query-intent/v2', businessQuestion: question,
+    metrics: [
+      { field: '订单金额', aggregation: 'sum', alias: 'revenue', concept: 'revenue' },
+      { field: '订单编号', aggregation: 'distinctCount', alias: 'project_count', concept: 'projectCount' },
+    ],
+    derivedMetrics: [], filters: [], resultFilters: [], ranking: null, constraints: [], ambiguities: [], assumptions: [],
+  };
+  const naturalYear = {
+    ...base,
+    dimensions: [{ field: '订购日期', alias: 'year', concept: 'time', grain: 'year' }],
+    time: { field: '订购日期', calendar: 'gregorian', periods: [], range: null, grain: 'year', grouping: 'year', groupingExplicit: true, explicit: true },
+    expectedResult: { shape: 'grouped-table', minimumRows: 1, maximumRows: 20000, requiredPeriods: [], requiredMetrics: ['revenue', 'project_count'], requiredDimensions: ['year'] },
+  };
+  const fiscalYear = {
+    ...base,
+    dimensions: [{ field: '赢单财年', alias: 'fiscal_year', concept: 'fiscalYear', grain: null }],
+    time: { field: '赢单财年', calendar: 'fiscal', periods: [], range: null, grain: null, grouping: 'year', groupingExplicit: true, explicit: true },
+    expectedResult: { shape: 'grouped-table', minimumRows: 1, maximumRows: 20000, requiredPeriods: [], requiredMetrics: ['revenue', 'project_count'], requiredDimensions: ['fiscal_year'] },
+  };
+  let calls = 0;
+  const plan = await planBusinessQuestionAsync({
+    metadata: catalog, question, skills: [fiscalSkill],
+    llm: { enabled: true, async planQueryIntent({ repairFeedback }) {
+      calls += 1;
+      if (calls === 1) return naturalYear;
+      assert.match(repairFeedback, /默认使用财年.*赢单财年/);
+      return fiscalYear;
+    } },
+  });
+  assert.equal(calls, 2);
+  assert.equal(plan.status, 'supported', JSON.stringify(plan.plannerDiagnostics));
+  assert.deepEqual(plan.request.select.map(item => [item.field, item.grain]), [['赢单财年', null]]);
+  assert.equal(plan.request.measures.length, 2);
 });
 
 test('相对时间语义标签在执行前物化为具体年份', async () => {

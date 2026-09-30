@@ -1,0 +1,217 @@
+[
+  {
+    "id": "B-001",
+    "question": "今年 x-ssl 的项目，而且是 POE 类型的有哪些，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期",
+    "mustCheck": [
+      "x-ssl",
+      "POE",
+      "项目名称",
+      "客户名称",
+      "销售总监",
+      "合作伙伴",
+      "创建日期",
+      "预计结束日期"
+    ],
+    "startedAt": "2026-09-11T07:23:27.903Z",
+    "completedAt": "2026-09-11T07:23:45.357Z",
+    "status": "passed",
+    "completionState": "completed",
+    "missingExpectedText": [],
+    "clarificationText": null,
+    "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\n今年 x-ssl 的项目，而且是 POE 类型的有哪些，返回项目名称、客户名称、销售总监、合作伙伴、创建日期、预计结束日期\n问\n\n查询结果为空，未找到满足条件（赢单财年 FY27、x-ssl 项目、客户类型为 POE）的商机记录。\n\n指标\n未指定\n维度\npipelineName、客户名称、Opportunity_manager、Opportunity_partner、code_open_date、预计关闭日期\n筛选\nxssl 等于 1；客户类型 包含任一：Private Entity（POE）；赢单财年 等于 27\n排序\n未排序\n查询明细\n\n暂无表格数据 · 结果集 rs-qry-intent-117b1b49\n\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+    "screenshot": "UAT-AY/complex-browser-uat/screenshots/B-001.png",
+    "followUpScreenshot": null
+  },
+  {
+    "id": "B-002",
+    "question": "今年 x-ssl 的 MNC 项目有哪些？请列出项目名称、客户名称、产品、销售总监和商机金额",
+    "mustCheck": [
+      "x-ssl",
+      "MNC",
+      "项目名称",
+      "客户名称",
+      "产品",
+      "销售总监",
+      "商机金额"
+    ],
+    "startedAt": "2026-09-11T07:23:45.397Z",
+    "completedAt": "2026-09-11T07:24:02.297Z",
+    "status": "passed",
+    "completionState": "completed",
+    "missingExpectedText": [],
+    "clarificationText": null,
+    "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\n今年 x-ssl 的 MNC 项目有哪些？请列出项目名称、客户名称、产品、销售总监和商机金额\n问\n\n查询结果为空，未找到符合条件（当前财年 FY27、xssl=1、客户类型为 MNC）的 x-ssl 项目记录。\n\n指标\nOpportunity_amount_CNY（求和）\n维度\npipelineName、客户名称、产品名称、Opportunity_manager\n筛选\nxssl 等于 1；客户类型 包含任一：Multinational Corporation（MNC）；赢单财年 等于 27\n排序\n按Opportunity_amount_CNY（求和）降序\n查询明细\n\n暂无表格数据 · 结果集 rs-qry-intent-d913d98a\n\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+    "screenshot": "UAT-AY/complex-browser-uat/screenshots/B-002.png",
+    "followUpScreenshot": null
+  },
+  {
+    "id": "B-003",
+    "question": "去年 x-ssl 且 recurring 的项目有哪些？请返回项目名称、客户名称、recurring 类型和订单金额",
+    "mustCheck": [
+      "x-ssl",
+      "recurring",
+      "项目名称",
+      "客户名称",
+      "订单金额"
+    ],
+    "startedAt": "2026-09-11T07:24:02.344Z",
+    "completedAt": "2026-09-11T07:24:32.959Z",
+    "status": "needs-review",
+    "completionState": "needs-confirmation",
+    "missingExpectedText": [],
+    "clarificationText": null,
+    "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n等待提问\n去年 x-ssl 且 recurring 的项目有哪些？请返回项目名称、客户名称、recurring 类型和订单金额\n问\n本轮未完成\n\n大模型理解结果在有限修复后仍未通过查询约束：大模型新增了用户未要求的可见维度：recurring（跟踪编号：trace-39bd22cf-90cd-46e2-a95d-80c69b8b3224）\n\n新建会话\n大模型理解结果在有限修复后仍未通过查询约束：大模型新增了用户未要求的可见维度：recurring（跟踪编号：trace-39bd22cf-90cd-46e2-a95d-80c69b8b3224）",
+    "screenshot": "UAT-AY/complex-browser-uat/screenshots/B-003.png",
+    "followUpScreenshot": null
+  },
+  {
+    "id": "B-004",
+    "question": "今年 POE 客户中 recurring 的项目有哪些？请列出项目名称、客户名称、产品和预计结束日期",
+    "mustCheck": [
+      "POE",
+      "recurring",
+      "项目名称",
+      "客户名称",
+      "产品",
+      "预计结束日期"
+    ],
+    "startedAt": "2026-09-11T07:24:33.008Z",
+    "completedAt": "2026-09-11T07:24:52.424Z",
+    "status": "passed",
+    "completionState": "completed",
+    "missingExpectedText": [],
+    "clarificationText": null,
+    "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\n今年 POE 客户中 recurring 的项目有哪些？请列出项目名称、客户名称、产品和预计结束日期\n问\n\n根据查询条件（赢单财年27、客户类型为Private Entity（POE）、recurring为Yes），未找到任何符合条件的项目记录。\n\n指标\n未指定\n维度\npipelineName、客户名称、产品名称、预计关闭日期\n筛选\n客户类型 包含任一：Private Entity（POE）；recurring 包含任一：Yes；赢单财年 等于 27\n排序\n未排序\n查询明细\n\n暂无表格数据 · 结果集 rs-qry-intent-8b72c89e\n\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+    "screenshot": "UAT-AY/complex-browser-uat/screenshots/B-004.png",
+    "followUpScreenshot": null
+  },
+  {
+    "id": "B-005",
+    "question": "x-ssl 项目中，哪些是 PSM？请列出项目名称、客户名称、客户类型、prime office 和产品",
+    "mustCheck": [
+      "x-ssl",
+      "PSM",
+      "项目名称",
+      "客户名称",
+      "客户类型",
+      "prime office",
+      "产品"
+    ],
+    "startedAt": "2026-09-11T07:24:52.473Z",
+    "completedAt": "2026-09-11T07:25:11.902Z",
+    "status": "passed",
+    "completionState": "completed",
+    "missingExpectedText": [],
+    "clarificationText": null,
+    "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\nx-ssl 项目中，哪些是 PSM？请列出项目名称、客户名称、客户类型、prime office 和产品\n问\n\n在x-ssl项目中，共有3744条PSM项目记录，涉及项目名称、客户名称、客户类型、prime office和产品等维度。由于数据量较大，仅展示部分预览行，无法列出所有项目。\n\n指标\n未指定\n维度\npipelineName、客户名称、客户类型、primeOffice、产品名称\n筛选\nxssl 等于 1；is_subcode 等于 1\n排序\n未排序\n查询明细\n数据洞察\n客户名称\t客户类型\tpipelineName\tprimeOffice\t产品名称\n客户23\t[\"Private Equity\"]\t订单名称20393\tMainland China\tComprehensive Development Blueprint for Healthcare Industry\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称9794\tGermany\tRetail Brand M&A and Integration Service\n客户23\t[\"Private Entity（POE）\"]\t订单名称5764\tMainland China\tRefined Cost Control for Financial Enterprises\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称7020\tAustralia\tInternational Strategy Roadmap for Manufacturing\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称7193\tNorway\tRisk Prevention in Medical Production Processes\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称13026\tNew York City\tUser Experience Analysis & Improvement\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称1846\tUK&I\tRisk Prevention in Medical Production Processes\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称10130\tMainland China\tComprehensive Development Blueprint for Healthcare Industry\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称15831\tStamford\tCustom Delivery Experience Optimization\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称988\tAmericas/New Yor\tCompetency Upgrade Plan for Financial Personnel\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称2101\tNew York City\tNew Market Entry Planning for Manufacturing\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称5160\tItaly\tSupply Chain Finance Risk Assessment for Manufacturing\n客户492\t[\"Private Entity（POE）\"]\t订单名称23095\t—\tOn-site Production Data Collection & Analysis Solutions\n客户3\t[\"Private Entity（POE）\"]\t订单名称1783\tMainland China\tCredit Risk Control Optimization in Banking\n客户5\t[\"Private Entity（POE）\"]\t订单名称12924\t—\tOmni-channel Distribution Model Building\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称21532\tNew York City\tSmart Manufacturing Project Financing Solutions\n客户3\t[\"Multinational Corporation（MNC）\"]\t订单名称27467\tCanada\tCustom Delivery Experience Optimization\n客户4\t[\"State-Owned Enterprise（SOE）\"]\t订单名称2552\tMainland China\tRemote Medical Business Process Consulting\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称24120\tPoland\tInnovative Investment Banking Training for Banks\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称12120\tCincinnati\tManufacturing Craftsman Talent Pipeline Development\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称23133\tFrance\tAML Monitoring & Compliance Enhancement\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称27892\tIselin\tGroup Hospital Development Strategy Design\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称4938\tUnited Arab Emirates\tIntelligent Cloud Financial Platform for Manufacturing\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称8962\tChicago\tConsumer Data Security & Compliance\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称14368\tSingapore\tData Compliance & Privacy Protection Consulting\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称15971\tNew York City\tGlobal Supply Chain Integration Management\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称2815\tHong Kong\tSpecialty Medical Brand Promotion Event Planning\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称12136\tAmericas/Charlot\tFlat Management Design for Chain Stores\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称22771\tTampa\tR&D Team Performance Enhancement\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称15383\tUnited Kingdom\tCybersecurity Graded Protection Project\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称27462\tNetherlands\tFinancial Brand Upgrade and Marketing Strategy\n客户4\t[\"Private Entity（POE）\"]\t订单名称740\tMainland China\tOrganizational Restructuring for Financial Holding Groups\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称20337\tFrance\tCompetency Upgrade Plan for Financial Personnel\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称26174\tDallas\tHigh-Efficiency Scheduling for Operating Rooms\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称23676\tNew York City\tTechnical Backbone Acceleration Program\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称26859\tLos Angeles\tOn-site Production Data Collection & Analysis Solutions\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称721\tItaly\tIntelligent Cloud Financial Platform for Manufacturing\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称24370\tUnited Kingdom\tHot Product Development & Launch Planning\n客户4\t[\"Private Entity（POE）\"]\t订单名称4869\tMainland China\tIntelligent Cloud Financial Platform for Manufacturing\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称26065\tSeattle\tDRGs Payment Management Optimization for Hospitals\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称11769\tNew York City\tCompliance and Internal Control Process Construction\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称6240\tSpain\tOrganizational Capacity Building for Medical Equipment Enterprises\n客户2\t[\"Private Entity（POE）\"]\t订单名称11512\tUnited Kingdom\tCybersecurity Graded Protection Project\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称25559\tBelgium\tFull-Process Lean Production Consulting\n客户23\t[\"Private Entity（POE）\"]\t订单名称3270\tMainland China\tCompliance and Internal Control Process Construction\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称12037\tJapan\tTraffic Growth & Conversion Consulting for Digital Products\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称19366\tSan Diego\tEnterprise-level AI Empowerment Consulting\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称9609\tIselin\tIntegrated Supply Chain & Storage Optimization\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称20011\tUS-Central\tTechnical Backbone Acceleration Program\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称8648\tNetherlands\tRisk Prevention in Medical Production Processes\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称8361\tGermany\tIntegrated Supply Chain & Storage Optimization\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称3051\tSwitzerland\tSmart Store Management System\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称8285\tSwitzerland\tCompliance and Internal Control Process Construction\n客户492\t[\"Private Entity（POE）\"]\t订单名称5423\tNew Zealand\tOn-site Production Data Collection & Analysis Solutions\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称8759\tDallas\tRetail Brand M&A and Integration Service\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称3327\tUS-East\tHierarchical Hospital Management System Design\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称15654\tMainland China\tRetail Brand M&A and Integration Service\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称630\tSacramento\tIntelligent Cloud Financial Platform for Manufacturing\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称15566\tGermany\tAML Monitoring & Compliance Enhancement\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称27475\tGermany\tTechnical Backbone Acceleration Program\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称19334\tAmericas\tValue Management for Digital Technology Companies\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称12763\tHong Kong\tDigital Ecosystem Enterprise Alliances\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称17099\tSalt Lake City\tGreen Finance Product Development Consulting\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称3594\tJapan\tRetail Brand M&A and Integration Service\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称14511\tFrance\tFull-Process Lean Production Consulting\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称13193\tTysons\tToB Tech Financing Roadshow Support\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称18424\tChicago\tInnovation Accelerator for Medical Technologies\n客户5\t[\"State-Owned Enterprise（SOE）\"]\t订单名称1299\t—\tOmni-channel Distribution Model Building\n客户4\t[\"Private Entity（POE）\"]\t订单名称2796\tNetherlands\tIntelligent Cloud Financial Platform for Manufacturing\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称12711\tNew York City\tSpecialty Medical Brand Promotion Event Planning\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称27506\tNew York City\tTechnical Backbone Acceleration Program\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称9268\tMainland China\tGrowth Roadmap for Digital Technology Companies\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称16141\tNew York City\tQuality Compliance and ISO System Building\n客户5\t[\"Multinational Corporation（MNC）\"]\t订单名称24357\tBelgium\tComprehensive Development Blueprint for Healthcare Industry\n客户492\t[\"State-Owned Enterprise（SOE）\"]\t订单名称2133\tMainland China\tSmart Store Management System\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称9605\tNew York City\tHospital Big Data Platform Construction\n客户492\t[\"State-Owned Enterprise（SOE）\"]\t订单名称16636\t—\tCompliance and Internal Control Process Construction\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称18514\tIselin\tRefined Cost Control for Financial Enterprises\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称2398\tUS-Central\tOmni-channel Distribution Model Building\n客户23\t[\"Private Entity（POE）\"]\t订单名称3082\tMainland China\tGrowth Roadmap for Digital Technology Companies\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称22413\tAsia-Pacific/Aus\tHigh-Efficiency Scheduling for Operating Rooms\n客户4\t[\"Private Entity（POE）\"]\t订单名称4021\tMainland China\tOmni-channel Distribution Model Building\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称1863\tJapan\tHot Product Development & Launch Planning\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称25507\tBoston\tAML Monitoring & Compliance Enhancement\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称6477\tAustralia\tCost Analysis Services for Manufacturing\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称5090\tNew York City\tCustom Delivery Experience Optimization\n客户492\t[\"Private Entity（POE）\"]\t订单名称16503\tHong Kong\tRefined Cost Management in Retail Industry\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称10245\tUnited Kingdom\tRefined Cost Management in Retail Industry\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称21431\tChicago\tFull-Cycle Patient Service Experience Enhancement\n客户23\t[\"Private Entity（POE）\"]\t订单名称22464\tMainland China\tGroup Hospital Development Strategy Design\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称14574\tNetherlands\tFull-Cycle Member Service Experience Enhancement\n客户4\t[\"Private Entity（POE）\"]\t订单名称19929\t—\tGraded Competency Training for Medical Staff\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称20924\tUS-Central\tCloud Service Platform Product Incubation\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称21321\tGermany\tComprehensive Development Blueprint for Healthcare Industry\n客户5\t[\"Private Entity（POE）\"]\t订单名称24048\tHong Kong\tValue Management for Digital Technology Companies\n客户23\t[\"Multinational Corporation（MNC）\"]\t订单名称5707\tMainland China\tNew Retail Transformation Strategy Consulting\n客户4\t[\"Multinational Corporation（MNC）\"]\t订单名称9594\tUnited Kingdom\tGreen Finance Product Development Consulting\n客户23\t[\"Private Entity（POE）\"]\t订单名称15229\tSeattle\tSmart Manufacturing Project Financing Solutions\n客户23\t[\"State-Owned Enterprise（SOE）\"]\t订单名称1589\tMainland China\tManufacturing Craftsman Talent Pipeline Development\n客户492\t[\"Multinational Corporation（MNC）\"]\t订单名称25136\tChicago\tFull-Process Lean Production Consulting\n上一页\n第 1 / 38 页 · 共 3,744 行\n下一页\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+    "screenshot": "UAT-AY/complex-browser-uat/screenshots/B-005.png",
+    "followUpScreenshot": null
+  },
+  {
+    "id": "B-006",
+    "question": "今年属于 PSM 的 x-ssl 项目有哪些？返回项目名称、客户名称、销售总监、合作伙伴和 prime office",
+    "mustCheck": [
+      "PSM",
+      "x-ssl",
+      "项目名称",
+      "客户名称",
+      "销售总监",
+      "合作伙伴",
+      "prime office"
+    ],
+    "startedAt": "2026-09-11T07:25:11.941Z",
+    "completedAt": "2026-09-11T07:25:29.387Z",
+    "status": "passed",
+    "completionState": "completed",
+    "missingExpectedText": [],
+    "clarificationText": null,
+    "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\n今年属于 PSM 的 x-ssl 项目有哪些？返回项目名称、客户名称、销售总监、合作伙伴和 prime office\n问\n\n查询结果为空，未找到满足条件（赢单财年=27、is_subcode=1、xssl=1）的项目记录。\n\n指标\n未指定\n维度\npipelineName、客户名称、Opportunity_manager、Opportunity_partner、primeOffice\n筛选\nis_subcode 等于 1；xssl 等于 1；赢单财年 等于 27\n排序\n未排序\n查询明细\n\n暂无表格数据 · 结果集 rs-qry-intent-0c349c63\n\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+    "screenshot": "UAT-AY/complex-browser-uat/screenshots/B-006.png",
+    "followUpScreenshot": null
+  },
+  {
+    "id": "B-007",
+    "question": "今年 x-ssl 项目中，产品是 Safety Production and Risk Control in Manufacturing 的有哪些？请列出项目名称、客户名称、客户类型和商机金额",
+    "mustCheck": [
+      "x-ssl",
+      "Safety Production and Risk Control in Manufacturing",
+      "项目名称",
+      "客户名称",
+      "客户类型",
+      "商机金额"
+    ],
+    "startedAt": "2026-09-11T07:25:29.424Z",
+    "completedAt": "2026-09-11T07:25:45.811Z",
+    "status": "passed",
+    "completionState": "completed",
+    "missingExpectedText": [],
+    "clarificationText": null,
+    "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\n今年 x-ssl 项目中，产品是 Safety Production and Risk Control in Manufacturing 的有哪些？请列出项目名称、客户名称、客户类型和商机金额\n问\n\n在赢单财年27（FY27）的x-ssl项目中，未找到产品为“Safety Production and Risk Control in Manufacturing”的商机记录，因此无法列出项目名称、客户名称、客户类型和商机金额。\n\n指标\nOpportunity_amount_CNY（求和）\n维度\npipelineName、客户名称、客户类型\n筛选\nxssl 等于 1；产品名称 等于 Safety Production and Risk Control in Manufacturing；赢单财年 等于 27\n排序\n按Opportunity_amount_CNY（求和）降序\n查询明细\n\n暂无表格数据 · 结果集 rs-qry-intent-5dc27ffb\n\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+    "screenshot": "UAT-AY/complex-browser-uat/screenshots/B-007.png",
+    "followUpScreenshot": null
+  },
+  {
+    "id": "B-008",
+    "question": "今年 MNC 和 POE 客户的 x-ssl 项目，按产品统计商机金额和项目数量",
+    "mustCheck": [
+      "MNC",
+      "POE",
+      "x-ssl",
+      "产品",
+      "商机金额",
+      "项目数量"
+    ],
+    "startedAt": "2026-09-11T07:25:45.855Z",
+    "completedAt": "2026-09-11T07:26:16.953Z",
+    "status": "passed",
+    "completionState": "completed",
+    "missingExpectedText": [],
+    "clarificationText": null,
+    "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\n今年 MNC 和 POE 客户的 x-ssl 项目，按产品统计商机金额和项目数量\n问\n\n查询结果为空，未找到符合条件的数据。\n\n指标\nOpportunity_amount_CNY（求和）、pipelineCode（去重计数）\n维度\n产品名称\n筛选\n客户类型 包含任一：Multinational Corporation（MNC）、Private Entity（POE）；xssl 等于 1；赢单财年 等于 27\n排序\n按Opportunity_amount_CNY（求和）降序\n查询明细\n\n暂无表格数据 · 结果集 rs-qry-intent-9f7affee\n\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+    "screenshot": "UAT-AY/complex-browser-uat/screenshots/B-008.png",
+    "followUpScreenshot": null
+  },
+  {
+    "id": "B-009",
+    "question": "x-ssl 项目中，MNC 客户且商机金额大于 20 万的有哪些？请列出客户名称、项目名称、产品、商机金额",
+    "mustCheck": [
+      "x-ssl",
+      "MNC",
+      "20",
+      "客户名称",
+      "项目名称",
+      "产品",
+      "商机金额"
+    ],
+    "startedAt": "2026-09-11T07:26:17.004Z",
+    "completedAt": "2026-09-11T07:26:34.933Z",
+    "status": "passed",
+    "completionState": "completed",
+    "missingExpectedText": [],
+    "clarificationText": null,
+    "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\nx-ssl 项目中，MNC 客户且商机金额大于 20 万的有哪些？请列出客户名称、项目名称、产品、商机金额\n问\n\n在 x-ssl 项目中，符合 MNC 客户且商机金额大于 20 万条件的记录共有 2023 条，涉及 7 个客户、2023 个项目、89 个产品。商机金额范围从约 20 万到约 7618.87 万。由于结果集较大，仅展示前 20 条记录作为示例。\n\n指标\nOpportunity_amount_CNY（求和）\n维度\n客户名称、pipelineName、产品名称\n筛选\nxssl 等于 1；客户类型 包含任一：Multinational Corporation（MNC）；Opportunity_amount_CNY 大于 200000\n排序\n按Opportunity_amount_CNY（求和）降序\n查询明细\n数据洞察\n客户名称\tpipelineName\t产品名称\tOpportunity_amount_CNY\n客户492\t订单名称14106\tFlexible Production Organization Upgrade\t76,188,728.68\n客户5\t订单名称24198\tSafety Production and Risk Control in Manufacturing\t45,117,658.11\n客户5\t订单名称17682\tMarket Launch Consulting for New Products\t26,880,000\n客户23\t订单名称17557\tQuality Compliance and ISO System Building\t24,097,920\n客户2\t订单名称22370\tUser Experience Analysis & Improvement\t15,360,000\n客户492\t订单名称11042\tSmart Factory Testing Platform Development\t14,080,000\n客户23\t订单名称18273\tGlobal Supply Chain Integration Management\t13,732,135\n客户4\t订单名称9794\tRetail Brand M&A and Integration Service\t12,800,000\n客户4\t订单名称13019\tRemote Medical Business Process Consulting\t10,240,000\n客户4\t订单名称20924\tCloud Service Platform Product Incubation\t9,201,537.28\n客户4\t订单名称481\tM&A Synergy Integration for Manufacturing\t8,960,000\n客户492\t订单名称8084\tInternet Company Acquisition Synergy Projects\t8,762,880\n客户23\t订单名称457\tFinancial Brand Upgrade and Marketing Strategy\t7,637,275.94\n客户4\t订单名称17100\tRetail Store Operation Risk Control\t7,130,081.59\n客户492\t订单名称17009\tDRGs Payment Management Optimization for Hospitals\t7,130,081.59\n客户492\t订单名称16631\tTop-Level Design for Smart Manufacturing\t7,067,121.09\n客户4\t订单名称15784\tGraded Competency Training for Medical Staff\t7,010,304\n客户492\t订单名称16353\tCybersecurity Graded Protection Project\t7,010,304\n客户4\t订单名称14057\tGraded Competency Training for Medical Staff\t6,908,630.91\n客户23\t订单名称3729\tMarket Launch Consulting for New Products\t6,400,000\n客户5\t订单名称28566\tSmart Risk Control Platform for Finance\t6,400,000\n客户4\t订单名称4144\tFMCG Financing & IPO Planning\t6,400,000\n客户23\t订单名称18534\tFMCG Financing & IPO Planning\t6,400,000\n客户4\t订单名称15232\tHospital Accreditation Risk Assessment\t6,400,000\n客户3\t订单名称20344\tInvestment and Financing Consulting for Medical Alliances\t6,272,000\n客户4\t订单名称9582\tFull-Process Lean Production Consulting\t5,827,315.2\n客户3\t订单名称21035\tInnovation Accelerator for Medical Technologies\t5,376,000\n客户5\t订单名称27943\tTraffic Growth & Conversion Consulting for Digital Products\t5,294,615.04\n客户23\t订单名称27246\tCompetency Upgrade Plan for Financial Personnel\t5,120,000\n客户5\t订单名称24461\tHospital Big Data Platform Construction\t5,120,000\n客户4\t订单名称7703\tFMCG Financing & IPO Planning\t5,120,000\n客户492\t订单名称5616\tGreen Finance Product Development Consulting\t5,120,000\n客户23\t订单名称2766\tEnterprise Data Security Risk Management\t4,994,841.6\n客户5\t订单名称18628\tAML Monitoring & Compliance Enhancement\t4,600,768.64\n客户5\t订单名称18082\tSmart Store Management System\t4,588,666.37\n客户492\t订单名称11035\tGraded Competency Training for Medical Staff\t4,480,000\n客户5\t订单名称20554\tUser Experience Analysis & Improvement\t4,480,000\n客户5\t订单名称18684\tCompetency Upgrade Plan for Financial Personnel\t4,480,000\n客户492\t订单名称20324\tMarket Launch Consulting for New Products\t4,480,000\n客户23\t订单名称7757\tIntelligent Cloud Financial Platform for Manufacturing\t4,480,000\n客户492\t订单名称19673\tNew Retail Transformation Strategy Consulting\t4,407,536.36\n客户492\t订单名称5232\tIntegrated Supply Chain & Storage Optimization\t4,381,448.77\n客户492\t订单名称26835\tRetail Store Operation Risk Control\t4,352,000\n客户4\t订单名称11167\tComprehensive Development Blueprint for Healthcare Industry\t4,118,033.92\n客户492\t订单名称11639\tFlexible Production Organization Upgrade\t4,080,782.49\n客户5\t订单名称11346\tCloud-Native Architecture & IT Governance\t3,840,000\n客户5\t订单名称18335\tGrowth Roadmap for Digital Technology Companies\t3,840,000\n客户5\t订单名称18450\tNew Market Entry Planning for Manufacturing\t3,840,000\n客户492\t订单名称14223\tRefined Cost Control for Financial Enterprises\t3,840,000\n客户492\t订单名称23003\tSmart Store Management System\t3,840,000\n客户492\t订单名称6831\tMarket Launch Consulting for New Products\t3,840,000\n客户23\t订单名称9784\tFMCG Financing & IPO Planning\t3,840,000\n客户5\t订单名称21701\tFlexible Production Organization Upgrade\t3,840,000\n客户9\t订单名称18207\tGrowth Roadmap for Digital Technology Companies\t3,840,000\n客户23\t订单名称2185\tNew Retail Transformation Strategy Consulting\t3,840,000\n客户23\t订单名称14809\tPublic Health Information System Optimization\t3,840,000\n客户492\t订单名称14648\tInternet Company Acquisition Synergy Projects\t3,840,000\n客户492\t订单名称5069\tHospital Big Data Platform Construction\t3,840,000\n客户23\t订单名称5628\tCompetency Upgrade Plan for Financial Personnel\t3,763,200\n客户4\t订单名称16893\tSupply Chain Finance Risk Assessment for Manufacturing\t3,680,614.91\n客户5\t订单名称11857\tSmart Risk Control Platform for Finance\t3,584,000\n客户5\t订单名称16639\tSpecialty Medical Brand Promotion Event Planning\t3,574,401.57\n客户4\t订单名称19130\tFull-Process Lean Production Consulting\t3,276,800\n客户3\t订单名称20848\tIntelligent Cloud Financial Platform for Manufacturing\t3,215,964.88\n客户492\t订单名称17181\tEnterprise Data Security Risk Management\t3,200,000\n客户5\t订单名称19561\tSmart Store Management System\t3,200,000\n客户4\t订单名称20406\tHigh-Value New Product Incubation Consulting\t3,200,000\n客户5\t订单名称18035\tRefined Cost Management in Retail Industry\t3,200,000\n客户492\t订单名称8363\tUser Experience Analysis & Improvement\t3,190,818.73\n客户5\t订单名称13348\tBranch Operation Efficiency Enhancement Project\t3,072,000\n客户4\t订单名称10360\tRisk Prevention in Medical Production Processes\t3,067,008\n客户3\t订单名称26368\tInnovative Investment Banking Training for Banks\t3,020,800\n客户492\t订单名称10578\tValue Management for Digital Technology Companies\t2,979,379.2\n客户5\t订单名称19939\tDigital Ecosystem Enterprise Alliances\t2,944,000\n客户23\t订单名称2459\tHigh-Performance Operations Center Optimization\t2,944,000\n客户2\t订单名称25014\tMedical Device Registration Compliance Process\t2,941,452.8\n客户492\t订单名称60\tCredit Risk Control Optimization in Banking\t2,936,746.48\n客户2\t订单名称260\tCollaborative Model for Multi-Plant Manufacturing Groups\t2,880,000\n客户2\t订单名称12337\tValue Management for Digital Technology Companies\t2,880,000\n客户492\t订单名称14228\tSpecialty Medical Brand Promotion Event Planning\t2,816,000\n客户4\t订单名称11289\tCredit Risk Control Optimization in Banking\t2,760,461.18\n客户2\t订单名称24585\tNew Retail Transformation Strategy Consulting\t2,760,461.18\n客户492\t订单名称19070\tTechnical Backbone Acceleration Program\t2,752,000\n客户5\t订单名称141\tRemote Medical Business Process Consulting\t2,707,745.58\n客户492\t订单名称25995\tOn-site Production Data Collection & Analysis Solutions\t2,706,136.58\n客户23\t订单名称21056\tSpecialty Medical Brand Promotion Event Planning\t2,589,335.04\n客户23\t订单名称3387\tHospital Big Data Platform Construction\t2,560,000\n客户4\t订单名称3009\tMarket Launch Consulting for New Products\t2,560,000\n客户492\t订单名称11942\tSupply Chain Finance Risk Assessment for Manufacturing\t2,560,000\n客户5\t订单名称26143\tGlobal Supply Chain Integration Management\t2,560,000\n客户4\t订单名称9298\tMedical Device Registration Compliance Process\t2,560,000\n客户492\t订单名称18345\tCompetency Upgrade Plan for Financial Personnel\t2,560,000\n客户3\t订单名称13278\tManufacturing Craftsman Talent Pipeline Development\t2,560,000\n客户492\t订单名称11718\tEnterprise-level AI Empowerment Consulting\t2,560,000\n客户2\t订单名称13418\tSafety Production and Risk Control in Manufacturing\t2,560,000\n客户4\t订单名称5162\tCredit Risk Control Optimization in Banking\t2,560,000\n客户2\t订单名称20262\tQuality Compliance and ISO System Building\t2,560,000\n客户492\t订单名称16087\tFlat Management Design for Chain Stores\t2,560,000\n客户492\t订单名称16289\tTraffic Growth & Conversion Consulting for Digital Products\t2,560,000\n客户492\t订单名称18034\tRisk Prevention in Medical Production Processes\t2,560,000\n上一页\n第 1 / 21 页 · 共 2,023 行\n下一页\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+    "screenshot": "UAT-AY/complex-browser-uat/screenshots/B-009.png",
+    "followUpScreenshot": null
+  },
+  {
+    "id": "B-010",
+    "question": "去年 Digital Ecosystem Enterprise Alliances 产品中，POE 客户有哪些？请列出客户名称、项目名称、订单金额和创建日期",
+    "mustCheck": [
+      "Digital Ecosystem Enterprise Alliances",
+      "POE",
+      "客户名称",
+      "项目名称",
+      "订单金额",
+      "创建日期"
+    ],
+    "startedAt": "2026-09-11T07:26:34.975Z",
+    "completedAt": "2026-09-11T07:26:51.876Z",
+    "status": "passed",
+    "completionState": "completed",
+    "missingExpectedText": [],
+    "clarificationText": null,
+    "uiText": "智能问数对话\n查询由 Wyn 数据集语义和受控查询内核执行\n1 个数据集 · 精确结果\n去年 Digital Ecosystem Enterprise Alliances 产品中，POE 客户有哪些？请列出客户名称、项目名称、订单金额和创建日期\n问\n\n查询结果为空，未找到符合条件（赢单财年26、产品为Digital Ecosystem Enterprise Alliances、客户类型为Private Entity（POE））的客户记录。\n\n指标\nOpportunity_amount_CNY（求和）\n维度\n客户名称、pipelineName、code_open_date\n筛选\n产品名称 等于 Digital Ecosystem Enterprise Alliances；客户类型 包含任一：Private Entity（POE）；赢单财年 等于 26\n排序\n按Opportunity_amount_CNY（求和）降序\n查询明细\n\n暂无表格数据 · 结果集 rs-qry-intent-3f8122fa\n\n改看是否删除\n按更新人查看\n按月查看趋势\n\n本轮由大模型理解并通过查询约束校验\n\n这次回答是否有帮助？\n有帮助\n回答有问题\n新建会话\n已完成，可以继续追问",
+    "screenshot": "UAT-AY/complex-browser-uat/screenshots/B-010.png",
+    "followUpScreenshot": null
+  }
+]
