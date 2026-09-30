@@ -14,6 +14,9 @@
 全量运行数据合计约 1.18GB / 36,357 个文件，其中 `data/insight-diagnostics`（事件明细）与
 `data/operation-events` 属于可回收的诊断类数据。
 
+> 注意：`maxItems` 是**按条数**计数，`insight-diagnostics` 未达 5,000 条，因此条数裁剪
+> 永远不触发 —— 它仍会增长到 1.1GB 以上。这正是第 7 节引入**按时间滚动保留**的原因。
+
 ## 2. 根因
 
 ### 2.1 `JsonRunStore.init()` 无界并发读取导致句柄耗尽（EMFILE）
@@ -197,3 +200,64 @@ UAT-AY/server-*.out
 - 删除集静态校验「位于仓库内且未受版本控制」通过（越界/受控冲突 = 0）；
 - `npm run check`、`npm test`（584 项）全部通过；
 - 清理后 `git ls-files` 与工作区一致，无引用悬空。
+
+## 7. 诊断数据按时间滚动保留（2026-09-30）
+
+### 7.1 策略
+
+`insight-diagnostics` 与 `operation-events` 属于**诊断类**数据，只服务近期排障。
+原先只按条数裁剪（`maxItems`），而 1,936 条远未达到 5,000 条上限，条数策略从不触发，
+目录会随真实使用无限增长（单条最大 13MB，总量已 1.1GB）。
+
+现改为**按时间滚动保留**：
+
+- 默认只保留最近 **7 天**，可用 `WYN_AI_RUNTIME_RETENTION_DAYS` 调整；
+- 触发时机：服务 `init()` 启动时 + 每次 `save()` 写入时（无需定时任务）；
+- 时间口径复用读取顺序 `completedAt → createdAt → updatedAt → at`，
+  都没有时回退到文件 `mtime`，保证「时间未知」的记录不会被误删；
+- `maxItems` 保留为条数安全网，两者取并集（过期 ∪ 溢出），去重后删除；
+- 仅作用于 `diagnostic` 类目录，`durable`/`audit` 类业务数据不受时间策略影响。
+
+### 7.2 本次清理结果
+
+```
+★ insight-diagnostics   1936 条 / 1.10GB  保留 7 天 / 上限 5000   可回收 1623 条 / 931.42MB
+★ operation-events     31077 条 / 40.85MB 保留 7 天 / 上限 10000  可回收 25378 条 / 33.40MB
+合计：可回收 27001 个 / 964.83MB
+```
+
+执行 `npm run maintain:data:apply` 后：
+
+| 目录 | 清理前 | 清理后 |
+| --- | --- | --- |
+| `data/` 合计 | 1213.1MB | **248.3MB** |
+| `insight-diagnostics` | 1,936 条 / 1129MB | 313 条 / 197.6MB |
+| `operation-events` | 31,077 条 / 40.9MB | 5,699 条 / 7.5MB |
+
+清理后校验：两个目录内**没有任何超过 7 天的记录**（oldest = 2026-09-28）；
+`data-insights`、`insight-runs`、`smart-query-conversations`、`request-audit`、
+`skill-audit`、`user-feedback` 等业务/审计数据**一条未动**。
+
+### 7.3 运维命令
+
+```powershell
+npm run maintain:data                          # 预览（默认 dry-run）
+npm run maintain:data:apply                    # 按各目录声明的保留策略执行
+
+# 一次性按指定天数回溯清理
+node scripts/maintain-runtime-data.mjs --retention-days 7 --apply
+# 仅按条数（旧行为）
+node scripts/maintain-runtime-data.mjs --retention-days 0 --apply
+```
+
+### 7.4 回归测试
+
+`test/run-store.test.mjs` 新增 4 项：
+
+- 超出保留窗口的记录在启动时从磁盘删除（3 旧 2 新 → 只剩 2）；
+- 每次保存都会滚动清理过期记录；
+- 缺少业务时间字段时回退到文件 `mtime`（旧 mtime 过期、新 mtime 保留）；
+- `retentionDays` 未设置时不影响原有条数裁剪行为。
+
+`test/runtime-retention.test.mjs` 断言诊断类目录默认 7 天、
+且 `durable` 业务数据不设时间保留。

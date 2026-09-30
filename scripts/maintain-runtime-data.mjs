@@ -29,6 +29,7 @@ function parseArgs(argv) {
     apply: false,
     dispositions: [...DEFAULT_MAINTENANCE_DISPOSITIONS],
     overrides: new Map(),
+    retentionDays: null,
     json: false,
   };
   for (let index = 0; index < argv.length; index += 1) {
@@ -37,6 +38,8 @@ function parseArgs(argv) {
     else if (arg === '--json') options.json = true;
     else if (arg === '--data-dir') options.dataDir = argv[++index] || options.dataDir;
     else if (arg.startsWith('--data-dir=')) options.dataDir = arg.slice('--data-dir='.length);
+    else if (arg === '--retention-days') options.retentionDays = Number(argv[++index]);
+    else if (arg.startsWith('--retention-days=')) options.retentionDays = Number(arg.slice('--retention-days='.length));
     else if (arg === '--dispositions') options.dispositions = String(argv[++index] || '').split(',').map(item => item.trim()).filter(Boolean);
     else if (arg.startsWith('--dispositions=')) options.dispositions = arg.slice('--dispositions='.length).split(',').map(item => item.trim()).filter(Boolean);
     else if (arg === '--max-items-dir') options.overrides.set(...splitOverride(argv[++index]));
@@ -44,6 +47,7 @@ function parseArgs(argv) {
     else if (arg === '--help' || arg === '-h') options.help = true;
     else throw new Error(`无法识别的参数：${arg}`);
   }
+  if (options.retentionDays != null && (!Number.isFinite(options.retentionDays) || options.retentionDays < 0)) throw new Error(`--retention-days 需要非负数字，收到：${options.retentionDays}`);
   return options;
 }
 
@@ -87,11 +91,20 @@ async function collect(directory) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   if (options.help) {
-    console.log('用法：node scripts/maintain-runtime-data.mjs [--data-dir data] [--apply] [--dispositions diagnostic] [--max-items-dir name=N] [--json]');
+    console.log('用法：node scripts/maintain-runtime-data.mjs [--data-dir data] [--apply] [--dispositions diagnostic] [--retention-days 7] [--max-items-dir name=N] [--json]');
     return;
   }
   const dataDir = resolve(process.cwd(), options.dataDir);
-  const report = { schema: 'wynai.runtime-data-maintenance/v1', dataDir, apply: options.apply, dispositions: options.dispositions, generatedAt: new Date().toISOString(), directories: [] };
+  const retroactiveCutoff = options.retentionDays == null ? null : Date.now() - options.retentionDays * 86_400_000;
+  const report = {
+    schema: 'wynai.runtime-data-maintenance/v1',
+    dataDir,
+    apply: options.apply,
+    dispositions: options.dispositions,
+    retroactiveRetentionDays: options.retentionDays,
+    generatedAt: new Date().toISOString(),
+    directories: [],
+  };
 
   let existing = [];
   try {
@@ -104,12 +117,15 @@ async function main() {
     const policy = resolveRetention(name);
     const selected = policy ? options.dispositions.includes(policy.disposition) : false;
     const maxItems = options.overrides.get(name) ?? policy?.maxItems ?? null;
+    // 优先使用 CLI 指定的天数，其次使用目录自身声明的保留天数。
+    const retentionDays = options.retentionDays ?? policy?.retentionDays ?? null;
     const directory = join(dataDir, name);
     const { names, records, totalBytes } = await collect(directory);
     const entry = {
       name,
       disposition: policy?.disposition || 'unmanaged',
       maxItems,
+      retentionDays,
       selected: selected || options.overrides.has(name),
       files: names.length,
       bytes: totalBytes,
@@ -117,11 +133,19 @@ async function main() {
       staleBytes: 0,
       deleted: 0,
     };
-    if (entry.selected && maxItems != null) {
-      const stale = records.slice(maxItems);
+    if (entry.selected && (maxItems != null || retentionDays != null)) {
+      // 与运行时一致的双重策略：按时间过期 ∪ 按条数溢出。
+      const cutoff = retentionDays == null ? null : (retroactiveCutoff ?? Date.now() - retentionDays * 86_400_000);
+      const byAge = cutoff == null ? [] : records.filter(item => item.time < cutoff);
+      const byCount = maxItems == null ? [] : records.slice(maxItems);
+      const staleMap = new Map();
+      for (const item of [...byAge, ...byCount]) staleMap.set(item.name, item);
+      const stale = [...staleMap.values()];
       entry.stale = stale.length;
       entry.staleBytes = stale.reduce((sum, item) => sum + item.bytes, 0);
-      entry.oldestKept = records[maxItems - 1]?.name || null;
+      entry.staleReason = { byAge: byAge.length, byCount: byCount.length };
+      const staleNames = new Set(stale.map(item => item.name));
+      entry.oldestKept = records.find(item => !staleNames.has(item.name))?.name || null;
       entry.newestStale = stale[0]?.name || null;
       if (options.apply) {
         for (const item of stale) {
@@ -149,11 +173,15 @@ async function main() {
   }
   console.log(`运行数据目录：${dataDir}`);
   console.log(`模式：${options.apply ? 'APPLY（实际删除）' : 'DRY-RUN（仅预览）'}｜回收范围：${options.dispositions.join(', ')}`);
+  if (options.retentionDays != null) console.log(`时间保留：仅保留最近 ${options.retentionDays} 天`);
   console.log('');
   for (const item of report.directories) {
     const flag = item.selected ? (item.stale > 0 ? '★' : '·') : ' ';
-    const limit = item.maxItems == null ? '-' : String(item.maxItems);
-    console.log(`${flag} ${item.name.padEnd(28)} ${String(item.files).padStart(6)} 条 / ${formatBytes(item.bytes).padStart(9)}  上限 ${limit.padStart(6)}  可回收 ${String(item.stale).padStart(6)} 条 / ${formatBytes(item.staleBytes)}  ${item.disposition}`);
+    const parts = [];
+    if (item.retentionDays != null) parts.push(`保留 ${item.retentionDays} 天`);
+    if (item.maxItems != null && item.maxItems !== null) parts.push(`上限 ${item.maxItems}`);
+    const rule = parts.join(' / ') || '无';
+    console.log(`${flag} ${item.name.padEnd(28)} ${String(item.files).padStart(6)} 条 / ${formatBytes(item.bytes).padStart(9)}  ${rule.padEnd(18)} 可回收 ${String(item.stale).padStart(6)} 条 / ${formatBytes(item.staleBytes)}  ${item.disposition}`);
   }
   console.log('');
   console.log(`合计：${report.totalFiles} 个文件 / ${formatBytes(report.totalBytes)}；可回收 ${report.staleFiles} 个 / ${formatBytes(report.staleBytes)}`);

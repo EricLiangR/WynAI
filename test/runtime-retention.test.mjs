@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { DEFAULT_MAINTENANCE_DISPOSITIONS, RUNTIME_RETENTION, formatBytes, resolveRetention } from '../lib/runtime-retention.mjs';
+import { DEFAULT_MAINTENANCE_DISPOSITIONS, DEFAULT_RETENTION_DAYS, RUNTIME_RETENTION, formatBytes, resolveRetention } from '../lib/runtime-retention.mjs';
 
 const projectRoot = fileURLToPath(new URL('..', import.meta.url));
 
@@ -11,9 +11,21 @@ test('保留策略覆盖全部运行数据目录且默认只回收诊断类数�
   for (const [name, policy] of Object.entries(RUNTIME_RETENTION)) {
     assert.ok(Number.isInteger(policy.maxItems) && policy.maxItems > 0, `${name} 的 maxItems 必须是正整数`);
     assert.ok(['durable', 'audit', 'diagnostic'].includes(policy.disposition), `${name} 的 disposition 非法`);
+    if (policy.retentionDays != null) assert.ok(Number.isFinite(policy.retentionDays) && policy.retentionDays > 0, `${name} 的 retentionDays 必须是正数`);
   }
   assert.deepEqual([...DEFAULT_MAINTENANCE_DISPOSITIONS], ['diagnostic']);
+  assert.equal(DEFAULT_RETENTION_DAYS, 7);
   assert.equal(resolveRetention('not-a-real-dir'), null);
+});
+
+test('诊断类数据默认按 7 天滚动保留，业务数据不受时间策略影响', () => {
+  for (const name of ['operation-events', 'insight-diagnostics']) {
+    assert.equal(RUNTIME_RETENTION[name].retentionDays, DEFAULT_RETENTION_DAYS, `${name} 应按默认天数滚动保留`);
+    assert.equal(RUNTIME_RETENTION[name].disposition, 'diagnostic');
+  }
+  for (const [name, policy] of Object.entries(RUNTIME_RETENTION)) {
+    if (policy.disposition === 'durable') assert.equal(policy.retentionDays, undefined, `${name} 是业务数据，不应设时间保留`);
+  }
 });
 
 test('保留策略与 server.mjs 实际使用的 maxItems 保持一致', async () => {

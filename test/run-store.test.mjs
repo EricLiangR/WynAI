@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { mkdtemp, readdir, readFile, rm, utimes, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { JsonRunStore } from '../lib/run-store.mjs';
@@ -114,6 +114,87 @@ test('损坏与命名不符的记录会被统计并按时间戳稳定排序兜�
     assert.equal(restored.loadStats.skipped, 1);
     assert.equal(restored.loadStats.loaded, 1);
     assert.deepEqual(restored.list().map(item => item.id), ['operation-event-00000002']);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+// 固定的“当前时间”，让按时间保留的断言可复现。
+const NOW = Date.parse('2026-09-30T00:00:00.000Z');
+const daysAgo = (days) => new Date(NOW - days * 86_400_000).toISOString();
+
+test('按时间保留：超出保留窗口的记录在启动时从磁盘删除', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'wynai-retention-runs-'));
+  try {
+    // 写入 3 旧 2 新；maxItems 足够大，确保删除只由时间策略触发。
+    const seeded = new JsonRunStore(directory, { maxItems: 100 });
+    await seeded.init();
+    const cases = [[30, 'old30'], [20, 'old20'], [8, 'old08'], [6, 'new06'], [1, 'new01']];
+    for (const [days, tag] of cases) {
+      await seeded.save({ id: `operation-event-${tag}00000000`, at: daysAgo(days), event: `d${days}` });
+    }
+    assert.equal((await readdir(directory)).length, 5);
+
+    const store = new JsonRunStore(directory, { maxItems: 100, retentionDays: 7, now: () => NOW });
+    await store.init();
+
+    // 只剩窗口内的 2 条，过期记录已从内存与磁盘同时移除。
+    assert.equal(store.list().length, 2);
+    assert.equal((await readdir(directory)).length, 2);
+    assert.ok(store.list().every(item => Date.parse(item.at) >= NOW - 7 * 86_400_000));
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('按时间保留：每次保存都会滚动清理过期记录', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'wynai-retention-rolling-'));
+  try {
+    // 直接落盘一条 30 天前的历史记录。
+    await writeFile(join(directory, 'operation-event-old0000001.json'), JSON.stringify({ id: 'operation-event-old0000001', at: daysAgo(30) }), 'utf8');
+    const store = new JsonRunStore(directory, { maxItems: 100, retentionDays: 7, now: () => NOW });
+    await store.init();
+    // 写入一条新记录触发 prune：过期记录清理，新记录保留。
+    await store.save({ id: 'operation-event-new0000001', at: daysAgo(1), event: 'new' });
+    const left = (await readdir(directory)).filter(name => name.endsWith('.json'));
+    assert.deepEqual(left, ['operation-event-new0000001.json']);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('按时间保留：缺少业务时间字段时回退到文件 mtime', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'wynai-retention-unknown-'));
+  try {
+    // 无业务时间字段时，以 mtime 作为时间依据：旧 mtime 视为过期，新 mtime 视为有效。
+    const staleFile = join(directory, 'operation-event-stale00001.json');
+    const freshFile = join(directory, 'operation-event-fresh00001.json');
+    await writeFile(staleFile, JSON.stringify({ id: 'operation-event-stale00001', event: 'legacy' }), 'utf8');
+    await writeFile(freshFile, JSON.stringify({ id: 'operation-event-fresh00001', event: 'legacy' }), 'utf8');
+    const stale = new Date(NOW - 30 * 86_400_000);
+    const fresh = new Date(NOW - 1 * 86_400_000);
+    await utimes(staleFile, stale, stale);
+    await utimes(freshFile, fresh, fresh);
+
+    const store = new JsonRunStore(directory, { maxItems: 100, retentionDays: 7, now: () => NOW });
+    await store.init();
+    assert.deepEqual(store.list().map(item => item.id), ['operation-event-fresh00001']);
+    assert.equal((await readdir(directory)).length, 1);
+  } finally {
+    await rm(directory, { recursive: true, force: true });
+  }
+});
+
+test('按时间保留：retentionDays 未设置时不影响原有条数裁剪行为', async () => {
+  const directory = await mkdtemp(join(tmpdir(), 'wynai-retention-off-'));
+  try {
+    const store = new JsonRunStore(directory, { maxItems: 2 });
+    await store.init();
+    await store.save(run('run-00000001', 1));
+    await store.save(run('run-00000002', 2));
+    await store.save(run('run-00000003', 3));
+    // 仅按条数裁剪，仍保留最新 2 条。
+    assert.deepEqual(store.list().map(item => item.id), ['run-00000003', 'run-00000002']);
   } finally {
     await rm(directory, { recursive: true, force: true });
   }

@@ -51,6 +51,7 @@ import { normalizeModelCapability, resolveModelBudget } from './model-capability
 import { InsightGovernanceService, redactInsightInput } from './lib/data-insights/insight-governance.mjs';
 import { buildBusinessFactPack } from './business-fact-engine.mjs';
 import { InsightDiagnosticLookupError, InsightDiagnosticStore, summarizeDiagnosticLifecycle } from './insight-diagnostic-store.mjs';
+import { DEFAULT_RETENTION_DAYS } from './lib/runtime-retention.mjs';
 
 const rootDir = fileURLToPath(new URL('.', import.meta.url));
 const publicDir = join(rootDir, 'public');
@@ -317,12 +318,14 @@ const MAX_QUERY_ROWS = 20000;
 const insightRunPersistence = new JsonRunStore(resolveRuntimePath(process.env.WYN_AI_INSIGHT_RUN_DIR, join(dataDir, 'insight-runs')), { maxItems: 200 });
 const insightRunStore = new InsightRunStore({ persistence: insightRunPersistence, maxItems: 200 });
 await insightRunStore.init();
-const insightDiagnosticStore = new InsightDiagnosticStore({ persistence: new JsonRunStore(resolveRuntimePath(process.env.WYN_AI_INSIGHT_DIAGNOSTIC_DIR, join(dataDir, 'insight-diagnostics')), { maxItems: 5000 }), maxItems: 5000 });
+// 诊断类数据按时间滚动保留：只保留最近 N 天（默认 7 天）。
+const runtimeRetentionDays = Number(process.env.WYN_AI_RUNTIME_RETENTION_DAYS || DEFAULT_RETENTION_DAYS);
+const insightDiagnosticStore = new InsightDiagnosticStore({ persistence: new JsonRunStore(resolveRuntimePath(process.env.WYN_AI_INSIGHT_DIAGNOSTIC_DIR, join(dataDir, 'insight-diagnostics')), { maxItems: 5000, retentionDays: runtimeRetentionDays }), maxItems: 5000 });
 await insightDiagnosticStore.init();
 const runStore = new JsonRunStore(join(dataDir, 'analysis-runs'), { maxItems: 100 });
 for (const run of (await runStore.init()).reverse()) agentRuns.set(run.id, run);
 const conversationStore = new JsonRunStore(join(dataDir, 'smart-query-conversations'), { maxItems: 100 });
-const operationalEventLog = new OperationalEventLog({ persistence: new JsonRunStore(join(dataDir, 'operation-events'), { maxItems: 10_000 }), maxItems: 10_000 });
+const operationalEventLog = new OperationalEventLog({ persistence: new JsonRunStore(join(dataDir, 'operation-events'), { maxItems: 10_000, retentionDays: runtimeRetentionDays }), maxItems: 10_000 });
 await operationalEventLog.init();
 const feedbackLearning = new FeedbackLearningService({
   feedbackPersistence: new JsonRunStore(join(dataDir, 'user-feedback'), { maxItems: 5000 }),
