@@ -2,5 +2,20 @@ node_modules/
 .env.local
 .DS_Store
 *.log
-data/analysis-runs/
+*.err
+*.out
+
+# 运行时过程数据：仅保留目录占位，不提交运行产物
+/data/*
+!/data/.gitkeep
+
+# 本地浏览器配置与截图：包含 Cookies、Login Data 等凭据，禁止提交
+.local-browser-profile/
+.local-browser-screenshots/
+
+# UAT 临时运行时目录与服务器日志
+UAT-AY/runtime-*/
+UAT-AY/server-*.err
+UAT-AY/server-*.out
+
 release/
